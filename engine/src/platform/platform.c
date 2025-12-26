@@ -54,17 +54,18 @@ const struct input_state* platform_get_input_state(void)
   return &input_state_;
 }
 
-void platform_frame_start(void)
-{
+void platform_frame_start(void) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   uint32_t now = SDL_GetTicks();
   ticks_ += now - prev_time_;
   prev_time_ = now;
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
 }
 
-void platform_frame_end(void)
-{
+void platform_frame_end(void) {
   SDL_GL_SwapWindow(window_);
   SDL_Delay(0);
 }
@@ -78,8 +79,7 @@ bool platform_tick_pending(void)
   return 0;
 }
 
-int platform_loop(void)
-{
+int platform_loop(void) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_QUIT) {

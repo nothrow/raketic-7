@@ -35,3 +35,4 @@ struct particles_data
 
 void entity_manager_initialize(void);
 struct particles_data* entity_manager_get_particles(void);
+void entity_manager_pack_particles(void);

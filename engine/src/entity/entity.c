@@ -1,5 +1,5 @@
 #include "entity.h"
-
+#include "platform/platform.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -13,8 +13,7 @@ typedef struct {
 
 static entity_manager_t manager_ = { 0 };
 
-static void objects_data_initialize(struct objects_data* data)
-{
+static void objects_data_initialize(struct objects_data* data) {
   data->position = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->thrust = retrieve_memory(sizeof(double) * MAXSIZE);
@@ -27,8 +26,7 @@ static void objects_data_initialize(struct objects_data* data)
   data->capacity = MAXSIZE;
 }
 
-static void particles_data_initialize(struct particles_data* data)
-{
+static void particles_data_initialize(struct particles_data* data) {
   data->position = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->lifetime_ticks = retrieve_memory(sizeof(uint16_t) * MAXSIZE);
@@ -38,14 +36,56 @@ static void particles_data_initialize(struct particles_data* data)
   data->capacity = MAXSIZE;
 }
 
-void entity_manager_initialize(void)
-{
+void entity_manager_initialize(void) {
   objects_data_initialize(&manager_.objects);
   particles_data_initialize(&manager_.particles);
+
+  vec2_t center = { 400.0, 300.0 };
+  
+  for (int i = 0; i < 10; i++)
+  {
+    manager_.particles.active++;
+    manager_.particles.position[i] = vec2_add(vec2_multiply(vec2_random(), 100), center);
+    manager_.particles.velocity[i] = vec2_multiply(vec2_random(), 3);
+    manager_.particles.orientation[i] = vec2_random();
+
+    manager_.particles.lifetime_ticks[i] = (uint16_t)(3 * TICKS_IN_SECOND);
+    manager_.particles.model_idx[i] = 0;
+  }
+
+  vec2_normalize_i(manager_.particles.orientation, manager_.particles.active);
 }
 
-
-struct particles_data* entity_manager_get_particles(void)
-{
+struct particles_data* entity_manager_get_particles(void) {
   return &manager_.particles;
+}
+
+void entity_manager_pack_particles(void) {
+  struct particles_data* pd = &manager_.particles;
+
+  int32_t last_alive = (int32_t)(pd->active - 1);
+
+  for (int32_t i = 0; i < last_alive; ++i) {
+    if (pd->lifetime_ticks[i] == 0) {
+
+      for (; last_alive >= i; --last_alive) {
+        if (pd->lifetime_ticks[last_alive] > 0) {
+          break;
+        }
+      }
+
+      if (i < last_alive) {
+
+        pd->position[i] = pd->position[last_alive];
+        pd->velocity[i] = pd->velocity[last_alive];
+        pd->lifetime_ticks[i] = pd->lifetime_ticks[last_alive];
+        pd->model_idx[i] = pd->model_idx[last_alive];
+        pd->orientation[i] = pd->orientation[last_alive];
+      }
+      else {
+        break;
+      }
+    }
+  }
+  pd->active = last_alive + 1;
 }

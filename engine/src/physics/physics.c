@@ -4,8 +4,7 @@
 
 #include <immintrin.h>
 
-static void particle_manager_euler(struct particles_data* pd)
-{
+static void particle_manager_euler(struct particles_data* pd) {
   __m256d dt = _mm256_set1_pd(TICK_S);
 
   double* positions = (double*)pd->position;
@@ -14,8 +13,7 @@ static void particle_manager_euler(struct particles_data* pd)
   double* end_pos = (double*)(pd->position + pd->active);
 
   // no need for testing velocities range, they are the same size as positions
-  for (; positions < end_pos; positions += 4, velocities += 4)
-  {
+  for (; positions < end_pos; positions += 4, velocities += 4) {
     __m256d pos = _mm256_load_pd(positions);
     __m256d vel = _mm256_load_pd(velocities);
 
@@ -25,8 +23,7 @@ static void particle_manager_euler(struct particles_data* pd)
   }
 }
 
-static uint32_t particle_manager_ttl(struct particles_data* pd)
-{
+static uint32_t particle_manager_ttl(struct particles_data* pd) {
   __m256i zero = _mm256_setzero_si256();
   __m256i one = _mm256_set1_epi16(1);
 
@@ -37,8 +34,7 @@ static uint32_t particle_manager_ttl(struct particles_data* pd)
 
   for (;
     lifetime_ticks < end_life;
-    lifetime_ticks += 16)
-  {
+    lifetime_ticks += 16) {
     __m256i lifetime = _mm256_load_si256((const __m256i*)lifetime_ticks);
     lifetime = _mm256_subs_epu16(lifetime, one);
     _mm256_store_si256((__m256i*)lifetime_ticks, lifetime);
@@ -51,48 +47,16 @@ static uint32_t particle_manager_ttl(struct particles_data* pd)
   return alive_count;  
 }
 
-static void particle_manager_compact(struct particles_data* pd)
-{
-  uint32_t last_alive = pd->active - 1;
-
-  for (uint32_t i = 0; i < pd->active; ++i) {
-    if (pd->lifetime_ticks[i] == 0) {
-
-      for (; last_alive > i; --last_alive) {
-        if (pd->lifetime_ticks[last_alive] > 0) {
-          break;
-        }
-      }
-
-      if (i < last_alive) {
-
-        pd->position[i] = pd->position[last_alive];
-        pd->velocity[i] = pd->velocity[last_alive];
-        pd->lifetime_ticks[i] = pd->lifetime_ticks[last_alive];
-        pd->model_idx[i] = pd->model_idx[last_alive];
-        pd->orientation[i] = pd->orientation[last_alive];
-      }
-      else {
-        break;
-      }
-    }
-  }
-
-  pd->active = last_alive + 1;
-}
-
-static void particle_manager_tick(void)
-{
+static void particle_manager_tick(void) {
   struct particles_data* pd = entity_manager_get_particles();
 
   particle_manager_euler(pd);
   if (particle_manager_ttl(pd) < pd->active) {
-    particle_manager_compact(pd);
+    entity_manager_pack_particles();
   }
 }
 
 
-void physics_engine_tick(void)
-{
+void physics_engine_tick(void) {
   particle_manager_tick();
 }

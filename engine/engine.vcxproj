@@ -20,8 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\memory.c" />
+    <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\entity.c" />
-    <ClCompile Include="src\graphic\graphic.c" />
+    <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\physics\physics.c">
       <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">All</AssemblerOutput>
@@ -31,11 +32,12 @@
     </ClCompile>
     <ClCompile Include="src\platform\lib.c" />
     <ClCompile Include="src\platform\platform.c" />
+    <ClCompile Include="src\platform\renderer.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\entity\entity.h" />
-    <ClInclude Include="src\graphic\graphic.h" />
+    <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\platform\platform.h" />
   </ItemGroup>

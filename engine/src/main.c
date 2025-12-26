@@ -1,6 +1,7 @@
 #include "platform/platform.h"
 #include "entity/entity.h"
 #include "physics/physics.h"
+#include "graphics/graphics.h"
 
 int __cdecl main(void) {
   bool running = true;
