@@ -1,0 +1,14 @@
+root = true
+
+# All files
+[*]
+indent_style = space
+
+# C files
+[*.{c,h}]
+
+indent_size = 2
+tab_width = 2
+
+# New line preferences
+insert_final_newline = true
