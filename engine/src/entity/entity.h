@@ -1,22 +1,37 @@
 #pragma once
 
-#include <stddef.h>
+#include <stdint.h>
 #include "core/core.h"
 
 struct objects_data
 {
+  uint32_t active;
+  uint32_t capacity;
+
   vec2_t* position;
   vec2_t* velocity;
-  vec2_t* acceleration;
+  double* thrust;
 
-  int* model_idx;
+  uint16_t* model_idx;
   vec2_t* orientation;
-
+  
   double* mass;
   double* radius;
+};
 
-  size_t active;
-  size_t capacity;
+struct particles_data
+{
+  uint32_t active;
+  uint32_t capacity;
+
+  vec2_t* position;
+  vec2_t* velocity;
+  
+  uint16_t* lifetime_ticks;
+  uint16_t* model_idx;
+
+  vec2_t* orientation;
 };
 
 void entity_manager_initialize(void);
+struct particles_data* entity_manager_get_particles(void);

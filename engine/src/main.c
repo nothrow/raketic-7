@@ -1,7 +1,8 @@
 #include "platform/platform.h"
 #include "entity/entity.h"
+#include "physics/physics.h"
 
-int main(void) {
+int __cdecl main(void) {
   bool running = true;
 
   memory_initialize();
@@ -14,8 +15,11 @@ int main(void) {
 
     running = platform_loop();
 
-    while (platform_is_dirty()) {
+    while (platform_tick_pending()) {
       // update game
+
+      physics_engine_tick();
+
     }
 
     platform_frame_end();

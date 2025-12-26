@@ -14,15 +14,12 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-#define TICK_MS (1000 / 120.0)
-
 static SDL_Window* window_;
 static SDL_GLContext* context_;
 static struct input_state input_state_;
 
 static uint32_t prev_time_;
 static double ticks_;
-
 
 static void _gl_init(void) {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -72,7 +69,7 @@ void platform_frame_end(void)
   SDL_Delay(0);
 }
 
-bool platform_is_dirty(void)
+bool platform_tick_pending(void)
 {
   if (ticks_ >= TICK_MS) {
     ticks_ -= TICK_MS;

@@ -17,10 +17,12 @@
     <ClCompile Include="src\platform\platform.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\core\memory.c" />
+    <ClCompile Include="src\physics\physics.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\core\core.h" />
+    <ClInclude Include="src\physics\physics.h" />
   </ItemGroup>
 </Project>

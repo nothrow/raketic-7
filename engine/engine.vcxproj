@@ -22,12 +22,19 @@
     <ClCompile Include="src\core\memory.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\physics\physics.c">
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">All</AssemblerOutput>
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">All</AssemblerOutput>
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">All</AssemblerOutput>
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\platform\lib.c" />
     <ClCompile Include="src\platform\platform.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\entity\entity.h" />
+    <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\platform\platform.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

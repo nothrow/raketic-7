@@ -14,6 +14,9 @@
 #endif
 
 
+#define TICK_MS (1000 / 120.0)
+#define TICK_S (1000 / 120.0) / 1000.0
+
 void clear_memory(void* ptr, size_t size);
 
 struct input_state {
@@ -25,7 +28,7 @@ struct input_state {
 
 void platform_create_window(void);
 int platform_loop(void);
-bool platform_is_dirty(void);
+bool platform_tick_pending(void);
 
 void platform_frame_start(void);
 void platform_frame_end(void);
