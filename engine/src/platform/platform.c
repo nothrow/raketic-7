@@ -116,9 +116,11 @@ bool platform_loop(void) {
 }
 
 void* platform_retrieve_memory(size_t memory_size) {
-  _ASSERT(allocated_size_ + memory_size < MEMORY_MAX_SIZE);
+  size_t aligned_offset = (allocated_size_ + 15) & ~(size_t)15;
 
-  void* ptr = (char*)fixed_heap_ + allocated_size_;
-  allocated_size_ += memory_size;
+  _ASSERT(aligned_offset + memory_size <= MEMORY_MAX_SIZE);
+
+  void* ptr = (char*)fixed_heap_ + aligned_offset;
+  allocated_size_ = aligned_offset + memory_size;
   return ptr;
 }

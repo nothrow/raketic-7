@@ -21,5 +21,7 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
 const struct input_state* platform_get_input_state(void);
 
 // Memory management (fixed heap, no dynamic allocation)
+// the returned memory is aligned to 16 bytes
+// no assumptions about the memory being cleared are done
 void* platform_retrieve_memory(size_t memory_size);
 void platform_clear_memory(void* ptr, size_t size);
