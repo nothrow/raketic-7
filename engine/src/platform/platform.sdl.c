@@ -11,13 +11,6 @@
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-
-
-#define MEMORY_MAX_SIZE (30 * 1024 * 1024)
-
-
 static SDL_Window* window_;
 static SDL_GLContext* context_;
 static struct input_state input_state_;
@@ -25,24 +18,8 @@ static struct input_state input_state_;
 static uint32_t prev_time_;
 static double ticks_;
 
-static void* fixed_heap_ = NULL;
-static size_t allocated_size_ = 0;
-
-static void _memory_initialize(void) {
-  fixed_heap_ = VirtualAlloc(NULL, MEMORY_MAX_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  _ASSERT(fixed_heap_ != NULL);
-}
-
-static void _gl_init(void) {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0.0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0, -1.0, 1.0);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-}
+void _memory_initialize(void);
+void _gl_initialize(void);
 
 static void _platform_create_window(void) {
   _VERIFY(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) >= 0, "SDL initialization failed");
@@ -56,10 +33,10 @@ static void _platform_create_window(void) {
 
   platform_clear_memory(&input_state_, sizeof(input_state_));
 
-  _gl_init();
   prev_time_ = SDL_GetTicks();
   ticks_ = 0;
 
+  _gl_initialize();
   _memory_initialize();
 }
 
@@ -115,12 +92,9 @@ bool platform_loop(void) {
   return true;
 }
 
-void* platform_retrieve_memory(size_t memory_size) {
-  size_t aligned_offset = (allocated_size_ + 15) & ~(size_t)15;
+// defined in main.c
+int run(void);
 
-  _ASSERT(aligned_offset + memory_size <= MEMORY_MAX_SIZE);
-
-  void* ptr = (char*)fixed_heap_ + aligned_offset;
-  allocated_size_ = aligned_offset + memory_size;
-  return ptr;
+int main(void) {
+  return run();
 }

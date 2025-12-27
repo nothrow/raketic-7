@@ -24,18 +24,6 @@ vec2_t vec2_add(vec2_t a, vec2_t b) {
   return result;
 }
 
-void vec2_multiply_i(vec2_t* v, double* scalar, int count) {
-  double* start = (double*)v;
-  double* last = (double*)&v[count];
-
-  for (; start < last; start += 4, scalar++) {
-    __m256d vec = _mm256_load_pd(start);   // x, y
-    __m256d scl = _mm256_set1_pd(*scalar); // scalar, scalar
-    __m256d res = _mm256_mul_pd(vec, scl); // x * scalar, y * scalar
-    _mm256_store_pd(start, res);
-  }
-}
-
 void vec2_normalize_i(vec2_t* v, int count) {
   double* start = (double*)v;
   double* last = (double*)&v[count];
@@ -65,5 +53,6 @@ void vec2_normalize_i(vec2_t* v, int count) {
 
     _mm256_store_pd(start, res0);
     _mm256_store_pd(start + 2, res1);
+
   }
 }

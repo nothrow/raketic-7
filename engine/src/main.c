@@ -3,7 +3,7 @@
 #include "physics/physics.h"
 #include "graphics/graphics.h"
 
-int __cdecl main(void) {
+int run(void) {
   bool running = true;
 
   platform_initialize();

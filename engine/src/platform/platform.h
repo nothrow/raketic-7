@@ -2,6 +2,9 @@
 
 #include "core/core.h"
 
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
 struct input_state {
   int mx, my;
   int mdx, mdy;

@@ -42,4 +42,4 @@ vec2_t vec2_multiply(vec2_t v, double scalar);
 vec2_t vec2_add(vec2_t a, vec2_t b);
 
 void vec2_normalize_i(vec2_t* v, int count);
-void vec2_multiply_i(vec2_t* v, double* scalar, int count);
+

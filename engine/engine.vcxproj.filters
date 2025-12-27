@@ -11,7 +11,7 @@
     <Filter Include="tools" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\platform\platform.c" />
+    <ClCompile Include="src\platform\platform.sdl.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\platform\lib.c" />
     <ClCompile Include="src\platform\platform.c" />
@@ -20,6 +20,9 @@
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\platform\renderer.c" />
     <ClCompile Include="src\core\vector.c" />
+    <ClCompile Include="src\platform\platform.win.c" />
+    <ClCompile Include="src\platform\platform.min.c" />
+    <ClCompile Include="src\platform\platform.gl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
