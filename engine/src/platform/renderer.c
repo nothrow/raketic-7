@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <gl/GL.h>
 
+#include "../generated/renderer.gen.h"
+
 void platform_renderer_draw_models(size_t model_count, const color_t* colors, const vec2_t* positions,
                                    const vec2_t* orientations, const uint16_t* model_indices) {
   for (size_t i = 0; i < model_count; i++) {
@@ -23,13 +25,16 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
     // clang-format on
 
     glMultMatrixd(m);
-
+    
+    _generated_draw_model(colors[i], model_indices[i]);
+    /*
     glBegin(GL_LINE_STRIP);
     glVertex2d(-5.0, -5.0);
     glVertex2d(5.0, -5.0);
     glVertex2d(0, 10.0);
     glVertex2d(-5.0, -5.0);
-    glEnd();
+    glEnd();*/
+
     glPopMatrix();
   }
 }

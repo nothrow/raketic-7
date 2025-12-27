@@ -23,6 +23,7 @@
     <ClCompile Include="src\platform\platform.win.c" />
     <ClCompile Include="src\platform\platform.min.c" />
     <ClCompile Include="src\platform\platform.gl.c" />
+    <ClCompile Include="generated\renderer.gen.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -30,5 +31,6 @@
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\graphics\graphics.h" />
+    <ClInclude Include="generated\renderer.gen.h" />
   </ItemGroup>
 </Project>

@@ -5,19 +5,52 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "engine", "engine\engine.vcxproj", "{131C08CA-2393-415A-8ED9-46CCD5B48B27}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raketic.modelgen", "raketic.modelgen\raketic.modelgen.csproj", "{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+		ReleaseMin|Any CPU = ReleaseMin|Any CPU
 		ReleaseMin|x86 = ReleaseMin|x86
+		ReleaseSDL|Any CPU = ReleaseSDL|Any CPU
 		ReleaseSDL|x86 = ReleaseSDL|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Debug|Any CPU.Build.0 = Debug|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Debug|x86.ActiveCfg = Debug|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Debug|x86.Build.0 = Debug|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Release|Any CPU.ActiveCfg = ReleaseSDL|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Release|Any CPU.Build.0 = ReleaseSDL|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Release|x86.ActiveCfg = ReleaseSDL|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.Release|x86.Build.0 = ReleaseSDL|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseMin|Any CPU.ActiveCfg = ReleaseMin|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseMin|Any CPU.Build.0 = ReleaseMin|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseMin|x86.ActiveCfg = ReleaseMin|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseMin|x86.Build.0 = ReleaseMin|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseSDL|Any CPU.ActiveCfg = ReleaseSDL|Win32
+		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseSDL|Any CPU.Build.0 = ReleaseSDL|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseSDL|x86.ActiveCfg = ReleaseSDL|Win32
 		{131C08CA-2393-415A-8ED9-46CCD5B48B27}.ReleaseSDL|x86.Build.0 = ReleaseSDL|Win32
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Debug|x86.Build.0 = Debug|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Release|x86.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.Release|x86.Build.0 = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseMin|Any CPU.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseMin|Any CPU.Build.0 = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseMin|x86.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseMin|x86.Build.0 = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseSDL|Any CPU.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseSDL|Any CPU.Build.0 = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseSDL|x86.ActiveCfg = Release|Any CPU
+		{4CCC2896-84C3-49E8-8859-9C81CEDFB2AD}.ReleaseSDL|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

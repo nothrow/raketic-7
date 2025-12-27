@@ -7,6 +7,8 @@ static uint64_t prev_time_;
 static double ticks_;
 
 static HWND hwnd_;
+static HGLRC hglrc_;
+static HDC hdc_;
 
 int _fltused = 0;
 
@@ -16,7 +18,7 @@ void _gl_initialize(void);
 static void _platform_create_window(void) {
   WNDCLASS wc = { 0 };
   wc.lpfnWndProc = DefWindowProc;
-  wc.hInstance = GetModuleHandle(NULL);
+  wc.hInstance = GetModuleHandleA(NULL);
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);
   wc.lpszClassName = "w";
   ATOM a = RegisterClass(&wc);
@@ -27,8 +29,8 @@ static void _platform_create_window(void) {
 
   _ASSERT(hwnd_ != NULL);
 
-  HDC hdc = GetDC(hwnd_);
-  _ASSERT(hdc != NULL);
+  hdc_ = GetDC(hwnd_);
+  _ASSERT(hdc_ != NULL);
 
   PIXELFORMATDESCRIPTOR pfd = { 0 };
   pfd.nSize = sizeof(pfd);
@@ -38,16 +40,16 @@ static void _platform_create_window(void) {
   pfd.cColorBits = 32;
   pfd.cAlphaBits = 8;
 
-  int pf = ChoosePixelFormat(hdc, &pfd);
+  int pf = ChoosePixelFormat(hdc_, &pfd);
   _ASSERT(pf != 0);
 
-  BOOL b = SetPixelFormat(hdc, pf, &pfd);
+  BOOL b = SetPixelFormat(hdc_, pf, &pfd);
   _ASSERT(b != 0);
 
-  HGLRC hglrc = wglCreateContext(hdc);
-  _ASSERT(hglrc != NULL);
+  hglrc_ = wglCreateContext(hdc_);
+  _ASSERT(hglrc_ != NULL);
 
-  b = wglMakeCurrent(hdc, hglrc);
+  b = wglMakeCurrent(hdc_, hglrc_);
   _ASSERT(b != 0);
 }
 
@@ -55,6 +57,8 @@ void platform_initialize(void) {
   _memory_initialize();
   _platform_create_window();
   _gl_initialize();
+
+  prev_time_ = GetTickCount64();
 }
 
 
@@ -71,7 +75,6 @@ void platform_frame_start(void) {
 
 void platform_frame_end(void) {
   SwapBuffers(GetDC(hwnd_));
-  Sleep(0);
 }
 
 bool platform_tick_pending(void) {
@@ -84,15 +87,22 @@ bool platform_tick_pending(void) {
 
 bool platform_loop(void) {
   MSG msg;
-  while (PeekMessage(&msg, hwnd_, 0, 0, PM_REMOVE)) {
-    if (msg.message == WM_QUIT || msg.message == WM_CLOSE) {
+  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+    switch (msg.message)
+    {
+    case WM_QUIT:
+      return false;
+    case WM_CLOSE:
+      DestroyWindow(hwnd_);
+    case WM_DESTROY:
+      PostQuitMessage(0);
       return false;
     }
+
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }
 
-  Sleep(0);
   return true;
 }
 
@@ -101,5 +111,9 @@ int run(void);
 
 extern void WinMainCRTStartup(void) {
   int ret = run();
+#pragma warning(disable: 4702)
+  wglMakeCurrent(NULL, NULL);
+  wglDeleteContext(hglrc_);
+
   ExitProcess(ret);
 }

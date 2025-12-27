@@ -13,6 +13,9 @@ int run(void) {
     platform_frame_start();
     running = platform_loop();
 
+    if (!running) // fail fast
+      break;
+
     while (platform_tick_pending()) {
       // update game
       physics_engine_tick();

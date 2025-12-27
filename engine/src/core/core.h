@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 // Debug macros - no standard library dependency in release
-#ifdef NDEBUG
+#ifdef asdNDEBUG
 #define _ASSERT(x) ((void)0)
 #define _VERIFY(x, msg) (x)
 #else

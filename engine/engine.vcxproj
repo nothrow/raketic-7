@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="generated\renderer.gen.c" />
     <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\graphics\graphics.c" />
@@ -40,6 +41,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\graphics\graphics.h" />
