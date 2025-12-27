@@ -3,10 +3,19 @@
 #include <immintrin.h>
 #include <stdlib.h>
 
+static uint32_t rng_state = 2463534242u;
+
+uint32_t rand32(void) {
+  rng_state ^= rng_state << 13;
+  rng_state ^= rng_state >> 17;
+  rng_state ^= rng_state << 5;
+  return rng_state;
+}
+
 vec2_t vec2_random(void) {
   vec2_t v;
-  v.x = (double)(rand() % 1000) / 1000.0 * 2.0 - 1.0;
-  v.y = (double)(rand() % 1000) / 1000.0 * 2.0 - 1.0;
+  v.x = (double)(rand32() % 1000) / 1000.0 * 2.0 - 1.0;
+  v.y = (double)(rand32() % 1000) / 1000.0 * 2.0 - 1.0;
   return v;
 }
 

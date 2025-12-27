@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <gl/GL.h>
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #pragma comment(lib, "winmm.lib")
@@ -35,14 +36,12 @@ static void _platform_create_window(void) {
 
   prev_time_ = SDL_GetTicks();
   ticks_ = 0;
-
-  _gl_initialize();
-  _memory_initialize();
 }
 
 void platform_initialize(void) {
   _memory_initialize();
   _platform_create_window();
+  _gl_initialize();
 }
 
 const struct input_state* platform_get_input_state(void) {
@@ -95,6 +94,9 @@ bool platform_loop(void) {
 // defined in main.c
 int run(void);
 
-int main(void) {
+int __cdecl main(int argc, char** argv) {
+  SDL_SetMainReady();
+  (argc);
+  (argv);
   return run();
 }

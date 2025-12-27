@@ -26,9 +26,13 @@
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <ClCompile Include="src\platform\platform.gl.c" />
-    <ClCompile Include="src\platform\platform.min.c" />
+    <ClCompile Include="src\platform\platform.min.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSDL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\platform\platform.sdl.c">
       <AssemblerOutput>All</AssemblerOutput>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\platform\platform.win.c" />
     <ClCompile Include="src\platform\renderer.c">
@@ -65,6 +69,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -80,11 +85,32 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgManifestInstall>true</VcpkgManifestInstall>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Size</FavorSizeOrSpeed>
+      <OmitFramePointers Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OmitFramePointers>
+      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</ExceptionHandling>
+      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</BufferSecurityCheck>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Fast</FloatingPointModel>
+      <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</FloatingPointExceptions>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">FastCall</CallingConvention>
+      <OmitDefaultLibName Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OmitDefaultLibName>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">$(ProjectDir)\src</AdditionalIncludeDirectories>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Level4</WarningLevel>
+      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</SDLCheck>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</TreatWarningAsError>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">/d2noftol3 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <Link>
+      <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</IgnoreAllDefaultLibraries>
+      <OptimizeReferences Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OptimizeReferences>
+      <SubSystem Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Windows</SubSystem>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">$(CoreLibraryDependencies);%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

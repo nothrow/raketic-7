@@ -2,70 +2,66 @@
 
 #include <Windows.h>
 #include <gl/GL.h>
-#include <SDL2/SDL.h>
 
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "version.lib")
-#pragma comment(lib, "imm32.lib")
-#pragma comment(lib, "opengl32.lib")
-#pragma comment(lib, "cfgmgr32.lib")
-#pragma comment(lib, "setupapi.lib")
-
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-
-static SDL_Window* window_;
-static SDL_GLContext* context_;
-static struct input_state input_state_;
-
-static uint32_t prev_time_;
+static uint64_t prev_time_;
 static double ticks_;
 
+static HWND hwnd_;
+
+int _fltused = 0;
+
 void _memory_initialize(void);
-
-static void _gl_initialize(void) {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0.0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0, -1.0, 1.0);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-}
+void _gl_initialize(void);
 
 static void _platform_create_window(void) {
-  _VERIFY(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) >= 0, "SDL initialization failed");
-  window_ = SDL_CreateWindow("Raketic", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT,
-                             SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
-  _ASSERT(window_ && "Window creation failed");
+  WNDCLASS wc = { 0 };
+  wc.lpfnWndProc = DefWindowProc;
+  wc.hInstance = GetModuleHandle(NULL);
+  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wc.lpszClassName = "w";
+  ATOM a = RegisterClass(&wc);
+  _ASSERT(a != 0);
 
-  context_ = SDL_GL_CreateContext(window_);
-  _ASSERT(context_ && "OpenGL context creation failed");
-  SDL_GL_SetSwapInterval(1); // Enable vsync
+  hwnd_ = CreateWindowA(wc.lpszClassName, "Raketic", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, WINDOW_WIDTH,
+                      WINDOW_HEIGHT, 0, 0, wc.hInstance, 0);
 
-  platform_clear_memory(&input_state_, sizeof(input_state_));
+  _ASSERT(hwnd_ != NULL);
 
-  _gl_initialize();
-  prev_time_ = SDL_GetTicks();
-  ticks_ = 0;
+  HDC hdc = GetDC(hwnd_);
+  _ASSERT(hdc != NULL);
 
-  _memory_initialize();
+  PIXELFORMATDESCRIPTOR pfd = { 0 };
+  pfd.nSize = sizeof(pfd);
+  pfd.nVersion = 1;
+  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  pfd.iPixelType = PFD_TYPE_RGBA;
+  pfd.cColorBits = 32;
+  pfd.cAlphaBits = 8;
+
+  int pf = ChoosePixelFormat(hdc, &pfd);
+  _ASSERT(pf != 0);
+
+  BOOL b = SetPixelFormat(hdc, pf, &pfd);
+  _ASSERT(b != 0);
+
+  HGLRC hglrc = wglCreateContext(hdc);
+  _ASSERT(hglrc != NULL);
+
+  b = wglMakeCurrent(hdc, hglrc);
+  _ASSERT(b != 0);
 }
 
 void platform_initialize(void) {
   _memory_initialize();
   _platform_create_window();
+  _gl_initialize();
 }
 
-const struct input_state* platform_get_input_state(void) {
-  return &input_state_;
-}
 
 void platform_frame_start(void) {
   glClear(GL_COLOR_BUFFER_BIT);
 
-  uint32_t now = SDL_GetTicks();
+  uint64_t now = GetTickCount64();
   ticks_ += now - prev_time_;
   prev_time_ = now;
 
@@ -74,8 +70,8 @@ void platform_frame_start(void) {
 }
 
 void platform_frame_end(void) {
-  SDL_GL_SwapWindow(window_);
-  SDL_Delay(0);
+  SwapBuffers(GetDC(hwnd_));
+  Sleep(0);
 }
 
 bool platform_tick_pending(void) {
@@ -87,27 +83,23 @@ bool platform_tick_pending(void) {
 }
 
 bool platform_loop(void) {
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_QUIT) {
+  MSG msg;
+  while (PeekMessage(&msg, hwnd_, 0, 0, PM_REMOVE)) {
+    if (msg.message == WM_QUIT || msg.message == WM_CLOSE) {
       return false;
     }
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
   }
 
-  int mx = input_state_.mx;
-  int my = input_state_.my;
-
-  input_state_.buttons = SDL_GetMouseState(&input_state_.mx, &input_state_.my);
-
-  input_state_.mdx = input_state_.mx - mx;
-  input_state_.mdy = input_state_.my - my;
-
+  Sleep(0);
   return true;
 }
 
-// defined in main.c
+// declared in main.c
 int run(void);
 
-int main(void) {
-  return run();
+extern void WinMainCRTStartup(void) {
+  int ret = run();
+  ExitProcess(ret);
 }
