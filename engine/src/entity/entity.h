@@ -38,6 +38,6 @@ struct particles_data {
   struct _128bytes* temporary; // reserved memory for intermediate computations
 };
 
-void entity_manager_initialize(void);
+void _entity_manager_initialize(void);
 struct particles_data* entity_manager_get_particles(void);
 void entity_manager_pack_particles(void);

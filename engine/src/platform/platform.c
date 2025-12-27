@@ -25,12 +25,12 @@ static struct input_state input_state_;
 static uint32_t prev_time_;
 static double ticks_;
 
-static void* fixed_heap = NULL;
-static size_t allocated_size = 0;
+static void* fixed_heap_ = NULL;
+static size_t allocated_size_ = 0;
 
 static void _memory_initialize(void) {
-  fixed_heap = VirtualAlloc(NULL, MEMORY_MAX_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-  _ASSERT(fixed_heap != NULL);
+  fixed_heap_ = VirtualAlloc(NULL, MEMORY_MAX_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  _ASSERT(fixed_heap_ != NULL);
 }
 
 static void _gl_init(void) {
@@ -116,9 +116,9 @@ bool platform_loop(void) {
 }
 
 void* platform_retrieve_memory(size_t memory_size) {
-  _ASSERT(allocated_size + memory_size < MEMORY_MAX_SIZE);
+  _ASSERT(allocated_size_ + memory_size < MEMORY_MAX_SIZE);
 
-  void* ptr = (char*)fixed_heap + allocated_size;
-  allocated_size += memory_size;
+  void* ptr = (char*)fixed_heap_ + allocated_size_;
+  allocated_size_ += memory_size;
   return ptr;
 }

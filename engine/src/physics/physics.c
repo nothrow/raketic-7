@@ -3,7 +3,7 @@
 
 #include <immintrin.h>
 
-static void particle_manager_euler(struct particles_data* pd) {
+static void _particle_manager_euler(struct particles_data* pd) {
   __m256d dt = _mm256_set1_pd(TICK_S);
 
   double* positions = (double*)pd->position;
@@ -22,7 +22,7 @@ static void particle_manager_euler(struct particles_data* pd) {
   }
 }
 
-static uint32_t particle_manager_ttl(struct particles_data* pd) {
+static uint32_t _particle_manager_ttl(struct particles_data* pd) {
   __m256i zero = _mm256_setzero_si256();
   __m256i one = _mm256_set1_epi16(1);
 
@@ -44,15 +44,15 @@ static uint32_t particle_manager_ttl(struct particles_data* pd) {
   return alive_count;
 }
 
-static void particle_manager_tick(void) {
+static void _particle_manager_tick(void) {
   struct particles_data* pd = entity_manager_get_particles();
 
-  particle_manager_euler(pd);
-  if (particle_manager_ttl(pd) < pd->active) {
+  _particle_manager_euler(pd);
+  if (_particle_manager_ttl(pd) < pd->active) {
     entity_manager_pack_particles();
   }
 }
 
 void physics_engine_tick(void) {
-  particle_manager_tick();
+  _particle_manager_tick();
 }

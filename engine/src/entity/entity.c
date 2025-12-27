@@ -11,7 +11,7 @@ typedef struct {
 
 static entity_manager_t manager_ = {0};
 
-static void objects_data_initialize(struct objects_data* data) {
+static void _objects_data_initialize(struct objects_data* data) {
   data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->thrust = platform_retrieve_memory(sizeof(double) * MAXSIZE);
@@ -24,7 +24,7 @@ static void objects_data_initialize(struct objects_data* data) {
   data->capacity = MAXSIZE;
 }
 
-static void particles_data_initialize(struct particles_data* data) {
+static void _particles_data_initialize(struct particles_data* data) {
   data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->lifetime_ticks = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
@@ -37,9 +37,9 @@ static void particles_data_initialize(struct particles_data* data) {
   data->capacity = MAXSIZE;
 }
 
-void entity_manager_initialize(void) {
-  objects_data_initialize(&manager_.objects);
-  particles_data_initialize(&manager_.particles);
+void _entity_manager_initialize(void) {
+  _objects_data_initialize(&manager_.objects);
+  _particles_data_initialize(&manager_.particles);
 
   // will be deleted - just for testing
   vec2_t center = {400.0, 300.0};
@@ -62,6 +62,15 @@ struct particles_data* entity_manager_get_particles(void) {
   return &manager_.particles;
 }
 
+static void _move_particle(struct particles_data* pd, size_t target, size_t source) {
+  pd->position[target] = pd->position[source];
+  pd->velocity[target] = pd->velocity[source];
+  pd->lifetime_ticks[target] = pd->lifetime_ticks[source];
+  pd->lifetime_max[target] = pd->lifetime_max[source];
+  pd->model_idx[target] = pd->model_idx[source];
+  pd->orientation[target] = pd->orientation[source];
+}
+
 void entity_manager_pack_particles(void) {
   struct particles_data* pd = &manager_.particles;
 
@@ -76,12 +85,7 @@ void entity_manager_pack_particles(void) {
       }
 
       if (i < last_alive) {
-        pd->position[i] = pd->position[last_alive];
-        pd->velocity[i] = pd->velocity[last_alive];
-        pd->lifetime_ticks[i] = pd->lifetime_ticks[last_alive];
-        pd->lifetime_max[i] = pd->lifetime_max[last_alive];
-        pd->model_idx[i] = pd->model_idx[last_alive];
-        pd->orientation[i] = pd->orientation[last_alive];
+        _move_particle(pd, i, last_alive);
       } else {
         break;
       }
