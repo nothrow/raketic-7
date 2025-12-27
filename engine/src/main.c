@@ -6,10 +6,8 @@
 int __cdecl main(void) {
   bool running = true;
 
-  memory_initialize();
+  platform_initialize();
   entity_manager_initialize();
-
-  platform_create_window();
 
   while (running) {
     platform_frame_start();

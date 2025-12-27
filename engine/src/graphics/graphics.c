@@ -4,8 +4,7 @@
 
 #include <immintrin.h>
 
-static void _particles_colors(const struct particles_data* pd, color_t* target)
-{
+static void _particles_colors(const struct particles_data* pd, color_t* target) {
   uint16_t* lifetime_ticks = pd->lifetime_ticks;
   uint16_t* lifetime_max = pd->lifetime_max;
 
@@ -17,22 +16,16 @@ static void _particles_colors(const struct particles_data* pd, color_t* target)
   __m256 two = _mm256_set1_ps(2.0f);
   __m256 bytemax = _mm256_set1_ps(255.0f);
 
-  __m256i shuffle_pattern = _mm256_setr_epi8(
-    0, 4, 8, 12,    // r0 g0 b0 a0
-    1, 5, 9, 13,    // r1 g1 b1 a1
-    2, 6, 10, 14,   // r2 g2 b2 a2
-    3, 7, 11, 15,   // r3 g3 b3 a3
-    // high lane (same pattern)
-    0, 4, 8, 12,
-    1, 5, 9, 13,
-    2, 6, 10, 14,
-    3, 7, 11, 15
-  );
+  __m256i shuffle_pattern = _mm256_setr_epi8(0, 4, 8, 12,  // r0 g0 b0 a0
+                                             1, 5, 9, 13,  // r1 g1 b1 a1
+                                             2, 6, 10, 14, // r2 g2 b2 a2
+                                             3, 7, 11, 15, // r3 g3 b3 a3
+                                             // high lane (same pattern)
+                                             0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
 
-  
-  for (; lifetime_ticks < end_life; lifetime_ticks+=8, lifetime_max+=8, target += 8) {
-    __m128i life = _mm_loadu_si128((const __m128i*)lifetime_ticks);     // l0, l1, l2, l3, l4, l5, l6, l7
-    __m128i max = _mm_loadu_si128((const __m128i*)lifetime_max); // m0, m1, m2, m3, m4, m5, m6, m7
+  for (; lifetime_ticks < end_life; lifetime_ticks += 8, lifetime_max += 8, target += 8) {
+    __m128i life = _mm_loadu_si128((const __m128i*)lifetime_ticks); // l0, l1, l2, l3, l4, l5, l6, l7
+    __m128i max = _mm_loadu_si128((const __m128i*)lifetime_max);    // m0, m1, m2, m3, m4, m5, m6, m7
 
     // extend to unsigned 32b first
     __m256i life32 = _mm256_cvtepu16_epi32(life); // l0, l1, l2, l3, l4, l5, l6, l7
@@ -63,40 +56,27 @@ static void _particles_colors(const struct particles_data* pd, color_t* target)
     __m256i bi = _mm256_cvtps_epi32(_mm256_mul_ps(b, bytemax));
 
     // now pack!
-
-    __m256i rgba_8 =
-      _mm256_packus_epi16(
+    __m256i rgba_8 = _mm256_packus_epi16(
         _mm256_packus_epi32(ri, gi),
-        _mm256_packus_epi32(bi, _mm256_setzero_si256())
-      ); // r0 r1 r2 r3 g0 g1 g2 g3 b0 b1 b2 b3 0 0 0 0 r4 r5 r6 r7 g4 g5 g6 g7 b4 b5 b6 b7 0 0 0 0
+        _mm256_packus_epi32(bi, _mm256_setzero_si256())); // r0 r1 r2 r3 g0 g1 g2 g3 b0 b1 b2 b3 0 0 0 0 r4 r5 r6 r7 g4
+                                                          // g5 g6 g7 b4 b5 b6 b7 0 0 0 0
 
     __m256i rgba_shuffled = _mm256_shuffle_epi8(rgba_8, shuffle_pattern);
     // r0 g0 b0 0 r1 g1 b1 0 r2 g2 b2 0 r3 g3 b3 0 r4 g4 b4 0 r5 g5 b5 0 r6 g6 b6 0 r7 g7 b7 0
     _mm256_storeu_si256((__m256i*)(target), rgba_shuffled);
-    target += 8;
   }
 }
 
-static void graphics_engine_particles_draw(struct particles_data* pd)
-{
+static void graphics_engine_particles_draw(struct particles_data* pd) {
   // compute colors!
   color_t* colors = (color_t*)pd->temporary;
 
   _particles_colors(pd, colors);
-  
 
-  platform_renderer_draw_models(
-    pd->active,
-    colors,
-    pd->position,
-    pd->orientation,
-    pd->model_idx
-  );
+  platform_renderer_draw_models(pd->active, colors, pd->position, pd->orientation, pd->model_idx);
 }
 
 void graphics_engine_draw(void) {
-
   struct particles_data* pd = entity_manager_get_particles();
   graphics_engine_particles_draw(pd);
-
 }

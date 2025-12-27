@@ -3,8 +3,7 @@
 #include <stdint.h>
 #include "core/core.h"
 
-struct objects_data
-{
+struct objects_data {
   uint32_t active;
   uint32_t capacity;
 
@@ -14,7 +13,7 @@ struct objects_data
 
   uint16_t* model_idx;
   vec2_t* orientation;
-  
+
   double* mass;
   double* radius;
 };
@@ -23,21 +22,20 @@ struct _128bytes {
   uint8_t data[128];
 };
 
-struct particles_data
-{
+struct particles_data {
   uint32_t active;
   uint32_t capacity;
 
   vec2_t* position;
   vec2_t* velocity;
-  
+
   uint16_t* lifetime_ticks;
   uint16_t* lifetime_max;
   uint16_t* model_idx;
 
   vec2_t* orientation;
 
-  struct _128bytes * temporary; // reserved memory for any needed intermediate computations. do not _store_ anything, as it gets lost
+  struct _128bytes* temporary; // reserved memory for intermediate computations
 };
 
 void entity_manager_initialize(void);

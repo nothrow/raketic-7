@@ -16,7 +16,6 @@
     <ClCompile Include="src\platform\lib.c" />
     <ClCompile Include="src\platform\platform.c" />
     <ClCompile Include="src\entity\entity.c" />
-    <ClCompile Include="src\core\memory.c" />
     <ClCompile Include="src\physics\physics.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\platform\renderer.c" />

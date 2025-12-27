@@ -1,8 +1,8 @@
-#include <windows.h>
+#include "platform.h"
+
+#include <Windows.h>
 #include <gl/GL.h>
 #include <SDL2/SDL.h>
-
-#include "platform.h"
 
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "version.lib")
@@ -14,12 +14,24 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
+
+#define MEMORY_MAX_SIZE (30 * 1024 * 1024)
+
+
 static SDL_Window* window_;
 static SDL_GLContext* context_;
 static struct input_state input_state_;
 
 static uint32_t prev_time_;
 static double ticks_;
+
+static void* fixed_heap = NULL;
+static size_t allocated_size = 0;
+
+static void _memory_initialize(void) {
+  fixed_heap = VirtualAlloc(NULL, MEMORY_MAX_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  _ASSERT(fixed_heap != NULL);
+}
 
 static void _gl_init(void) {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -32,25 +44,31 @@ static void _gl_init(void) {
   glLoadIdentity();
 }
 
-void platform_create_window(void) {
+static void _platform_create_window(void) {
   _VERIFY(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) >= 0, "SDL initialization failed");
-  window_ = SDL_CreateWindow("Raketic", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+  window_ = SDL_CreateWindow("Raketic", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT,
+                             SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
   _ASSERT(window_ && "Window creation failed");
-
 
   context_ = SDL_GL_CreateContext(window_);
   _ASSERT(context_ && "OpenGL context creation failed");
   SDL_GL_SetSwapInterval(1); // Enable vsync
 
-  clear_memory(&input_state_, sizeof(input_state_));
+  platform_clear_memory(&input_state_, sizeof(input_state_));
 
   _gl_init();
   prev_time_ = SDL_GetTicks();
   ticks_ = 0;
+
+  _memory_initialize();
 }
 
-const struct input_state* platform_get_input_state(void)
-{
+void platform_initialize(void) {
+  _memory_initialize();
+  _platform_create_window();
+}
+
+const struct input_state* platform_get_input_state(void) {
   return &input_state_;
 }
 
@@ -70,20 +88,19 @@ void platform_frame_end(void) {
   SDL_Delay(0);
 }
 
-bool platform_tick_pending(void)
-{
+bool platform_tick_pending(void) {
   if (ticks_ >= TICK_MS) {
     ticks_ -= TICK_MS;
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
-int platform_loop(void) {
+bool platform_loop(void) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_QUIT) {
-      return 0;
+      return false;
     }
   }
 
@@ -95,5 +112,13 @@ int platform_loop(void) {
   input_state_.mdx = input_state_.mx - mx;
   input_state_.mdy = input_state_.my - my;
 
-  return 1;
+  return true;
+}
+
+void* platform_retrieve_memory(size_t memory_size) {
+  _ASSERT(allocated_size + memory_size < MEMORY_MAX_SIZE);
+
+  void* ptr = (char*)fixed_heap + allocated_size;
+  allocated_size += memory_size;
+  return ptr;
 }

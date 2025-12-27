@@ -1,7 +1,7 @@
-#include <windows.h>
-
 #include "platform.h"
 
-void clear_memory(void* ptr, size_t size) {
+#include <Windows.h>
+
+void platform_clear_memory(void* ptr, size_t size) {
   RtlZeroMemory(ptr, size);
 }

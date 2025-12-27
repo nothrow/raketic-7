@@ -1,5 +1,4 @@
 #include "physics.h"
-#include "platform/platform.h"
 #include "entity/entity.h"
 
 #include <immintrin.h>
@@ -32,9 +31,7 @@ static uint32_t particle_manager_ttl(struct particles_data* pd) {
 
   uint32_t alive_count = 0;
 
-  for (;
-    lifetime_ticks < end_life;
-    lifetime_ticks += 16) {
+  for (; lifetime_ticks < end_life; lifetime_ticks += 16) {
     __m256i lifetime = _mm256_load_si256((const __m256i*)lifetime_ticks);
     lifetime = _mm256_subs_epu16(lifetime, one);
     _mm256_store_si256((__m256i*)lifetime_ticks, lifetime);
@@ -44,7 +41,7 @@ static uint32_t particle_manager_ttl(struct particles_data* pd) {
     alive_count += _mm_popcnt_u32(_mm256_movemask_epi8(alive_mask)) / 2; // /2 because 16-bit elements, 8-bit mask
   }
 
-  return alive_count;  
+  return alive_count;
 }
 
 static void particle_manager_tick(void) {
@@ -55,7 +52,6 @@ static void particle_manager_tick(void) {
     entity_manager_pack_particles();
   }
 }
-
 
 void physics_engine_tick(void) {
   particle_manager_tick();

@@ -1,14 +1,15 @@
 root = true
 
-# All files
 [*]
 indent_style = space
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
 
-# C files
 [*.{c,h}]
-
 indent_size = 2
 tab_width = 2
 
-# New line preferences
-insert_final_newline = true
+# Visual Studio / clang-format style hints
+# K&R brace style: opening brace on same line
+# BreakBeforeBraces = Attach

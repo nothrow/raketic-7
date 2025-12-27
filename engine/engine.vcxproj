@@ -19,20 +19,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\core\memory.c" />
     <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\physics\physics.c">
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">All</AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">All</AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">All</AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">All</AssemblerOutput>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="src\platform\lib.c" />
-    <ClCompile Include="src\platform\platform.c" />
-    <ClCompile Include="src\platform\renderer.c" />
+    <ClCompile Include="src\platform\lib.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+    <ClCompile Include="src\platform\platform.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+    <ClCompile Include="src\platform\renderer.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\core.h" />
@@ -120,6 +122,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)\src</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,6 +149,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <CallingConvention>FastCall</CallingConvention>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -164,6 +168,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)\src</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -183,6 +188,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <TreatWarningAsError>true</TreatWarningAsError>
       <CallingConvention>FastCall</CallingConvention>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
