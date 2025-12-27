@@ -8,15 +8,17 @@ static const GLubyte color_white[] = { 255, 255, 255 };
 
 void platform_renderer_draw_models(
   size_t model_count,
+  const color_t* colors,
   const vec2_t* positions,
   const vec2_t* orientations,
   const uint16_t* model_indices
 ) {
-  glColor3ubv(color_white);
   for (size_t i = 0; i < model_count; i++)
   {
     if (model_indices[i] != 0)
       continue;
+
+    glColor4ubv((GLubyte*)(colors + i));
 
     glPushMatrix();
     double m[16] = {

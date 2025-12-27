@@ -19,6 +19,10 @@ struct objects_data
   double* radius;
 };
 
+struct _128bytes {
+  uint8_t data[128];
+};
+
 struct particles_data
 {
   uint32_t active;
@@ -28,9 +32,12 @@ struct particles_data
   vec2_t* velocity;
   
   uint16_t* lifetime_ticks;
+  uint16_t* lifetime_max;
   uint16_t* model_idx;
 
   vec2_t* orientation;
+
+  struct _128bytes * temporary; // reserved memory for any needed intermediate computations. do not _store_ anything, as it gets lost
 };
 
 void entity_manager_initialize(void);

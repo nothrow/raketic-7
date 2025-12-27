@@ -8,6 +8,10 @@ typedef struct {
   double y;
 } vec2_t;
 
+typedef struct {
+  uint8_t r, g, b, a;
+} color_t;
+
 vec2_t vec2_random(void);
 vec2_t vec2_multiply(vec2_t v, double scalar);
 vec2_t vec2_add(vec2_t, vec2_t);

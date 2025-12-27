@@ -30,8 +30,11 @@ static void particles_data_initialize(struct particles_data* data) {
   data->position = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->lifetime_ticks = retrieve_memory(sizeof(uint16_t) * MAXSIZE);
+  data->lifetime_max = retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->model_idx = retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->orientation = retrieve_memory(sizeof(vec2_t) * MAXSIZE);
+  data->temporary = retrieve_memory(sizeof(struct _128bytes) * MAXSIZE);
+
   data->active = 0;
   data->capacity = MAXSIZE;
 }
@@ -49,7 +52,10 @@ void entity_manager_initialize(void) {
     manager_.particles.velocity[i] = vec2_multiply(vec2_random(), 3);
     manager_.particles.orientation[i] = vec2_random();
 
-    manager_.particles.lifetime_ticks[i] = (uint16_t)(3 * TICKS_IN_SECOND);
+    manager_.particles.lifetime_ticks[i] = 
+      manager_.particles.lifetime_max[i] =
+      (uint16_t)(3 * TICKS_IN_SECOND);
+
     manager_.particles.model_idx[i] = 0;
   }
 
@@ -79,6 +85,7 @@ void entity_manager_pack_particles(void) {
         pd->position[i] = pd->position[last_alive];
         pd->velocity[i] = pd->velocity[last_alive];
         pd->lifetime_ticks[i] = pd->lifetime_ticks[last_alive];
+        pd->lifetime_max[i] = pd->lifetime_max[last_alive];
         pd->model_idx[i] = pd->model_idx[last_alive];
         pd->orientation[i] = pd->orientation[last_alive];
       }

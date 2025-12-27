@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 
-#define MAXSIZE 10*1024*1024
+#define MAXSIZE 30*1024*1024
 
 static void* fixed_heap = NULL;
 static size_t allocated_size = 0;
