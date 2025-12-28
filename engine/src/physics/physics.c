@@ -3,6 +3,15 @@
 
 #include <immintrin.h>
 
+#define YOSHIDA_C1 0.6756035959798289f
+#define YOSHIDA_C2 -0.1756035959798288f
+#define YOSHIDA_C3 -0.1756035959798288f
+#define YOSHIDA_C4 0.6756035959798289f
+
+#define YOSHIDA_D1 1.3512071919596578f
+#define YOSHIDA_D2 -1.7024143839193155f
+#define YOSHIDA_D3 1.3512071919596578f
+
 static void _particle_manager_euler(struct particles_data* pd) {
   __m256 dt = _mm256_set1_ps(TICK_S);
 
@@ -21,6 +30,12 @@ static void _particle_manager_euler(struct particles_data* pd) {
     _mm256_store_ps(positions, pos);
   }
 }
+
+static void _objects_apply_yoshida(struct objects_data* od) {
+  // Yoshida integrator implementation would go here
+  // For simplicity, this is left as a placeholder
+}
+
 
 static uint32_t _particle_manager_ttl(struct particles_data* pd) {
   __m256i zero = _mm256_setzero_si256();
@@ -44,6 +59,12 @@ static uint32_t _particle_manager_ttl(struct particles_data* pd) {
   return alive_count;
 }
 
+static void _objects_tick(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  _objects_apply_yoshida(od);
+}
+
 static void _particle_manager_tick(void) {
   struct particles_data* pd = entity_manager_get_particles();
 
@@ -54,5 +75,6 @@ static void _particle_manager_tick(void) {
 }
 
 void physics_engine_tick(void) {
+  _objects_tick();
   _particle_manager_tick();
 }

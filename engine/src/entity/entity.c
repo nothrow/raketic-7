@@ -1,5 +1,6 @@
 #include "entity.h"
 #include "platform/platform.h"
+#include "../generated/renderer.gen.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -13,6 +14,7 @@ static entity_manager_t manager_ = {0};
 
 static void _objects_data_initialize(struct objects_data* data) {
   data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
+  data->position_bb = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
@@ -37,12 +39,24 @@ static void _particles_data_initialize(struct particles_data* data) {
   data->capacity = MAXSIZE;
 }
 
-void _entity_manager_initialize(void) {
+void entity_manager_initialize(void) {
   _objects_data_initialize(&manager_.objects);
   _particles_data_initialize(&manager_.particles);
 
   // will be deleted - just for testing
   vec2_t center = {400.0, 300.0};
+
+  manager_.objects.active = 1;
+  manager_.objects.position[0] = center;
+  manager_.objects.velocity[0] = (vec2_t){ 0.0f, 0.1f };
+  manager_.objects.orientation[0] = (vec2_t){ 0.3f, -0.8f };
+  manager_.objects.model_idx[0] = MODEL_SHIP_IDX;
+  manager_.objects.mass[0] = 1000.0f;
+  manager_.objects.radius[0] = 20.0f;
+
+  vec2_normalize_i(manager_.objects.orientation, manager_.objects.active);
+
+  /*
 
   for (int i = 0; i < 10; i++) {
     manager_.particles.active++;
@@ -55,11 +69,15 @@ void _entity_manager_initialize(void) {
     manager_.particles.model_idx[i] = 0;
   }
 
-  vec2_normalize_i(manager_.particles.orientation, manager_.particles.active);
+  vec2_normalize_i(manager_.particles.orientation, manager_.particles.active);*/
 }
 
 struct particles_data* entity_manager_get_particles(void) {
   return &manager_.particles;
+}
+
+struct objects_data* entity_manager_get_objects(void) {
+  return &manager_.objects;
 }
 
 static void _move_particle(struct particles_data* pd, size_t target, size_t source) {

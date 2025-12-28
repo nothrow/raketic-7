@@ -5,13 +5,13 @@
 
 #include "../generated/renderer.gen.h"
 
+static color_t white_ = { 255, 255, 255, 255 };
+
 void platform_renderer_draw_models(size_t model_count, const color_t* colors, const vec2_t* positions,
                                    const vec2_t* orientations, const uint16_t* model_indices) {
   for (size_t i = 0; i < model_count; i++) {
-    if (model_indices[i] != 0)
-      continue;
-
-    glColor4ubv((GLubyte*)(colors + i));
+    if (colors != NULL)
+      glColor4ubv((GLubyte*)(colors + i));
 
     glPushMatrix();
 
@@ -25,8 +25,8 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
     // clang-format on
 
     glMultMatrixf(m);
-    
-    _generated_draw_model(colors[i], model_indices[i]);
+
+    _generated_draw_model(colors ? colors[i] : white_, model_indices[i]);
     /*
     glBegin(GL_LINE_STRIP);
     glVertex2d(-5.0, -5.0);

@@ -8,6 +8,8 @@ struct objects_data {
   uint32_t capacity;
 
   vec2_t* position;
+  vec2_t* position_bb;
+
   vec2_t* velocity;
   float* thrust;
 
@@ -38,6 +40,7 @@ struct particles_data {
   struct _128bytes* temporary; // reserved memory for intermediate computations
 };
 
-void _entity_manager_initialize(void);
+void entity_manager_initialize(void);
 struct particles_data* entity_manager_get_particles(void);
+struct objects_data* entity_manager_get_objects(void);
 void entity_manager_pack_particles(void);

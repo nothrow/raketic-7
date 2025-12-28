@@ -67,7 +67,8 @@ static void _particles_colors(const struct particles_data* pd, color_t* target) 
   }
 }
 
-static void graphics_engine_particles_draw(struct particles_data* pd) {
+static void _graphics_particles_draw() {
+  struct particles_data* pd = entity_manager_get_particles();
   // compute colors!
   color_t* colors = (color_t*)pd->temporary;
 
@@ -76,7 +77,13 @@ static void graphics_engine_particles_draw(struct particles_data* pd) {
   platform_renderer_draw_models(pd->active, colors, pd->position, pd->orientation, pd->model_idx);
 }
 
+static void _graphics_objects_draw() {
+  struct objects_data* od = entity_manager_get_objects();
+
+  platform_renderer_draw_models(od->active, NULL, od->position, od->orientation, od->model_idx);
+}
+
 void graphics_engine_draw(void) {
-  struct particles_data* pd = entity_manager_get_particles();
-  graphics_engine_particles_draw(pd);
+  _graphics_particles_draw();
+  _graphics_objects_draw();
 }

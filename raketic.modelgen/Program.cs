@@ -39,7 +39,7 @@ foreach (var model in models)
 
     ModelWriter.DumpModelData(cWriter, model);
 
-    hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX {i++}");
+    hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
 }
 
 foreach (var model in models)

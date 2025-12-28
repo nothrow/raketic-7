@@ -7,7 +7,7 @@ int run(void) {
   bool running = true;
 
   platform_initialize();
-  _entity_manager_initialize();
+  entity_manager_initialize();
 
   while (running) {
     platform_frame_start();
