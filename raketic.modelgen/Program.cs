@@ -32,31 +32,29 @@ cWriter.WriteLine("#include \"renderer.gen.h\"");
 cWriter.WriteLine("#include <Windows.h>");
 cWriter.WriteLine("#include <gl/GL.h>");
 
-/*
-void platform_renderer_draw_models(size_t model_count, const color_t* colors, const vec2_t* positions,
-                                   const vec2_t* orientations, const uint16_t* model_indices) {*/
 
 foreach (var model in models)
 {
-    hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX {i}");
+    ModelWriter.DumpModelData(cWriter, model);
 
-    cWriter.WriteLine($"static void _model_{model.FileName}(color_t color) {{");
-    ModelWriter.DumpModel(cWriter, model);
-    cWriter.WriteLine($"}}");
-
-    ++i;
+    hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX {i++}");
 }
 
-cWriter.WriteLine("void _generated_draw_model(color_t color, uint16_t index) {");
-cWriter.WriteLine("    switch (index) {");
 foreach (var model in models)
 {
-    cWriter.WriteLine($"        case MODEL_{model.FileName.ToUpper()}_IDX:");
-    cWriter.WriteLine($"            _model_{model.FileName}(color); break;");
+    ModelWriter.DumpModel(cWriter, model);
+}
+
+cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
+cWriter.WriteLine($"  switch (index) {{");
+foreach (var model in models)
+{
+    cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX:");
+    cWriter.WriteLine($"      _model_{model.FileName}(color); break;");
 }
 cWriter.WriteLine($"    default: _ASSERT(0);");
-cWriter.WriteLine("    }");
-cWriter.WriteLine("}");
+cWriter.WriteLine($"  }}");
+cWriter.WriteLine($"}}");
 
 
 static class Paths
