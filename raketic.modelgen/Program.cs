@@ -35,6 +35,8 @@ cWriter.WriteLine("#include <gl/GL.h>");
 
 foreach (var model in models)
 {
+    Console.WriteLine($"Processing model: {model.FileName}");
+
     ModelWriter.DumpModelData(cWriter, model);
 
     hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX {i++}");

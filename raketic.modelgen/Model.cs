@@ -16,9 +16,9 @@ internal record LineStrip(
     Point[] Points,
     bool IsClosed,
     string Color
-    );
+);
 
 internal record Model(
     string FileName,
     LineStrip[] LineStrips
-    );
+);

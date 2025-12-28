@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace raketic.modelgen;
 
 internal static class ModelWriter
@@ -18,7 +12,7 @@ internal static class ModelWriter
             {
                 checked
                 {
-                    w.Write($" {(byte)point.X}, {(byte)point.Y},");
+                    w.Write($" {(sbyte)point.X}, {(sbyte)point.Y},");
                 }
             }
             w.WriteLine();
