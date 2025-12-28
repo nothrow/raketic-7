@@ -14,12 +14,12 @@ uint32_t rand32(void) {
 
 vec2_t vec2_random(void) {
   vec2_t v;
-  v.x = (double)(rand32() % 1000) / 1000.0 * 2.0 - 1.0;
-  v.y = (double)(rand32() % 1000) / 1000.0 * 2.0 - 1.0;
+  v.x = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
+  v.y = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
   return v;
 }
 
-vec2_t vec2_multiply(vec2_t v, double scalar) {
+vec2_t vec2_multiply(vec2_t v, float scalar) {
   vec2_t result;
   result.x = v.x * scalar;
   result.y = v.y * scalar;
@@ -34,34 +34,25 @@ vec2_t vec2_add(vec2_t a, vec2_t b) {
 }
 
 void vec2_normalize_i(vec2_t* v, int count) {
-  double* start = (double*)v;
-  double* last = (double*)&v[count];
+  float* start = (float*)v;
+  float* last = (float*)&v[count];
 
-  for (; start < last; start += 4) {
-    __m256d v0 = _mm256_load_pd(start);     // x0, y0, x1, y1
-    __m256d v1 = _mm256_load_pd(start + 2); // x2, y2, x3, y3
+  for (; start < last; start += 8) {
+    __m256 vec = _mm256_load_ps(start); // x0, y0, x1, y1, x2, y2, x3, y3
 
-    __m256d xs = _mm256_unpacklo_pd(v0, v1); // x0, x2, x1, x3
-    __m256d ys = _mm256_unpackhi_pd(v0, v1); // y0, y2, y1, y3
+    __m256 sq = _mm256_mul_ps(vec, vec); // x0^2, y0^2, x1^2, y1^2, x2^2, y2^2, x3^2, y3^2
 
-    __m256d x2 = _mm256_mul_pd(xs, xs); // x0^2, x2^2, x1^2, x3^2
-    __m256d y2 = _mm256_mul_pd(ys, ys); // y0^2, y2^2, y1^2, y3^2
+    // horizontal add pairs: [len0^2, len1^2, len0^2, len1^2, len2^2, len3^2, len2^2, len3^2]
+    __m256 len_sq = _mm256_hadd_ps(sq, sq);
 
-    __m256d sum = _mm256_add_pd(x2, y2); // x0^2 + y0^2, x2^2 + y2^2, x1^2 + y1^2, x3^2 + y3^2
+    // shuffle to duplicate: [len0^2, len0^2, len1^2, len1^2, len2^2, len2^2, len3^2, len3^2]
+    __m256 len_sq_paired = _mm256_permute_ps(len_sq, 0x50);
 
-    // we don't have 1/sqrt(x) for doubles, so we convert to float
-    __m128 sumf = _mm256_cvtpd_ps(sum);
-    __m128 rsqrtf = _mm_rsqrt_ps(sumf);      // approximate 1/sqrt
-    __m256d rsqrt = _mm256_cvtps_pd(rsqrtf); // back to double
+    // rsqrt works natively on floats
+    __m256 inv_len = _mm256_rsqrt_ps(len_sq_paired);
 
-    __m256d norm_xs = _mm256_mul_pd(xs, rsqrt); // normalized x
-    __m256d norm_ys = _mm256_mul_pd(ys, rsqrt); // normalized y
+    __m256 result = _mm256_mul_ps(vec, inv_len);
 
-    __m256d res0 = _mm256_unpacklo_pd(norm_xs, norm_ys); // x0, y0, x1, y1
-    __m256d res1 = _mm256_unpackhi_pd(norm_xs, norm_ys); // x2, y2, x3, y3
-
-    _mm256_store_pd(start, res0);
-    _mm256_store_pd(start + 2, res1);
-
+    _mm256_store_ps(start, result);
   }
 }

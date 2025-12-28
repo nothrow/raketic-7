@@ -16,7 +16,7 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
     glPushMatrix();
 
     // clang-format off
-    double m[16] = {
+    float m[16] = {
       orientations[i].x, -orientations[i].y, 0.0, 0.0,
       orientations[i].y, orientations[i].x , 0.0, 0.0,
       0.0              , 0.0               , 1.0, 0.0,
@@ -24,7 +24,7 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
     };
     // clang-format on
 
-    glMultMatrixd(m);
+    glMultMatrixf(m);
     
     _generated_draw_model(colors[i], model_indices[i]);
     /*

@@ -14,11 +14,11 @@ static entity_manager_t manager_ = {0};
 static void _objects_data_initialize(struct objects_data* data) {
   data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
-  data->thrust = platform_retrieve_memory(sizeof(double) * MAXSIZE);
+  data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->orientation = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
-  data->mass = platform_retrieve_memory(sizeof(double) * MAXSIZE);
-  data->radius = platform_retrieve_memory(sizeof(double) * MAXSIZE);
+  data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
 
   data->active = 0;
   data->capacity = MAXSIZE;

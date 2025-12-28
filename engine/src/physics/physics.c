@@ -4,21 +4,21 @@
 #include <immintrin.h>
 
 static void _particle_manager_euler(struct particles_data* pd) {
-  __m256d dt = _mm256_set1_pd(TICK_S);
+  __m256 dt = _mm256_set1_ps(TICK_S);
 
-  double* positions = (double*)pd->position;
-  double* velocities = (double*)pd->velocity;
+  float* positions = (float*)pd->position;
+  float* velocities = (float*)pd->velocity;
 
-  double* end_pos = (double*)(pd->position + pd->active);
+  float* end_pos = (float*)(pd->position + pd->active);
 
   // no need for testing velocities range, they are the same size as positions
-  for (; positions < end_pos; positions += 4, velocities += 4) {
-    __m256d pos = _mm256_load_pd(positions);
-    __m256d vel = _mm256_load_pd(velocities);
+  for (; positions < end_pos; positions += 8, velocities += 8) {
+    __m256 pos = _mm256_load_ps(positions);
+    __m256 vel = _mm256_load_ps(velocities);
 
-    pos = _mm256_fmadd_pd(vel, dt, pos);
+    pos = _mm256_fmadd_ps(vel, dt, pos);
 
-    _mm256_store_pd(positions, pos);
+    _mm256_store_ps(positions, pos);
   }
 }
 

@@ -9,13 +9,13 @@ struct objects_data {
 
   vec2_t* position;
   vec2_t* velocity;
-  double* thrust;
+  float* thrust;
 
   uint16_t* model_idx;
   vec2_t* orientation;
 
-  double* mass;
-  double* radius;
+  float* mass;
+  float* radius;
 };
 
 struct _128bytes {

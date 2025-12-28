@@ -23,13 +23,13 @@
 
 // Timing constants (120Hz fixed timestep)
 #define TICKS_IN_SECOND 120
-#define TICK_MS (1000.0 / TICKS_IN_SECOND)
-#define TICK_S (1.0 / TICKS_IN_SECOND)
+#define TICK_MS (1000.0f / TICKS_IN_SECOND)
+#define TICK_S (1.0f / TICKS_IN_SECOND)
 
 // Core types
 typedef struct {
-  double x;
-  double y;
+  float x;
+  float y;
 } vec2_t;
 
 typedef struct {
@@ -38,7 +38,7 @@ typedef struct {
 
 // Vector operations
 vec2_t vec2_random(void);
-vec2_t vec2_multiply(vec2_t v, double scalar);
+vec2_t vec2_multiply(vec2_t v, float scalar);
 vec2_t vec2_add(vec2_t a, vec2_t b);
 
 void vec2_normalize_i(vec2_t* v, int count);
