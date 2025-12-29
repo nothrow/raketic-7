@@ -46,6 +46,8 @@ internal class ModelWriter
         w.WriteLine($"  glVertexPointer(2, GL_BYTE, 0, _model_{model.FileName}_vertices);");
 
         int start = 0;
+        float previousWidth = -1f;
+
         foreach (var linestrip in model.LineStrips)
         {
             var len = linestrip.Points.Length;
@@ -57,6 +59,11 @@ internal class ModelWriter
             else
             {
                 w.WriteLine($"  glColor4ubv((GLubyte*)(_model_colors + {_colorIndexes[linestrip.Color] * 4}));");
+            }
+            if (linestrip.StrokeWidth != previousWidth)
+            {
+                w.WriteLine($"  glLineWidth({linestrip.StrokeWidth:0.0}f);");
+                previousWidth = linestrip.StrokeWidth;
             }
 
             w.WriteLine($"  glDrawArrays({GetLineModel(linestrip)}, {start}, {linestrip.Points.Length});");
