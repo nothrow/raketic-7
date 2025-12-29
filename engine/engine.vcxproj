@@ -85,33 +85,51 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
     <VcpkgEnabled>true</VcpkgEnabled>
     <VcpkgManifestInstall>true</VcpkgManifestInstall>
   </PropertyGroup>
-  <ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Size</FavorSizeOrSpeed>
-      <OmitFramePointers Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OmitFramePointers>
-      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</ExceptionHandling>
-      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</BufferSecurityCheck>
-      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Fast</FloatingPointModel>
-      <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</FloatingPointExceptions>
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">FastCall</CallingConvention>
-      <OmitDefaultLibName Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OmitDefaultLibName>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">$(ProjectDir)\src</AdditionalIncludeDirectories>
-      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Level4</WarningLevel>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">false</SDLCheck>
-      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</TreatWarningAsError>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">/d2noftol3 %(AdditionalOptions)</AdditionalOptions>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <CallingConvention>FastCall</CallingConvention>
+      <OmitDefaultLibName>true</OmitDefaultLibName>
+      <AdditionalIncludeDirectories>$(ProjectDir)\src</AdditionalIncludeDirectories>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalOptions>/d2noftol3 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MinSpace</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
-      <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</IgnoreAllDefaultLibraries>
-      <OptimizeReferences Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</OptimizeReferences>
-      <SubSystem Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Windows</SubSystem>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">$(CoreLibraryDependencies);%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
+      <GenerateManifest>false</GenerateManifest>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <FixedBaseAddress>true</FixedBaseAddress>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+      <SetChecksum>false</SetChecksum>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalOptions>/MERGE:.rdata=.text /FILEALIGN:512 /EMITPOGOPHASEINFO:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
