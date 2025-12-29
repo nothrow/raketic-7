@@ -1,5 +1,4 @@
 using raketic.modelgen;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 // relative paths:
@@ -32,19 +31,22 @@ cWriter.WriteLine("#include \"renderer.gen.h\"");
 cWriter.WriteLine("#include <Windows.h>");
 cWriter.WriteLine("#include <gl/GL.h>");
 
+var modelWriter = new ModelWriter();
 
 foreach (var model in models)
 {
     Console.WriteLine($"Processing model: {model.FileName}");
 
-    ModelWriter.DumpModelData(cWriter, model);
+    modelWriter.DumpModelData(cWriter, model);
 
     hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
 }
 
+modelWriter.DumpModelColors(cWriter, models);
+
 foreach (var model in models)
 {
-    ModelWriter.DumpModel(cWriter, model);
+    modelWriter.DumpModel(cWriter, model);
 }
 
 cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");

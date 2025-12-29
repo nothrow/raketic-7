@@ -15,7 +15,9 @@ internal record Point(
 internal record LineStrip(
     Point[] Points,
     bool IsClosed,
-    string Color
+    float StrokeWidth,
+    string Class,
+    System.Drawing.Color Color
 );
 
 internal record Model(

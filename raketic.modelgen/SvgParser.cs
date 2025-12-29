@@ -7,6 +7,7 @@ namespace raketic.modelgen;
 internal class SvgParser
 {
     private Matrix? _transform = null;
+
     private IEnumerable<LineStrip> ParseLinestrip(SvgElement elem) => elem switch
     {
         SvgPolyline poly => [ParsePoly(poly)],
@@ -62,6 +63,7 @@ internal class SvgParser
     private IEnumerable<LineStrip> ParsePath(SvgPath path)
     {
         var currentSegment = new List<Point>();
+        var @class = path.TryGetAttribute("class", out var classAttr) ? classAttr : "";
 
         foreach (var data in path.PathData)
         {
@@ -73,7 +75,9 @@ internal class SvgParser
                         yield return new LineStrip(
                             Points: [.. currentSegment],
                             IsClosed: false,
-                            Color: path.Stroke.ToString()
+                            Color: GetColor(path.Stroke),
+                            StrokeWidth: path.StrokeWidth,
+                            Class: @class
                         );
                         currentSegment.Clear();
                     }
@@ -88,7 +92,9 @@ internal class SvgParser
                         yield return new LineStrip(
                             Points: [.. currentSegment],
                             IsClosed: true,
-                            Color: path.Stroke.ToString()
+                            Color: GetColor(path.Stroke),
+                            StrokeWidth: path.StrokeWidth,
+                            Class: @class
                         );
                         currentSegment.Clear();
                     }
@@ -103,10 +109,18 @@ internal class SvgParser
             yield return new LineStrip(
                             Points: [.. currentSegment],
                             IsClosed: false,
-                            Color: path.Stroke.ToString()
+                            Color: GetColor(path.Stroke),
+                            StrokeWidth: path.StrokeWidth,
+                            Class: @class
                         );
         }
     }
+
+    private System.Drawing.Color GetColor(SvgPaintServer paintServer) => paintServer switch
+    {
+        SvgColourServer colorServer => colorServer.Colour,
+        _ => System.Drawing.Color.Black
+    };
 
     private LineStrip ParseLine(SvgLine line) => new LineStrip(
             Points:
@@ -115,13 +129,17 @@ internal class SvgParser
                 GetPoint(line.EndX, line.EndY)
             ],
             IsClosed: false,
-            Color: line.Stroke.ToString()
+            Color: GetColor(line.Stroke),
+            StrokeWidth: line.StrokeWidth,
+            Class: line.TryGetAttribute("class", out var classAttr) ? classAttr : ""
         );
 
     private LineStrip ParsePoly(SvgPolyline poly) => new LineStrip(
             Points: ParsePoints(poly.Points),
             IsClosed: false,
-            Color: poly.Stroke.ToString()
+            Color: GetColor(poly.Stroke),
+            StrokeWidth: poly.StrokeWidth,
+            Class: poly.TryGetAttribute("class", out var classAttr) ? classAttr : ""
         );
 
     private Point[] ParsePoints(SvgPointCollection points)
