@@ -18,8 +18,12 @@ bool platform_tick_pending(void);
 void platform_frame_start(void);
 void platform_frame_end(void);
 
-void platform_renderer_draw_models(size_t model_count, const color_t* colors, const vec2_t* positions,
-                                   const vec2_t* orientations, const uint16_t* model_indices);
+void platform_renderer_draw_models(
+  size_t model_count,
+  const color_t* colors,
+  const position_orientation_t* position_orientation,
+  const uint16_t* model_indices
+);
 
 const struct input_state* platform_get_input_state(void);
 

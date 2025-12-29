@@ -10,15 +10,23 @@ typedef struct {
   struct particles_data particles;
 } entity_manager_t;
 
+int rand32();
+
 static entity_manager_t manager_ = {0};
 
+static void _position_orientation_initialize(position_orientation_t* position_orientation) {
+  position_orientation->position_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  position_orientation->position_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  position_orientation->orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  position_orientation->orientation_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+}
+
 static void _objects_data_initialize(struct objects_data* data) {
-  data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
-  data->position_bb = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
-  data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
+  _position_orientation_initialize(&data->position_orientation);
+  data->velocity_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->velocity_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
-  data->orientation = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
 
@@ -27,12 +35,13 @@ static void _objects_data_initialize(struct objects_data* data) {
 }
 
 static void _particles_data_initialize(struct particles_data* data) {
-  data->position = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
-  data->velocity = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
+  _position_orientation_initialize(&data->position_orientation);
+
+  data->velocity_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->velocity_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->lifetime_ticks = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->lifetime_max = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
-  data->orientation = platform_retrieve_memory(sizeof(vec2_t) * MAXSIZE);
   data->temporary = platform_retrieve_memory(sizeof(struct _128bytes) * MAXSIZE);
 
   data->active = 0;
@@ -44,32 +53,34 @@ void entity_manager_initialize(void) {
   _particles_data_initialize(&manager_.particles);
 
   // will be deleted - just for testing
-  vec2_t center = {400.0, 300.0};
-
   manager_.objects.active = 1;
-  manager_.objects.position[0] = center;
-  manager_.objects.velocity[0] = (vec2_t){ 0.0f, 0.1f };
-  manager_.objects.orientation[0] = (vec2_t){ 0.3f, -0.8f };
+  manager_.objects.position_orientation.position_x[0] = 400.0f;
+  manager_.objects.position_orientation.position_y[0] = 300.0f;
+  manager_.objects.velocity_x[0] = 0.0f;
+  manager_.objects.velocity_y[0] = 0.1f;
+  manager_.objects.position_orientation.orientation_x[0] = 0.3f;
+  manager_.objects.position_orientation.orientation_y[0] = -0.8f;
   manager_.objects.model_idx[0] = MODEL_SHIP_IDX;
   manager_.objects.mass[0] = 1000.0f;
   manager_.objects.radius[0] = 20.0f;
 
-  vec2_normalize_i(manager_.objects.orientation, manager_.objects.active);
-
-  /*
+  vec2_normalize_i(manager_.objects.position_orientation.orientation_x, manager_.objects.position_orientation.orientation_y, manager_.objects.active);
 
   for (int i = 0; i < 10; i++) {
     manager_.particles.active++;
-    manager_.particles.position[i] = vec2_add(vec2_multiply(vec2_random(), 100), center);
-    manager_.particles.velocity[i] = vec2_multiply(vec2_random(), 3);
-    manager_.particles.orientation[i] = vec2_random();
+    manager_.particles.position_orientation.position_x[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 100.0f + 400.0f;
+    manager_.particles.position_orientation.position_y[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 100.0f + 300.0f;
+    manager_.particles.velocity_x[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 3.0f;
+    manager_.particles.velocity_y[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 3.0f;
+    manager_.particles.position_orientation.orientation_x[i] = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
+    manager_.particles.position_orientation.orientation_y[i] = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
 
     manager_.particles.lifetime_ticks[i] = manager_.particles.lifetime_max[i] = (uint16_t)(3 * TICKS_IN_SECOND);
 
     manager_.particles.model_idx[i] = 0;
   }
 
-  vec2_normalize_i(manager_.particles.orientation, manager_.particles.active);*/
+  vec2_normalize_i(manager_.particles.position_orientation.orientation_x, manager_.particles.position_orientation.orientation_y, manager_.particles.active);
 }
 
 struct particles_data* entity_manager_get_particles(void) {
@@ -81,12 +92,15 @@ struct objects_data* entity_manager_get_objects(void) {
 }
 
 static void _move_particle(struct particles_data* pd, size_t target, size_t source) {
-  pd->position[target] = pd->position[source];
-  pd->velocity[target] = pd->velocity[source];
+  pd->position_orientation.position_x[target] = pd->position_orientation.position_x[source];
+  pd->position_orientation.position_y[target] = pd->position_orientation.position_y[source];
+  pd->velocity_x[target] = pd->velocity_x[source];
+  pd->velocity_y[target] = pd->velocity_y[source];
   pd->lifetime_ticks[target] = pd->lifetime_ticks[source];
   pd->lifetime_max[target] = pd->lifetime_max[source];
   pd->model_idx[target] = pd->model_idx[source];
-  pd->orientation[target] = pd->orientation[source];
+  pd->position_orientation.orientation_x[target] = pd->position_orientation.orientation_x[source];
+  pd->position_orientation.orientation_y[target] = pd->position_orientation.orientation_y[source];
 }
 
 void entity_manager_pack_particles(void) {

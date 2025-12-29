@@ -7,14 +7,13 @@ struct objects_data {
   uint32_t active;
   uint32_t capacity;
 
-  vec2_t* position;
-  vec2_t* position_bb;
-
-  vec2_t* velocity;
+  float* velocity_x;
+  float* velocity_y;
   float* thrust;
 
+  position_orientation_t position_orientation;
+
   uint16_t* model_idx;
-  vec2_t* orientation;
 
   float* mass;
   float* radius;
@@ -28,14 +27,14 @@ struct particles_data {
   uint32_t active;
   uint32_t capacity;
 
-  vec2_t* position;
-  vec2_t* velocity;
+  float* velocity_x;
+  float* velocity_y;
 
   uint16_t* lifetime_ticks;
   uint16_t* lifetime_max;
   uint16_t* model_idx;
 
-  vec2_t* orientation;
+  position_orientation_t position_orientation;
 
   struct _128bytes* temporary; // reserved memory for intermediate computations
 };

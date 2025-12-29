@@ -15,23 +15,31 @@
 static void _particle_manager_euler(struct particles_data* pd) {
   __m256 dt = _mm256_set1_ps(TICK_S);
 
-  float* positions = (float*)pd->position;
-  float* velocities = (float*)pd->velocity;
+  float* px = pd->position_orientation.position_x;
+  float* py = pd->position_orientation.position_y;
 
-  float* end_pos = (float*)(pd->position + pd->active);
+  float* vx = pd->velocity_x;
+  float* vy = pd->velocity_y;
+
+  float* end_pos = pd->position_orientation.position_x + pd->active;
 
   // no need for testing velocities range, they are the same size as positions
-  for (; positions < end_pos; positions += 8, velocities += 8) {
-    __m256 pos = _mm256_load_ps(positions);
-    __m256 vel = _mm256_load_ps(velocities);
+  for (; px < end_pos; px += 8, py += 8, vx += 8, vy += 8) {
+    __m256 pxv = _mm256_load_ps(px);
+    __m256 pyv = _mm256_load_ps(py);
+    __m256 vvx = _mm256_load_ps(vx);
+    __m256 vyv = _mm256_load_ps(vy);
 
-    pos = _mm256_fmadd_ps(vel, dt, pos);
+    __m256 pxn = _mm256_fmadd_ps(vvx, dt, pxv);
+    __m256 pyn = _mm256_fmadd_ps(vyv, dt, pyv);
 
-    _mm256_store_ps(positions, pos);
+    _mm256_store_ps(px, pxn);
+    _mm256_store_ps(py, pyn);
   }
 }
 
 static void _objects_apply_yoshida(struct objects_data* od) {
+  (od);
   // Yoshida integrator implementation would go here
   // For simplicity, this is left as a placeholder
 }

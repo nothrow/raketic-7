@@ -74,13 +74,13 @@ static void _graphics_particles_draw() {
 
   _particles_colors(pd, colors);
 
-  platform_renderer_draw_models(pd->active, colors, pd->position, pd->orientation, pd->model_idx);
+  platform_renderer_draw_models(pd->active, colors, &pd->position_orientation, pd->model_idx);
 }
 
 static void _graphics_objects_draw() {
   struct objects_data* od = entity_manager_get_objects();
 
-  platform_renderer_draw_models(od->active, NULL, od->position, od->orientation, od->model_idx);
+  platform_renderer_draw_models(od->active, NULL, &od->position_orientation, od->model_idx);
 }
 
 void graphics_engine_draw(void) {

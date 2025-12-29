@@ -4,11 +4,14 @@
 #include <gl/GL.h>
 
 #include "../generated/renderer.gen.h"
+#include "../entity/entity.h"
 
 static color_t white_ = { 255, 255, 255, 255 };
 
-void platform_renderer_draw_models(size_t model_count, const color_t* colors, const vec2_t* positions,
-                                   const vec2_t* orientations, const uint16_t* model_indices) {
+void platform_renderer_draw_models(size_t model_count, const color_t* colors,
+  const position_orientation_t* position_orientation,
+  const uint16_t* model_indices)
+  {
   for (size_t i = 0; i < model_count; i++) {
     if (colors != NULL)
       glColor4ubv((GLubyte*)(colors + i));
@@ -17,23 +20,16 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors, co
 
     // clang-format off
     float m[16] = {
-      orientations[i].x, -orientations[i].y, 0.0, 0.0,
-      orientations[i].y, orientations[i].x , 0.0, 0.0,
+      position_orientation->orientation_x[i], -position_orientation->orientation_y[i], 0.0, 0.0,
+      position_orientation->orientation_y[i], position_orientation->orientation_x[i], 0.0, 0.0,
       0.0              , 0.0               , 1.0, 0.0,
-      positions[i].x   , positions[i].y    , 0.0, 1.0,
+      position_orientation->position_x[i]   , position_orientation->position_y[i]    , 0.0, 1.0,
     };
     // clang-format on
 
     glMultMatrixf(m);
 
     _generated_draw_model(colors ? colors[i] : white_, model_indices[i]);
-    /*
-    glBegin(GL_LINE_STRIP);
-    glVertex2d(-5.0, -5.0);
-    glVertex2d(5.0, -5.0);
-    glVertex2d(0, 10.0);
-    glVertex2d(-5.0, -5.0);
-    glEnd();*/
 
     glPopMatrix();
   }

@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 // Debug macros - no standard library dependency in release
-#ifdef asdNDEBUG
+#ifdef NDEBUG
 #define _ASSERT(x) ((void)0)
 #define _VERIFY(x, msg) (x)
 #else
@@ -26,20 +26,18 @@
 #define TICK_MS (1000.0f / TICKS_IN_SECOND)
 #define TICK_S (1.0f / TICKS_IN_SECOND)
 
-// Core types
+// for easier passing to renderer
 typedef struct {
-  float x;
-  float y;
-} vec2_t;
+  float* position_x;
+  float* position_y;
+
+  float* orientation_x;
+  float* orientation_y;
+} position_orientation_t;
 
 typedef struct {
   uint8_t r, g, b, a;
 } color_t;
 
-// Vector operations
-vec2_t vec2_random(void);
-vec2_t vec2_multiply(vec2_t v, float scalar);
-vec2_t vec2_add(vec2_t a, vec2_t b);
-
-void vec2_normalize_i(vec2_t* v, int count);
+void vec2_normalize_i(float* xs, float* ys, int count);
 

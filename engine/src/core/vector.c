@@ -12,47 +12,29 @@ uint32_t rand32(void) {
   return rng_state;
 }
 
-vec2_t vec2_random(void) {
-  vec2_t v;
-  v.x = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
-  v.y = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
-  return v;
-}
+void vec2_normalize_i(float* xs, float* ys, int count) {
+  float* x = xs;
+  float* y = ys;
+  float* last = x + count;
 
-vec2_t vec2_multiply(vec2_t v, float scalar) {
-  vec2_t result;
-  result.x = v.x * scalar;
-  result.y = v.y * scalar;
-  return result;
-}
+  __m256 epsilon = _mm256_set1_ps(1.0e-6f);
 
-vec2_t vec2_add(vec2_t a, vec2_t b) {
-  vec2_t result;
-  result.x = a.x + b.x;
-  result.y = a.y + b.y;
-  return result;
-}
+  for (; x < last; x += 8, y += 8) {
 
-void vec2_normalize_i(vec2_t* v, int count) {
-  float* start = (float*)v;
-  float* last = (float*)&v[count];
+    __m256 vx = _mm256_load_ps(x);
+    __m256 vy = _mm256_load_ps(y);
 
-  for (; start < last; start += 8) {
-    __m256 vec = _mm256_load_ps(start); // x0, y0, x1, y1, x2, y2, x3, y3
+    __m256 vx_sq = _mm256_mul_ps(vx, vx);
+    __m256 vy_sq = _mm256_mul_ps(vy, vy);
 
-    __m256 sq = _mm256_mul_ps(vec, vec); // x0^2, y0^2, x1^2, y1^2, x2^2, y2^2, x3^2, y3^2
+    __m256 len_sq = _mm256_add_ps(vx_sq, vy_sq);
+    __m256 len_sq_safe = _mm256_max_ps(len_sq, epsilon);
+    __m256 inv_len = _mm256_rsqrt_ps(len_sq_safe);
 
-    // horizontal add pairs: [len0^2, len1^2, len0^2, len1^2, len2^2, len3^2, len2^2, len3^2]
-    __m256 len_sq = _mm256_hadd_ps(sq, sq);
+    __m256 result = _mm256_mul_ps(vx, inv_len);
+    _mm256_store_ps(x, result);
 
-    // shuffle to duplicate: [len0^2, len0^2, len1^2, len1^2, len2^2, len2^2, len3^2, len3^2]
-    __m256 len_sq_paired = _mm256_permute_ps(len_sq, 0x50);
-
-    // rsqrt works natively on floats
-    __m256 inv_len = _mm256_rsqrt_ps(len_sq_paired);
-
-    __m256 result = _mm256_mul_ps(vec, inv_len);
-
-    _mm256_store_ps(start, result);
+    result = _mm256_mul_ps(vy, inv_len);
+    _mm256_store_ps(y, result);
   }
 }
