@@ -129,7 +129,7 @@
       <DataExecutionPrevention>false</DataExecutionPrevention>
       <SetChecksum>false</SetChecksum>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
-      <AdditionalOptions>/MERGE:.rdata=.text /FILEALIGN:512 /EMITPOGOPHASEINFO:NO %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MERGE:.rdata=.text /MERGE:.data=.text /FILEALIGN:32 /ALIGN:32 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
