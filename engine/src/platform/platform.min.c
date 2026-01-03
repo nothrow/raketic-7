@@ -87,6 +87,18 @@ bool platform_tick_pending(void) {
   return false;
 }
 
+static struct input_state input_state_ = { 0 };
+
+const struct input_state* platform_get_input_state(void) {
+  return &input_state_;
+}
+
+bool platform_input_is_button_down(enum buttons button) {
+  (void)button;
+  return false;
+}
+
+
 bool platform_loop(void) {
   MSG msg;
   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {

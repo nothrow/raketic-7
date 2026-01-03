@@ -14,6 +14,14 @@ typedef struct {
 } entity_manager_t;
 
 
+static inline entity_id_t ID_WITH_TYPE(uint32_t id, uint8_t type) {
+  _ASSERT((id) <= 0x00FFFFFF);
+  _ASSERT((type) <= 0xFF);
+
+  entity_id_t ret = { ._ = ((((type) & 0xFF) << 24) | ((id) & 0x00FFFFFF)) };
+  return ret;
+}
+
 object_vtable_t entity_manager_vtables[ENTITY_TYPE_COUNT] = { 0 };
 
 int rand32();
@@ -35,7 +43,7 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
-  data->identifiers = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
+  data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
 
   data->active = 0;
   data->capacity = MAXSIZE;
@@ -65,7 +73,7 @@ static void _generate_dummy_data(void) {
   manager_.objects.position_orientation.orientation_x[0] = 0.3f;
   manager_.objects.position_orientation.orientation_y[0] = -0.8f;
   manager_.objects.model_idx[0] = MODEL_SHIP_IDX;
-  manager_.objects.identifiers[0] = CREATE_ID_WITH_TYPE(0, ENTITY_TYPE_SHIP);
+  manager_.objects.type[0]._ = ENTITY_TYPE_SHIP;
   manager_.objects.mass[0] = 1000.0f;
   manager_.objects.radius[0] = 20.0f;
 
@@ -91,7 +99,7 @@ static void _generate_dummy_data(void) {
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x,
                    manager_.particles.position_orientation.orientation_y, manager_.particles.active);
 
-  controller_set_entity(CREATE_ID_WITH_TYPE(0, ENTITY_TYPE_SHIP));
+  controller_set_entity(ID_WITH_TYPE(0, ENTITY_TYPE_SHIP));
 }
 
 void entity_manager_initialize(void) {
@@ -147,46 +155,17 @@ void entity_manager_pack_particles(void) {
   pd->active = last_alive + 1;
 }
 
-// either id (if raw), or lookup
-entity_id_t entity_manager_lookup_raw(entity_id_t id) {
-  if (IS_ANY_TYPE(id)) {
-    return id;
-  }
+void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {
+  uint8_t entity_type = GET_TYPE(recipient_id);
 
-  uint32_t type = GET_TYPE(id);
-  _ASSERT(type < ENTITY_TYPE_COUNT);
-
-  return entity_manager_vtables[type].lookup_raw(id);
-}
-
-// either id, or lookup, so it has type
-entity_id_t entity_manager_lookup_typed(entity_id_t id) {
-  if (IS_ANY_TYPE(id)) {
-    _ASSERT(id < manager_.objects.active);
-
-    return manager_.objects.identifiers[id];
-  }
-
-  return id;
-}
-
-void entity_manager_dispatch_message(messaging_recipient_type_t recipient_type, messaging_recipient_id_t recipient_id,
-                                     message_t msg) {
-  if (recipient_type == RECIPIENT_TYPE_ANY && recipient_id == RECIPIENT_ID_BROADCAST) {
+  if (recipient_id._ == RECIPIENT_ID_BROADCAST._) {
     for (size_t i = 1; i < ENTITY_TYPE_COUNT; i++) {
       entity_manager_vtables[i].dispatch_message(recipient_id, msg);
     }
-  } else if (recipient_id == RECIPIENT_ID_BROADCAST) {
-    uint32_t obj_type = recipient_type;
-    _ASSERT(obj_type < ENTITY_TYPE_COUNT);
-
-    // broadcast to all of type. it is up to the vtable to handle it
-    entity_manager_vtables[obj_type].dispatch_message(RECIPIENT_ID_BROADCAST, msg);
+  } else if (entity_type != RECIPIENT_TYPE_ANY._) {
+    _ASSERT(entity_type < ENTITY_TYPE_COUNT);
+    entity_manager_vtables[entity_type].dispatch_message(recipient_id, msg);
   } else {
-    entity_id_t object_id = entity_manager_lookup_typed(recipient_id);
-    uint32_t obj_type = GET_TYPE(object_id);
-
-    _ASSERT(obj_type < ENTITY_TYPE_COUNT);
-    entity_manager_vtables[obj_type].dispatch_message(object_id, msg);
+    _ASSERT(0 && "missing type in id");
   }
 }

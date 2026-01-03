@@ -2,12 +2,10 @@
 
 #include <stdint.h>
 
+#include "entity/types.h"
 
-typedef uint32_t messaging_recipient_type_t;
-typedef uint32_t messaging_recipient_id_t;
-
-static const messaging_recipient_id_t RECIPIENT_ID_BROADCAST = 0xFFFFFFFF;
-static const messaging_recipient_type_t RECIPIENT_TYPE_ANY = 0xFFFFFFFF;
+static const entity_id_t RECIPIENT_ID_BROADCAST = { 0xFFFFFFFF };
+static const entity_type_t RECIPIENT_TYPE_ANY = { 0xFF };
 
 
 typedef struct {
@@ -36,5 +34,5 @@ static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t dat
 
 void messaging_initialize(void);
 
-void messaging_send(messaging_recipient_type_t recipient_type, messaging_recipient_id_t recipient_id, message_t msg);
+void messaging_send(entity_id_t recipient_id, message_t msg);
 void messaging_pump(void);

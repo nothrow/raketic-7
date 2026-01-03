@@ -7,8 +7,7 @@
 struct message_with_recipient
 {
   message_t message;
-  messaging_recipient_type_t recipient_type;
-  messaging_recipient_id_t recipient_id;
+  entity_id_t recipient_id;
 };
 
 struct messaging_system {
@@ -25,12 +24,11 @@ void messaging_initialize(void)
   messaging_.messages = platform_retrieve_memory(sizeof(struct message_with_recipient) * MAX_MESSAGES);
 }
 
-void messaging_send(messaging_recipient_type_t recipient_type, messaging_recipient_id_t recipient_id, message_t msg)
+void messaging_send(entity_id_t recipient_id, message_t msg)
 {
   size_t next_tail = (messaging_.tail + 1) % MAX_MESSAGES;
   _ASSERT(next_tail != messaging_.head); // overflow
 
-  messaging_.messages[messaging_.tail].recipient_type = recipient_type;
   messaging_.messages[messaging_.tail].recipient_id = recipient_id;
   messaging_.messages[messaging_.tail].message = msg;
   messaging_.tail = next_tail;
@@ -44,6 +42,6 @@ void messaging_pump(void)
     // for now, just discard
     messaging_.head = (messaging_.head + 1) % MAX_MESSAGES;
 
-    entity_manager_dispatch_message(mwr->recipient_type, mwr->recipient_id, mwr->message);
+    entity_manager_dispatch_message(mwr->recipient_id, mwr->message);
   }
 }
