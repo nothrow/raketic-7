@@ -18,6 +18,7 @@
     <ClCompile Include="generated\renderer.gen.c" />
     <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\entity.c" />
+    <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\physics\physics.c">
@@ -44,6 +45,8 @@
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\entity\entity.h" />
+    <ClInclude Include="src\entity\entity_internal.h" />
+    <ClInclude Include="src\entity\ship.h" />
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\platform\platform.h" />

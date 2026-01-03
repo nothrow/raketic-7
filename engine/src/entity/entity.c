@@ -2,6 +2,8 @@
 #include "platform/platform.h"
 #include "../generated/renderer.gen.h"
 
+#include "ship.h"
+
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
 
@@ -9,6 +11,9 @@ typedef struct {
   struct objects_data objects;
   struct particles_data particles;
 } entity_manager_t;
+
+
+object_vtable_t entity_manager_vtables[ENTITY_TYPE_COUNT] = { 0 };
 
 int rand32();
 
@@ -29,6 +34,7 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->identifiers = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
 
   data->active = 0;
   data->capacity = MAXSIZE;
@@ -61,6 +67,7 @@ void entity_manager_initialize(void) {
   manager_.objects.position_orientation.orientation_x[0] = 0.3f;
   manager_.objects.position_orientation.orientation_y[0] = -0.8f;
   manager_.objects.model_idx[0] = MODEL_SHIP_IDX;
+  manager_.objects.identifiers[0] = CREATE_ID_WITH_TYPE(0, ENTITY_TYPE_SHIP);
   manager_.objects.mass[0] = 1000.0f;
   manager_.objects.radius[0] = 20.0f;
 
@@ -81,6 +88,9 @@ void entity_manager_initialize(void) {
   }
 
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x, manager_.particles.position_orientation.orientation_y, manager_.particles.active);
+
+
+  ship_entity_initialize();
 }
 
 struct particles_data* entity_manager_get_particles(void) {
@@ -124,4 +134,28 @@ void entity_manager_pack_particles(void) {
     }
   }
   pd->active = last_alive + 1;
+}
+
+// either id (if raw), or lookup
+entity_id_t entity_manager_lookup_raw(entity_id_t id)
+{
+  if (IS_ANY_TYPE(id)) {
+    return id;
+  }
+
+  _ASSERT(GET_TYPE(id) < ENTITY_TYPE_COUNT);
+
+  return entity_manager_vtables[GET_TYPE(id)].lookup_raw(id);
+}
+
+// either id, or lookup, so it has type
+entity_id_t entity_manager_lookup_typed(entity_id_t id)
+{
+  if (IS_ANY_TYPE(id)) {
+    _ASSERT(id < manager_.objects.active);
+
+    return manager_.objects.identifiers[id];
+  }
+
+  return id;
 }

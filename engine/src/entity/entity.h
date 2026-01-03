@@ -3,6 +3,19 @@
 #include <stdint.h>
 #include "core/core.h"
 
+typedef uint32_t entity_id_t;
+
+enum entity_type {
+  ENTITY_TYPE_ANY = 0,
+  ENTITY_TYPE_SHIP,
+  ENTITY_TYPE_COUNT,
+};
+
+// either id (if raw), or lookup
+entity_id_t entity_manager_lookup_raw(entity_id_t id);
+// either id, or lookup, so it has type
+entity_id_t entity_manager_lookup_typed(entity_id_t id);
+
 struct objects_data {
   uint32_t active;
   uint32_t capacity;
@@ -10,6 +23,7 @@ struct objects_data {
   float* velocity_x;
   float* velocity_y;
   float* thrust;
+  entity_id_t* identifiers;
 
   position_orientation_t position_orientation;
 
@@ -43,3 +57,6 @@ void entity_manager_initialize(void);
 struct particles_data* entity_manager_get_particles(void);
 struct objects_data* entity_manager_get_objects(void);
 void entity_manager_pack_particles(void);
+
+
+

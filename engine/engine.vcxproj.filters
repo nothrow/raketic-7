@@ -14,7 +14,6 @@
     <ClCompile Include="src\platform\platform.sdl.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\platform\lib.c" />
-    <ClCompile Include="src\platform\platform.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\physics\physics.c" />
     <ClCompile Include="src\graphics\graphics.c" />
@@ -24,6 +23,7 @@
     <ClCompile Include="src\platform\platform.min.c" />
     <ClCompile Include="src\platform\platform.gl.c" />
     <ClCompile Include="generated\renderer.gen.c" />
+    <ClCompile Include="src\entity\ship.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -32,5 +32,7 @@
     <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="generated\renderer.gen.h" />
+    <ClInclude Include="src\entity\ship.h" />
+    <ClInclude Include="src\entity\entity_internal.h" />
   </ItemGroup>
 </Project>
