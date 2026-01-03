@@ -25,6 +25,12 @@ static entity_id_t _ship_lookup_raw(entity_id_t id) {
   return ship_manager_.rawid[refid];
 }
 
+static void _ship_dispatch(entity_id_t id, message_t msg) {
+  // for now, no messages handled
+  (void)id;
+  (void)msg;
+}
+
 void ship_entity_initialize(void)
 {
   ship_manager_.capacity = MAXSIZE;
@@ -32,6 +38,8 @@ void ship_entity_initialize(void)
 
 
   entity_manager_vtables[ENTITY_TYPE_SHIP].lookup_raw = _ship_lookup_raw;
+  entity_manager_vtables[ENTITY_TYPE_SHIP].dispatch_message = _ship_dispatch;
+ 
 
   // will be deleted - just for testing
   ship_manager_.active = 1;

@@ -58,6 +58,8 @@ void entity_manager_initialize(void) {
   _objects_data_initialize(&manager_.objects);
   _particles_data_initialize(&manager_.particles);
 
+  ship_entity_initialize();
+
   // will be deleted - just for testing
   manager_.objects.active = 1;
   manager_.objects.position_orientation.position_x[0] = 400.0f;
@@ -90,7 +92,8 @@ void entity_manager_initialize(void) {
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x, manager_.particles.position_orientation.orientation_y, manager_.particles.active);
 
 
-  ship_entity_initialize();
+
+
 }
 
 struct particles_data* entity_manager_get_particles(void) {
@@ -143,9 +146,10 @@ entity_id_t entity_manager_lookup_raw(entity_id_t id)
     return id;
   }
 
-  _ASSERT(GET_TYPE(id) < ENTITY_TYPE_COUNT);
+  uint32_t type = GET_TYPE(id);
+  _ASSERT(type < ENTITY_TYPE_COUNT);
 
-  return entity_manager_vtables[GET_TYPE(id)].lookup_raw(id);
+  return entity_manager_vtables[type].lookup_raw(id);
 }
 
 // either id, or lookup, so it has type
@@ -158,4 +162,34 @@ entity_id_t entity_manager_lookup_typed(entity_id_t id)
   }
 
   return id;
+}
+
+void entity_manager_dispatch_message(messaging_recipient_type_t recipient_type, messaging_recipient_id_t recipient_id,
+  message_t msg)
+{
+  if (recipient_type == RECIPIENT_TYPE_BROADCAST && recipient_id == RECIPIENT_ID_BROADCAST) {
+    for (size_t i = 0; i < manager_.objects.active; i++) {
+      uint32_t obj_type = GET_TYPE(manager_.objects.identifiers[i]);
+      _ASSERT(obj_type < ENTITY_TYPE_COUNT);
+
+      entity_manager_vtables[obj_type].dispatch_message(manager_.objects.identifiers[i], msg);
+    }
+  }
+  else if (recipient_id == RECIPIENT_ID_BROADCAST)
+  {
+    uint32_t obj_type = recipient_type;
+    _ASSERT(obj_type < ENTITY_TYPE_COUNT);
+
+    // broadcast to all of type. it is up to the vtable to handle it
+    entity_manager_vtables[obj_type].dispatch_message(RECIPIENT_ID_BROADCAST, msg);
+  }
+
+  else
+  {
+    entity_id_t object_id = entity_manager_lookup_typed(recipient_id);
+    uint32_t obj_type = GET_TYPE(object_id);
+
+    _ASSERT(obj_type < ENTITY_TYPE_COUNT);
+    entity_manager_vtables[obj_type].dispatch_message(object_id, msg);
+  }
 }

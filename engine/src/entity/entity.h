@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "core/core.h"
+#include "messaging/messaging.h"
 
 typedef uint32_t entity_id_t;
 
@@ -57,6 +58,8 @@ void entity_manager_initialize(void);
 struct particles_data* entity_manager_get_particles(void);
 struct objects_data* entity_manager_get_objects(void);
 void entity_manager_pack_particles(void);
+
+void entity_manager_dispatch_message(messaging_recipient_type_t recipient_type, messaging_recipient_id_t recipient_id, message_t msg);
 
 
 

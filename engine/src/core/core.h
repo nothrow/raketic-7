@@ -7,8 +7,14 @@
 // Debug macros - no standard library dependency in release
 #ifdef NDEBUG
 #define _ASSERT(x) ((void)0)
+#define _ASSERTIONS(x) ((void)0)
 #define _VERIFY(x, msg) (x)
 #else
+#define _ASSERTIONS(x)                                                                                                 \
+  do {                                                                                                                 \
+    x                                                                                                                  \
+  } while (0)
+
 #define _ASSERT(x)                                                                                                     \
   do {                                                                                                                 \
     if (!(x))                                                                                                          \

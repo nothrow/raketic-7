@@ -24,6 +24,7 @@
     <ClCompile Include="src\platform\platform.gl.c" />
     <ClCompile Include="generated\renderer.gen.c" />
     <ClCompile Include="src\entity\ship.c" />
+    <ClCompile Include="src\messaging\messaging.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -34,5 +35,6 @@
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="src\entity\ship.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
+    <ClInclude Include="src\messaging\messaging.h" />
   </ItemGroup>
 </Project>
