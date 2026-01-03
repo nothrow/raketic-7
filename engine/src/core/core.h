@@ -6,7 +6,7 @@
 
 // Debug macros - no standard library dependency in release
 #ifdef NDEBUG
-#define _ASSERT(x) ((void)0)
+#define _ASSERT(x) ((void)(x))
 #define _ASSERTIONS(x) ((void)0)
 #else
 

@@ -85,4 +85,7 @@ static void _particle_manager_tick(void) {
 void physics_engine_tick(void) {
   _objects_tick();
   _particle_manager_tick();
+
+  messaging_send(RECIPIENT_TYPE_ANY, RECIPIENT_ID_BROADCAST,
+                 CREATE_MESSAGE(MESSAGE_BROADCAST_TICK, 0, 0));
 }

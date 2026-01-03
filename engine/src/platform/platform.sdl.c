@@ -21,6 +21,7 @@ static double ticks_;
 
 void _memory_initialize(void);
 void _gl_initialize(void);
+void _math_initialize(void);
 
 #include "entity/types.h"
 #include "messaging/messaging.h"
@@ -46,6 +47,7 @@ void platform_initialize(void) {
   _memory_initialize();
   _platform_create_window();
   _gl_initialize();
+  _math_initialize();
 }
 
 const struct input_state* platform_get_input_state(void) {

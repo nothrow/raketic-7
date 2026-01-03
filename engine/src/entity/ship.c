@@ -1,5 +1,7 @@
 
 #include "platform/platform.h"
+#include "platform/math.h"
+
 #include "entity_internal.h"
 #include "entity.h"
 #include "ship.h"
@@ -25,21 +27,38 @@ static entity_id_t _ship_lookup_raw(entity_id_t id) {
   return ship_manager_.rawid[refid];
 }
 
-static void _ship_dispatch(entity_id_t id, message_t msg) {
-  // for now, no messages handled
-  (void)id;
-  (void)msg;
+static void _ship_rotate_by(entity_id_t idx, int32_t rotation) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  float ox = od->position_orientation.orientation_x[idx];
+  float oy = od->position_orientation.orientation_y[idx];
+
+  // 2D rotation matrix: [cos -sin] [x]   [x*cos - y*sin]
+  //                     [sin  cos] [y] = [x*sin + y*cos]
+  float c = lut_cos(rotation);
+  float s = lut_sin(rotation);
+
+  od->position_orientation.orientation_x[idx] = ox * c - oy * s;
+  od->position_orientation.orientation_y[idx] = ox * s + oy * c;
+
+  // renormalize to avoid drift over many rotations
+  vec2_normalize_i(&od->position_orientation.orientation_x[idx], &od->position_orientation.orientation_y[idx], 1);
 }
 
-void ship_entity_initialize(void)
-{
+static void _ship_dispatch(entity_id_t id, message_t msg) {
+  switch (msg.message) {
+  case MESSAGE_SHIP_ROTATE_BY:
+    _ship_rotate_by(_ship_lookup_raw(id), msg.data_a);
+    break;
+  }
+}
+
+void ship_entity_initialize(void) {
   ship_manager_.capacity = MAXSIZE;
   ship_manager_.rawid = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
 
-
   entity_manager_vtables[ENTITY_TYPE_SHIP].lookup_raw = _ship_lookup_raw;
   entity_manager_vtables[ENTITY_TYPE_SHIP].dispatch_message = _ship_dispatch;
- 
 
   // will be deleted - just for testing
   ship_manager_.active = 1;

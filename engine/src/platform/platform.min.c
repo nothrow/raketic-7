@@ -13,6 +13,7 @@ static HDC hdc_;
 int _fltused = 0;
 
 void _memory_initialize(void);
+void _math_initialize(void);
 void _gl_initialize(void);
 
 static void _platform_create_window(void) {
@@ -57,6 +58,7 @@ void platform_initialize(void) {
   _memory_initialize();
   _platform_create_window();
   _gl_initialize();
+  _math_initialize();
 
   prev_time_ = GetTickCount64();
 }

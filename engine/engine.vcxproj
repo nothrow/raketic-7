@@ -29,6 +29,7 @@
     <ClCompile Include="src\platform\lib.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
+    <ClCompile Include="src\platform\math.c" />
     <ClCompile Include="src\platform\platform.gl.c" />
     <ClCompile Include="src\platform\platform.min.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -54,6 +55,7 @@
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\messaging\messaging.h" />
     <ClInclude Include="src\physics\physics.h" />
+    <ClInclude Include="src\platform\math.h" />
     <ClInclude Include="src\platform\platform.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -122,6 +124,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ControlFlowGuard>false</ControlFlowGuard>
       <StringPooling>true</StringPooling>
+      <PreprocessorDefinitions>NDEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
