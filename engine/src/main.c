@@ -20,6 +20,8 @@ int run(void) {
     if (!running) // fail fast
       break;
 
+    messaging_send(RECIPIENT_TYPE_ANY, RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_FRAME_TICK, 0, 0));
+
     while (platform_tick_pending()) {
       // update game
       physics_engine_tick();

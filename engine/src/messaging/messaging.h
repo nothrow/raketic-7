@@ -20,11 +20,8 @@ typedef struct {
 
 enum message_codes_system {
   MESSAGE_BROADCAST_SYSTEM_INITIALIZED = 0,
-  MESSAGE_BROADCAST_TICK = 1
-};
-
-enum message_codes_controller {
-  MESSAGE_CONTROLLER_MOUSEMOVE = 0x10,
+  MESSAGE_BROADCAST_120HZ_TICK = 1,
+  MESSAGE_BROADCAST_FRAME_TICK = 2,
 };
 
 enum message_codes_ship {

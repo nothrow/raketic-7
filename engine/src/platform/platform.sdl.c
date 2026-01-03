@@ -84,9 +84,6 @@ bool platform_loop(void) {
     if (event.type == SDL_QUIT) {
       return false;
     }
-    else if (event.type == SDL_MOUSEMOTION) {
-      messaging_send(ENTITY_TYPE_CONTROLLER, RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_CONTROLLER_MOUSEMOVE, event.motion.xrel, event.motion.yrel));
-    }
   }
 
   int mx = input_state_.mx;

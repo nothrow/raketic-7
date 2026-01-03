@@ -16,12 +16,14 @@ Console.WriteLine();
 var svgFiles = Directory.GetFiles(paths.ModelsDir, "*.svg");
 
 Console.WriteLine($"Found {svgFiles.Length} SVG file(s):");
-var models = svgFiles.Select(SvgParser.ParseSvg);
+var models = svgFiles.Select(SvgParser.ParseSvg).ToArray();
 
 int i = 0;
 
 using var hWriter = new StreamWriter(paths.OutputH, false);
 using var cWriter = new StreamWriter(paths.OutputC, false);
+
+Console.WriteLine();
 
 hWriter.WriteLine("#pragma once");
 hWriter.WriteLine("#include \"platform/platform.h\"");

@@ -11,12 +11,12 @@ internal class SvgParser
 
     private IEnumerable<LineStrip> ParseLinestrip(SvgElement elem) => elem switch
     {
+        SvgCircle circle when circle.ID == "center" => HandleCenterMarker(circle),
         SvgPolyline poly => [ParsePoly(poly)],
         SvgLine line => [ParseLine(line)],
         SvgPath path => ParsePath(path),
         SvgGroup group => ParseGroup(group),
-        SvgCircle circle when circle.ID == "center" => HandleCenterMarker(circle),
-        SvgCircle => [], // ignore other circles (they're markers, not geometry)
+        SvgRectangle rectangle => ParseRectangle(rectangle),
         _ => throw new InvalidOperationException($"Unsupported SVG element: {elem.GetType().Name}"),
     };
 
@@ -67,6 +67,25 @@ internal class SvgParser
         {
             return new Point(x, y);
         }
+    }
+
+
+    private IEnumerable<LineStrip> ParseRectangle(SvgRectangle rectangle)
+    {
+        return [
+            new LineStrip(
+                Points: [
+                    GetPoint(rectangle.X, rectangle.Y),
+                    GetPoint(rectangle.X + rectangle.Width, rectangle.Y),
+                    GetPoint(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height),
+                    GetPoint(rectangle.X, rectangle.Y + rectangle.Height)
+                ],
+                IsClosed: true,
+                Color: GetColor(rectangle.Stroke),
+                StrokeWidth: rectangle.StrokeWidth,
+                Class: rectangle.TryGetAttribute("class", out var classAttr) ? classAttr : ""
+            )
+        ];
     }
 
     private IEnumerable<LineStrip> ParsePath(SvgPath path)
@@ -163,6 +182,7 @@ internal class SvgParser
 
     public static Model ParseSvg(string fullPath)
     {
+        Console.WriteLine($"Parsing SVG file: {fullPath}");
         var filename = Path.GetFileNameWithoutExtension(fullPath);
         SvgDocument doc = SvgDocument.Open(fullPath);
 
@@ -170,7 +190,17 @@ internal class SvgParser
         var lineStrips = doc.Children.SelectMany(parser.ParseLinestrip).ToArray();
 
         // Determine center: explicit marker or bounding box center
-        var center = parser._explicitCenter ?? ComputeBoundingBoxCenter(lineStrips);
+        Point center;
+        if (parser._explicitCenter != null)
+        {
+            center = parser._explicitCenter;
+            Console.WriteLine($"  Using explicit center: ({center.X}, {center.Y})");
+        }
+        else
+        {
+            center = ComputeBoundingBoxCenter(lineStrips);
+            Console.WriteLine($"  Computed bounding box center: ({center.X}, {center.Y})");
+        }
 
         // Translate all points so center is at (0, 0)
         var centeredStrips = lineStrips
