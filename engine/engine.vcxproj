@@ -29,7 +29,9 @@
     <ClCompile Include="src\platform\lib.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="src\platform\math.c" />
+    <ClCompile Include="src\platform\math.c">
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\platform\platform.gl.c" />
     <ClCompile Include="src\platform\platform.min.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
