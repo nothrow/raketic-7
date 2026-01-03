@@ -54,6 +54,10 @@ const struct input_state* platform_get_input_state(void) {
   return &input_state_;
 }
 
+bool platform_input_is_button_down(enum buttons button) {
+  return (input_state_.buttons & button) != 0;
+}
+
 void platform_frame_start(void) {
   glClear(GL_COLOR_BUFFER_BIT);
 

@@ -16,6 +16,14 @@ static void _process_mouse() {
   if (input->mdx != 0) {
     messaging_send(ENTITY_TYPE_SHIP, _controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_BY, -input->mdx, 0));
   }
+
+  if (platform_input_is_button_down(BUTTON_LEFT)) {
+    messaging_send(ENTITY_TYPE_SHIP, _controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 100, 0));
+    // thrust on
+  } else {
+    messaging_send(ENTITY_TYPE_SHIP, _controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
+    // thrust off
+  }
 }
 
 static void _controller_dispatch(entity_id_t id, message_t msg) {

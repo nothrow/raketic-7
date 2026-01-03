@@ -26,6 +26,7 @@ enum message_codes_system {
 
 enum message_codes_ship {
   MESSAGE_SHIP_ROTATE_BY = 0x10,
+  MESSAGE_SHIP_ENGINES_THRUST = 0x11
 };
 
 static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t data_b) {

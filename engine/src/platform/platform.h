@@ -11,6 +11,12 @@ struct input_state {
   unsigned int buttons;
 };
 
+enum buttons {
+  BUTTON_LEFT = 0x1,
+  BUTTON_RIGHT = 0x2,
+  BUTTON_MIDDLE = 0x4,
+};
+
 void platform_initialize(void);
 bool platform_loop(void);
 bool platform_tick_pending(void);
@@ -26,6 +32,7 @@ void platform_renderer_draw_models(
 );
 
 const struct input_state* platform_get_input_state(void);
+bool platform_input_is_button_down(enum buttons button);
 
 // Memory management (fixed heap, no dynamic allocation)
 // the returned memory is aligned to 16 bytes
