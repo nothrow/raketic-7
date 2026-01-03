@@ -17,6 +17,7 @@
   <ItemGroup>
     <ClCompile Include="generated\renderer.gen.c" />
     <ClCompile Include="src\core\vector.c" />
+    <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
@@ -45,9 +46,11 @@
   <ItemGroup>
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="src\core\core.h" />
+    <ClInclude Include="src\entity\controller.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\ship.h" />
+    <ClInclude Include="src\entity\types.h" />
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\messaging\messaging.h" />
     <ClInclude Include="src\physics\physics.h" />

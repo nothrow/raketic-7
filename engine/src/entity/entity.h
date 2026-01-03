@@ -6,11 +6,7 @@
 
 typedef uint32_t entity_id_t;
 
-enum entity_type {
-  ENTITY_TYPE_ANY = 0,
-  ENTITY_TYPE_SHIP,
-  ENTITY_TYPE_COUNT,
-};
+#include "types.h"
 
 // either id (if raw), or lookup
 entity_id_t entity_manager_lookup_raw(entity_id_t id);

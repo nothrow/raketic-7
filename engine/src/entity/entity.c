@@ -3,6 +3,7 @@
 #include "../generated/renderer.gen.h"
 
 #include "ship.h"
+#include "controller.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -59,6 +60,7 @@ void entity_manager_initialize(void) {
   _particles_data_initialize(&manager_.particles);
 
   ship_entity_initialize();
+  controller_entity_initialize();
 
   // will be deleted - just for testing
   manager_.objects.active = 1;
@@ -90,10 +92,6 @@ void entity_manager_initialize(void) {
   }
 
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x, manager_.particles.position_orientation.orientation_y, manager_.particles.active);
-
-
-
-
 }
 
 struct particles_data* entity_manager_get_particles(void) {

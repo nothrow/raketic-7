@@ -11,7 +11,7 @@ int run(void) {
   messaging_initialize();
   entity_manager_initialize();
 
-  messaging_send(RECIPIENT_TYPE_BROADCAST, RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0));
+  messaging_send(RECIPIENT_TYPE_BROADCAST, RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
   while (running) {
     platform_frame_start();

@@ -22,8 +22,12 @@ static double ticks_;
 void _memory_initialize(void);
 void _gl_initialize(void);
 
+#include "entity/types.h"
+#include "messaging/messaging.h"
+
 static void _platform_create_window(void) {
-  _VERIFY(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) >= 0, "SDL initialization failed");
+  int sdl_init = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+  _ASSERT(sdl_init >= 0 && "SDL initialization failed");
   window_ = SDL_CreateWindow("Raketic", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT,
                              SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
   _ASSERT(window_ && "Window creation failed");
@@ -77,6 +81,9 @@ bool platform_loop(void) {
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_QUIT) {
       return false;
+    }
+    else if (event.type == SDL_MOUSEMOTION) {
+      messaging_send(ENTITY_TYPE_CONTROLLER, RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_CONTROLLER_MOUSEMOVE, event.motion.xrel, event.motion.yrel));
     }
   }
 

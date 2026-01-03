@@ -8,23 +8,17 @@
 #ifdef NDEBUG
 #define _ASSERT(x) ((void)0)
 #define _ASSERTIONS(x) ((void)0)
-#define _VERIFY(x, msg) (x)
 #else
+
+#include <assert.h>
+
 #define _ASSERTIONS(x)                                                                                                 \
   do {                                                                                                                 \
     x                                                                                                                  \
   } while (0)
 
-#define _ASSERT(x)                                                                                                     \
-  do {                                                                                                                 \
-    if (!(x))                                                                                                          \
-      __debugbreak();                                                                                                  \
-  } while (0)
-#define _VERIFY(x, msg)                                                                                                \
-  do {                                                                                                                 \
-    if (!(x))                                                                                                          \
-      __debugbreak();                                                                                                  \
-  } while (0)
+#define _ASSERT(x) assert(x)
+
 #endif
 
 // Timing constants (120Hz fixed timestep)
