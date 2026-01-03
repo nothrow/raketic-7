@@ -67,10 +67,54 @@ static uint32_t _particle_manager_ttl(struct particles_data* pd) {
   return alive_count;
 }
 
+static void _parts_world_transform(struct objects_data* od, struct parts_data* pd) {
+  for (uint32_t i = 0; i < pd->active; i += 8) {
+    uint32_t parent_idx = GET_ORDINAL(pd->parent_id[i]);
+
+    _ASSERT(parent_idx >= 0 && parent_idx <= od->active);
+    _ASSERT(od->parts_start_idx[parent_idx] >= i && od->parts_start_idx[parent_idx] + od->parts_count[parent_idx] <= i);
+    _ASSERT((od->parts_count[parent_idx] % 8) == 0);
+
+    __m256 parent_x = _mm256_set1_ps(od->position_orientation.position_x[parent_idx]);
+    __m256 parent_y = _mm256_set1_ps(od->position_orientation.position_y[parent_idx]);
+
+    __m256 parent_ox = _mm256_set1_ps(od->position_orientation.orientation_x[parent_idx]);
+    __m256 parent_oy = _mm256_set1_ps(od->position_orientation.orientation_y[parent_idx]);
+
+    __m256 local_x = _mm256_load_ps(&pd->local_offset_x[i]);
+    __m256 local_y = _mm256_load_ps(&pd->local_offset_y[i]);
+
+    // rotate local offset by parent's orientation
+    __m256 rotated_lx = _mm256_fmsub_ps(local_x, parent_ox, _mm256_mul_ps(local_y, parent_oy));
+    __m256 rotated_ly = _mm256_fmadd_ps(local_x, parent_oy, _mm256_mul_ps(local_y, parent_ox));
+
+    // set world position
+    __m256 world_px = _mm256_add_ps(parent_x, rotated_lx);
+    __m256 world_py = _mm256_add_ps(parent_y, rotated_ly);
+    _mm256_store_ps(&pd->world_position_orientation.position_x[i], world_px);
+    _mm256_store_ps(&pd->world_position_orientation.position_y[i], world_py);
+
+    __m256 local_ox = _mm256_load_ps(&pd->local_orientation_x[i]);
+    __m256 local_oy = _mm256_load_ps(&pd->local_orientation_y[i]);
+    // rotate local orientation by parent's orientation
+    __m256 world_ox = _mm256_fmsub_ps(local_ox, parent_ox, _mm256_mul_ps(local_oy, parent_oy));
+    __m256 world_oy = _mm256_fmadd_ps(local_ox, parent_oy, _mm256_mul_ps(local_oy, parent_ox));
+
+    // normalize world orientation
+    __m256 length_sq = _mm256_rsqrt_ps(_mm256_add_ps(_mm256_mul_ps(world_ox, world_ox), _mm256_mul_ps(world_oy, world_oy)));
+    world_ox = _mm256_mul_ps(world_ox, length_sq);
+    world_oy = _mm256_mul_ps(world_oy, length_sq);
+    _mm256_store_ps(&pd->world_position_orientation.orientation_x[i], world_ox);
+    _mm256_store_ps(&pd->world_position_orientation.orientation_y[i], world_oy);
+  }
+}
+
 static void _objects_tick(void) {
   struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* pd = entity_manager_get_parts();
 
   _objects_apply_yoshida(od);
+  _parts_world_transform(od, pd);
 }
 
 static void _particle_manager_tick(void) {

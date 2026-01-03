@@ -27,6 +27,7 @@
     <ClCompile Include="src\messaging\messaging.c" />
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\platform\math.c" />
+    <ClCompile Include="src\entity\factory.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />

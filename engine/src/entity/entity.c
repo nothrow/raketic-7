@@ -11,16 +11,8 @@
 typedef struct {
   struct objects_data objects;
   struct particles_data particles;
+  struct parts_data parts;
 } entity_manager_t;
-
-
-static inline entity_id_t ID_WITH_TYPE(uint32_t id, uint8_t type) {
-  _ASSERT((id) <= 0x00FFFFFF);
-  _ASSERT((type) <= 0xFF);
-
-  entity_id_t ret = { ._ = ((((type) & 0xFF) << 24) | ((id) & 0x00FFFFFF)) };
-  return ret;
-}
 
 object_vtable_t entity_manager_vtables[ENTITY_TYPE_COUNT] = { 0 };
 
@@ -35,6 +27,19 @@ static void _position_orientation_initialize(position_orientation_t* position_or
   position_orientation->orientation_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
 }
 
+static void _parts_data_initialize(struct parts_data* data) {
+  _position_orientation_initialize(&data->world_position_orientation);
+  data->parent_id = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
+  data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
+  data->local_offset_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->local_offset_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->local_orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->local_orientation_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
+  data->active = 0;
+  data->capacity = MAXSIZE;
+}
+
 static void _objects_data_initialize(struct objects_data* data) {
   _position_orientation_initialize(&data->position_orientation);
   data->velocity_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
@@ -44,6 +49,8 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
+  data->parts_start_idx = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
+  data->parts_count = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
 
   data->active = 0;
   data->capacity = MAXSIZE;
@@ -65,20 +72,7 @@ static void _particles_data_initialize(struct particles_data* data) {
 
 static void _generate_dummy_data(void) {
   // will be deleted - just for testing
-  manager_.objects.active = 1;
-  manager_.objects.position_orientation.position_x[0] = 400.0f;
-  manager_.objects.position_orientation.position_y[0] = 300.0f;
-  manager_.objects.velocity_x[0] = 0.0f;
-  manager_.objects.velocity_y[0] = 0.1f;
-  manager_.objects.position_orientation.orientation_x[0] = 0.3f;
-  manager_.objects.position_orientation.orientation_y[0] = -0.8f;
-  manager_.objects.model_idx[0] = MODEL_SHIP_IDX;
-  manager_.objects.type[0]._ = ENTITY_TYPE_SHIP;
-  manager_.objects.mass[0] = 1000.0f;
-  manager_.objects.radius[0] = 20.0f;
-
-  vec2_normalize_i(manager_.objects.position_orientation.orientation_x,
-                   manager_.objects.position_orientation.orientation_y, manager_.objects.active);
+  entity_id_t player = _generate_entity_by_model(ENTITY_TYPEREF_SHIP, MODEL_SHIP_IDX);
 
   for (int i = 0; i < 10; i++) {
     manager_.particles.active++;
@@ -99,12 +93,13 @@ static void _generate_dummy_data(void) {
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x,
                    manager_.particles.position_orientation.orientation_y, manager_.particles.active);
 
-  controller_set_entity(ID_WITH_TYPE(0, ENTITY_TYPE_SHIP));
+  controller_set_entity(player);
 }
 
 void entity_manager_initialize(void) {
   _objects_data_initialize(&manager_.objects);
   _particles_data_initialize(&manager_.particles);
+  _parts_data_initialize(&manager_.parts);
 
   ship_entity_initialize();
   controller_entity_initialize();
@@ -118,6 +113,10 @@ struct particles_data* entity_manager_get_particles(void) {
 
 struct objects_data* entity_manager_get_objects(void) {
   return &manager_.objects;
+}
+
+struct parts_data* entity_manager_get_parts(void) {
+  return &manager_.parts;
 }
 
 static void _move_particle(struct particles_data* pd, size_t target, size_t source) {
@@ -164,6 +163,7 @@ void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {
     }
   } else if (entity_type != RECIPIENT_TYPE_ANY._) {
     _ASSERT(entity_type < ENTITY_TYPE_COUNT);
+
     entity_manager_vtables[entity_type].dispatch_message(recipient_id, msg);
   } else {
     _ASSERT(0 && "missing type in id");

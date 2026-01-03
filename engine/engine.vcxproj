@@ -19,6 +19,7 @@
     <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\entity\entity.c" />
+    <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\main.c" />
