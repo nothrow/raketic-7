@@ -7,6 +7,7 @@ namespace raketic.modelgen;
 internal class SvgParser
 {
     private Matrix? _transform = null;
+    private Point? _explicitCenter = null;
 
     private IEnumerable<LineStrip> ParseLinestrip(SvgElement elem) => elem switch
     {
@@ -14,8 +15,16 @@ internal class SvgParser
         SvgLine line => [ParseLine(line)],
         SvgPath path => ParsePath(path),
         SvgGroup group => ParseGroup(group),
+        SvgCircle circle when circle.ID == "center" => HandleCenterMarker(circle),
+        SvgCircle => [], // ignore other circles (they're markers, not geometry)
         _ => throw new InvalidOperationException($"Unsupported SVG element: {elem.GetType().Name}"),
     };
+
+    private IEnumerable<LineStrip> HandleCenterMarker(SvgCircle circle)
+    {
+        _explicitCenter = GetPoint(circle.CenterX.Value, circle.CenterY.Value);
+        return [];
+    }
 
     private IEnumerable<LineStrip> ParseGroup(SvgGroup group)
     {
@@ -158,10 +167,37 @@ internal class SvgParser
         SvgDocument doc = SvgDocument.Open(fullPath);
 
         var parser = new SvgParser();
+        var lineStrips = doc.Children.SelectMany(parser.ParseLinestrip).ToArray();
+
+        // Determine center: explicit marker or bounding box center
+        var center = parser._explicitCenter ?? ComputeBoundingBoxCenter(lineStrips);
+
+        // Translate all points so center is at (0, 0)
+        var centeredStrips = lineStrips
+            .Select(ls => ls with
+            {
+                Points = ls.Points.Select(p => new Point(p.X - center.X, p.Y - center.Y)).ToArray()
+            })
+            .ToArray();
 
         return new Model(
             FileName: filename,
-            doc.Children.SelectMany(parser.ParseLinestrip).ToArray()
+            centeredStrips
         );
+    }
+
+    private static Point ComputeBoundingBoxCenter(LineStrip[] lineStrips)
+    {
+        var allPoints = lineStrips.SelectMany(ls => ls.Points).ToArray();
+
+        if (allPoints.Length == 0)
+            return new Point(0, 0);
+
+        float minX = allPoints.Min(p => p.X);
+        float maxX = allPoints.Max(p => p.X);
+        float minY = allPoints.Min(p => p.Y);
+        float maxY = allPoints.Max(p => p.Y);
+
+        return new Point((minX + maxX) / 2, (minY + maxY) / 2);
     }
 }
