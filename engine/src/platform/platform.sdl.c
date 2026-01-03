@@ -37,6 +37,8 @@ static void _platform_create_window(void) {
   _ASSERT(context_ && "OpenGL context creation failed");
   SDL_GL_SetSwapInterval(1); // Enable vsync
 
+  SDL_SetRelativeMouseMode(SDL_TRUE);
+
   platform_clear_memory(&input_state_, sizeof(input_state_));
 
   prev_time_ = SDL_GetTicks();
@@ -83,21 +85,25 @@ bool platform_tick_pending(void) {
 }
 
 bool platform_loop(void) {
+  // Reset delta každý frame
+  input_state_.mdx = 0;
+  input_state_.mdy = 0;
+
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_QUIT) {
+    switch (event.type) {
+    case SDL_QUIT:
       return false;
+    case SDL_MOUSEMOTION:
+      input_state_.mdx += event.motion.xrel;
+      input_state_.mdy += event.motion.yrel;
+      input_state_.mx = event.motion.x;
+      input_state_.my = event.motion.y;
+      break;
     }
   }
 
-  int mx = input_state_.mx;
-  int my = input_state_.my;
-
-  input_state_.buttons = SDL_GetMouseState(&input_state_.mx, &input_state_.my);
-
-  input_state_.mdx = input_state_.mx - mx;
-  input_state_.mdy = input_state_.my - my;
-
+  input_state_.buttons = SDL_GetMouseState(NULL, NULL);
   return true;
 }
 

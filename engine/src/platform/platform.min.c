@@ -9,6 +9,7 @@ static double ticks_;
 static HWND hwnd_;
 static HGLRC hglrc_;
 static HDC hdc_;
+static struct input_state input_state_ = { 0 };
 
 int _fltused = 0;
 
@@ -16,9 +17,40 @@ void _memory_initialize(void);
 void _math_initialize(void);
 void _gl_initialize(void);
 
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+  switch (msg) {
+  case WM_INPUT: {
+    UINT size = sizeof(RAWINPUT);
+    RAWINPUT raw;
+    GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER));
+
+    if (raw.header.dwType == RIM_TYPEMOUSE) {
+      input_state_.mdx += raw.data.mouse.lLastX;
+      input_state_.mdy += raw.data.mouse.lLastY;
+
+      USHORT flags = raw.data.mouse.usButtonFlags;
+      if (flags & RI_MOUSE_LEFT_BUTTON_DOWN)   input_state_.buttons |= BUTTON_LEFT;
+      if (flags & RI_MOUSE_LEFT_BUTTON_UP)     input_state_.buttons &= ~BUTTON_LEFT;
+      if (flags & RI_MOUSE_RIGHT_BUTTON_DOWN)  input_state_.buttons |= BUTTON_RIGHT;
+      if (flags & RI_MOUSE_RIGHT_BUTTON_UP)    input_state_.buttons &= ~BUTTON_RIGHT;
+      if (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN) input_state_.buttons |= BUTTON_MIDDLE;
+      if (flags & RI_MOUSE_MIDDLE_BUTTON_UP)   input_state_.buttons &= ~BUTTON_MIDDLE;
+    }
+    return 0;
+  }
+  case WM_CLOSE:
+    DestroyWindow(hwnd);
+    return 0;
+  case WM_DESTROY:
+    PostQuitMessage(0);
+    return 0;
+  }
+  return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
 static void _platform_create_window(void) {
   WNDCLASS wc = { 0 };
-  wc.lpfnWndProc = DefWindowProc;
+  wc.lpfnWndProc = WndProc;
   wc.hInstance = GetModuleHandleA(NULL);
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);
   wc.lpszClassName = "w";
@@ -29,6 +61,14 @@ static void _platform_create_window(void) {
                       WINDOW_HEIGHT, 0, 0, wc.hInstance, 0);
 
   _ASSERT(hwnd_ != NULL);
+
+  RAWINPUTDEVICE rid = {0};
+  rid.usUsagePage = 0x01;  // HID_USAGE_PAGE_GENERIC
+  rid.usUsage = 0x02;      // HID_USAGE_GENERIC_MOUSE
+  rid.dwFlags = 0;
+  rid.hwndTarget = hwnd_;
+  RegisterRawInputDevices(&rid, 1, sizeof(rid));
+  ShowCursor(FALSE);
 
   hdc_ = GetDC(hwnd_);
   _ASSERT(hdc_ != NULL);
@@ -87,32 +127,21 @@ bool platform_tick_pending(void) {
   return false;
 }
 
-static struct input_state input_state_ = { 0 };
-
 const struct input_state* platform_get_input_state(void) {
   return &input_state_;
 }
 
 bool platform_input_is_button_down(enum buttons button) {
-  (void)button;
-  return false;
+  return (input_state_.buttons & button) != 0;
 }
 
-
 bool platform_loop(void) {
+  input_state_.mdx = 0;
+  input_state_.mdy = 0;
+
   MSG msg;
   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-    switch (msg.message)
-    {
-    case WM_QUIT:
-      return false;
-    case WM_CLOSE:
-      DestroyWindow(hwnd_);
-    case WM_DESTROY:
-      PostQuitMessage(0);
-      return false;
-    }
-
+    if (msg.message == WM_QUIT) return false;
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }
