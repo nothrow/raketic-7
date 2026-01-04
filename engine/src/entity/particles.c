@@ -27,8 +27,7 @@ static void _spawn_particle(particle_create_t* pcm) {
   pd->active++;
 }
 
-void particles_create_particle(particle_create_t* pc)
-{
+void particles_create_particle(particle_create_t* pc) {
   _spawn_particle(pc);
 }
 

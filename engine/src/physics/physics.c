@@ -158,9 +158,8 @@ void physics_test__parts_world_transform_rotations(void) {
 
 
   pd->active = 16;
-  for (int i = 0; i < 2; i++)
-  {
-    od->parts_start_idx[i] = 8*i;
+  for (int i = 0; i < 2; i++) {
+    od->parts_start_idx[i] = 8 * i;
     od->parts_count[i] = 2;
 
     pd->parent_id[8 * i] = OBJECT_ID_WITH_TYPE(i, ENTITY_TYPE_ANY);

@@ -48,14 +48,12 @@ static void _engine_tick() {
         float ox = od->position_orientation.orientation_x[GET_ORDINAL(pd->parent_id[i])];
         float oy = od->position_orientation.orientation_y[GET_ORDINAL(pd->parent_id[i])];
 
-        particle_create_t pcm = {
-          .x = pd->world_position_orientation.position_x[i],
-          .y = pd->world_position_orientation.position_y[i],
-          .vx = -ox * ed->thrust * 100.0f,
-          .vy = -oy * ed->thrust * 100.0f,
-          .ttl = 3 * TICKS_IN_SECOND,
-          .model_idx = MODEL_EXHAUST_IDX
-        };
+        particle_create_t pcm = { .x = pd->world_position_orientation.position_x[i],
+                                  .y = pd->world_position_orientation.position_y[i],
+                                  .vx = -ox * ed->thrust * 100.0f,
+                                  .vy = -oy * ed->thrust * 100.0f,
+                                  .ttl = 3 * TICKS_IN_SECOND,
+                                  .model_idx = MODEL_EXHAUST_IDX };
 
         particles_create_particle(&pcm);
       }

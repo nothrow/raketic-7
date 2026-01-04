@@ -11,7 +11,7 @@ int run(void) {
   debug_initialize();
   platform_initialize();
   messaging_initialize();
-  entity_manager_initialize();  
+  entity_manager_initialize();
 
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
