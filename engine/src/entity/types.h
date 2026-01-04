@@ -12,6 +12,10 @@ typedef struct {
   uint8_t _;
 } entity_type_t;
 
+typedef struct {
+  uint8_t _;
+} part_type_t;
+
 static inline uint8_t GET_TYPE(entity_id_t tid) {
   return (uint8_t)(((tid._) >> 24) & 0xFF);
 }
@@ -42,4 +46,11 @@ enum entity_type {
   ENTITY_TYPE_COUNT,
 };
 
+enum part_type {
+  PART_TYPE_ENGINE = 0,
+  PART_TYPE_COUNT,
+};
+
 static entity_type_t ENTITY_TYPEREF_SHIP = { ENTITY_TYPE_SHIP };
+
+static part_type_t PART_TYPEREF_ENGINE = { PART_TYPE_ENGINE };

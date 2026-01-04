@@ -30,7 +30,7 @@ static void _position_orientation_initialize(position_orientation_t* position_or
 static void _parts_data_initialize(struct parts_data* data) {
   _position_orientation_initialize(&data->world_position_orientation);
   data->parent_id = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
-  data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
+  data->type = platform_retrieve_memory(sizeof(part_type_t) * MAXSIZE);
   data->local_offset_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->local_offset_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->local_orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);

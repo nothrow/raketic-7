@@ -1,4 +1,5 @@
 #include "entity_internal.h"
+#include "../generated/slots.gen.h"
 
 static void _clear_position_orientation(uint32_t idx)
 {
@@ -20,6 +21,8 @@ entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {
   _clear_position_orientation(new_idx);
 
   entity_id_t ret = ID_WITH_TYPE(new_idx, type._);
+
+  _generated_fill_slots(model, ret);
 
   od->active += 1;
 

@@ -72,8 +72,7 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     uint32_t parent_idx = GET_ORDINAL(pd->parent_id[i]);
 
     _ASSERT(parent_idx >= 0 && parent_idx <= od->active);
-    _ASSERT(od->parts_start_idx[parent_idx] >= i && od->parts_start_idx[parent_idx] + od->parts_count[parent_idx] <= i);
-    _ASSERT((od->parts_count[parent_idx] % 8) == 0);
+    _ASSERT(od->parts_start_idx[parent_idx] <= i && od->parts_start_idx[parent_idx] + od->parts_count[parent_idx] >= i);
 
     __m256 parent_x = _mm256_set1_ps(od->position_orientation.position_x[parent_idx]);
     __m256 parent_y = _mm256_set1_ps(od->position_orientation.position_y[parent_idx]);

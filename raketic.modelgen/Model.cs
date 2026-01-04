@@ -20,7 +20,19 @@ internal record LineStrip(
     System.Drawing.Color Color
 );
 
+internal enum SlotType
+{
+Engine
+}
+
+
+internal record Slot(
+    Point Position,
+    SlotType Type
+);
+
 internal record Model(
     string FileName,
-    LineStrip[] LineStrips
+    LineStrip[] LineStrips,
+    Slot[] Slots
 );

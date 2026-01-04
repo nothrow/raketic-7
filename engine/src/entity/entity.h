@@ -31,7 +31,7 @@ struct parts_data {
   uint32_t capacity;
 
   entity_id_t* parent_id;
-  entity_type_t* type;
+  part_type_t* type;
 
   float* local_offset_x;
   float* local_offset_y;

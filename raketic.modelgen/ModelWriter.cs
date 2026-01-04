@@ -1,3 +1,5 @@
+
+
 namespace raketic.modelgen;
 
 internal class ModelWriter
@@ -73,5 +75,52 @@ internal class ModelWriter
         w.WriteLine($"}}");
         w.WriteLine();
     }
-}
 
+    public void DumpModelSlots(StreamWriter w, Model model)
+    {
+        if (model.Slots.Length == 0)
+            return;
+
+        //struct objects_data*od = entity_manager_get_objects();
+        w.WriteLine($"static void _model_{model.FileName}_slots(entity_id_t parent) {{");
+        w.WriteLine($"  struct objects_data* od = entity_manager_get_objects();");
+        w.WriteLine($"  struct parts_data* pd = entity_manager_get_parts();");
+        w.WriteLine($"  uint32_t parent_idx = GET_ORDINAL(parent);");
+        w.WriteLine($"  uint32_t i = pd->active;");
+
+        // reserve nearest multiple of 8 slots (for better computations)
+        int slotCount = model.Slots.Length;
+        int reservedSlots = (slotCount + 7) & ~7;
+
+        w.WriteLine();
+
+        w.WriteLine($"  _ASSERT(pd->active + {reservedSlots} < pd->capacity);");
+        w.WriteLine($"  od->parts_start_idx[parent_idx] = i;");
+        w.WriteLine($"  od->parts_count[parent_idx] = {slotCount};");
+        w.WriteLine($"  pd->active += {reservedSlots};");
+
+        w.WriteLine();
+        for (int i = 0; i < model.Slots.Length; i++)
+        {
+            w.WriteLine($"  pd->parent_id[i + {i}] = parent;");
+            w.WriteLine($"  pd->local_offset_x[i + {i}] = {model.Slots[i].Position.X};");
+            w.WriteLine($"  pd->local_offset_y[i + {i}] = {model.Slots[i].Position.Y};");
+
+            w.WriteLine($"  pd->type[i + {i}] = {GetTypeRef(model.Slots[i].Type)};");
+
+            w.WriteLine($"  pd->local_orientation_x[i + {i}] = 0.0f;");
+            w.WriteLine($"  pd->local_orientation_y[i + {i}] = 1.0f;");
+
+            w.WriteLine();
+        }
+
+        w.WriteLine($"}}");
+        w.WriteLine();
+    }
+
+    private string GetTypeRef(SlotType type) => type switch
+    {
+        SlotType.Engine => "PART_TYPEREF_ENGINE",
+        _ => throw new InvalidOperationException($"Unknown slot type: {type}"),
+    };
+}

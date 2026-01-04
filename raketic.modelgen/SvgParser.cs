@@ -8,21 +8,55 @@ internal class SvgParser
 {
     private Matrix? _transform = null;
     private Point? _explicitCenter = null;
+    private List<(string, Point)> _slots = new();
 
     private IEnumerable<LineStrip> ParseLinestrip(SvgElement elem) => elem switch
     {
-        SvgCircle circle when circle.ID == "center" => HandleCenterMarker(circle),
+        { ID: "center" } => HandleCenterMarker(elem),
+        _ when elem.ContainsAttribute("slot") => HandleSlot(elem),
+
         SvgPolyline poly => [ParsePoly(poly)],
         SvgLine line => [ParseLine(line)],
         SvgPath path => ParsePath(path),
         SvgGroup group => ParseGroup(group),
         SvgRectangle rectangle => ParseRectangle(rectangle),
+
         _ => throw new InvalidOperationException($"Unsupported SVG element: {elem.GetType().Name}"),
     };
 
-    private IEnumerable<LineStrip> HandleCenterMarker(SvgCircle circle)
+    private static Point GetCenter(SvgElement el)
     {
-        _explicitCenter = GetPoint(circle.CenterX.Value, circle.CenterY.Value);
+        if (el is SvgCircle circle)
+        {
+            return new Point(circle.CenterX.Value, circle.CenterY.Value);
+        }
+        else if (el is SvgRectangle rectangle)
+        {
+            return new Point(rectangle.X + rectangle.Width / 2, rectangle.Y + rectangle.Height / 2);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unsupported center marker element: {el.GetType().Name}");
+        }
+    }
+
+
+    private IEnumerable<LineStrip> HandleSlot(SvgElement el)
+    {
+        var slotName = el.TryGetAttribute("slot", out var slotAttr) ? slotAttr : null;
+        if (string.IsNullOrEmpty(slotName))
+        {
+            throw new InvalidOperationException("Slot element must have a non-empty 'slot' attribute.");
+        }
+
+        var center = GetCenter(el);
+        _slots.Add((slotName, center));
+        return [];
+    }
+
+    private IEnumerable<LineStrip> HandleCenterMarker(SvgElement el)
+    {
+        _explicitCenter = GetCenter(el);
         return [];
     }
 
@@ -41,7 +75,7 @@ internal class SvgParser
         }
         try
         {
-            foreach(var element in group.Children.SelectMany(ParseLinestrip))
+            foreach (var element in group.Children.SelectMany(ParseLinestrip))
             {
                 yield return element;
             }
@@ -212,9 +246,16 @@ internal class SvgParser
 
         return new Model(
             FileName: filename,
-            centeredStrips
+            centeredStrips,
+            Slots: parser._slots.Select(x => new Slot(x.Item2 with { X = x.Item2.X - center.X, Y = x.Item2.Y - center.Y }, ParseSlotType(x.Item1))).ToArray()
         );
     }
+
+    private static SlotType ParseSlotType(string item) => item.ToLower() switch
+    {
+        "engine" => SlotType.Engine,
+        _ => throw new InvalidOperationException($"Unknown slot type: {item}"),
+    };
 
     private static Point ComputeBoundingBoxCenter(LineStrip[] lineStrips)
     {
