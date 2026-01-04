@@ -41,6 +41,13 @@ static inline entity_id_t PART_ID_WITH_TYPE(uint32_t id, uint8_t type) {
   return ret;
 }
 
+// makes the target all parts of given type of given entity
+static inline entity_id_t PARTS_OF_TYPE(entity_id_t entity, entity_type_t part) {
+  _ASSERT(!IS_PART(entity));
+
+  return PART_ID_WITH_TYPE(GET_ORDINAL(entity), part._);
+}
+
 static inline bool is_valid_id(entity_id_t id) {
   return id._ != 0xFFFFFFFF;
 }

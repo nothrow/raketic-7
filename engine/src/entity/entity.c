@@ -171,7 +171,6 @@ void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {
     _ASSERT(entity_type >= 0 && entity_type < ENTITY_TYPE_COUNT);
 
     entity_manager_vtables[entity_type].dispatch_message(recipient_id, msg);
-
   } else {
     _ASSERT(0 && "missing type in id");
   }
