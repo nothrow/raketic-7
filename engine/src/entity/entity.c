@@ -1,5 +1,6 @@
 #include "entity.h"
 #include "platform/platform.h"
+#include "platform/math.h"
 #include "../generated/renderer.gen.h"
 
 #include "ship.h"
@@ -18,8 +19,6 @@ typedef struct {
 } entity_manager_t;
 
 object_vtable_t entity_manager_vtables[ENTITY_TYPE_COUNT] = { 0 };
-
-int rand32();
 
 static entity_manager_t manager_ = { 0 };
 

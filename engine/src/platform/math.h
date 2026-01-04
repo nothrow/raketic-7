@@ -4,3 +4,16 @@
 
 float lut_sin(int32_t deg);
 float lut_cos(int32_t deg);
+
+// xorshift RNG
+uint32_t rand32(void);
+
+// random float in range [0, 1)
+static inline float randf(void) {
+  return (float)(rand32() % 10000) / 10000.0f;
+}
+
+// random float in range [-1, 1)
+static inline float randf_symmetric(void) {
+  return randf() * 2.0f - 1.0f;
+}

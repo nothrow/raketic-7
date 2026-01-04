@@ -1,4 +1,5 @@
 #include "platform/platform.h"
+#include "platform/math.h"
 #include "engine.h"
 
 #include "particles.h"
@@ -45,14 +46,47 @@ static void _engine_tick() {
       struct engine_data* ed = (struct engine_data*)(pd->data[i].data);
 
       if (ed->thrust > 0.0f) {
+        // spawn probability based on thrust (higher thrust = more particles)
+        // at full thrust ~40% chance per tick, gives nice density without overwhelming
+        float spawn_chance = ed->thrust * 0.4f;
+        if (randf() > spawn_chance) {
+          continue;
+        }
+
         float ox = od->position_orientation.orientation_x[GET_ORDINAL(pd->parent_id[i])];
         float oy = od->position_orientation.orientation_y[GET_ORDINAL(pd->parent_id[i])];
 
-        particle_create_t pcm = { .x = pd->world_position_orientation.position_x[i],
-                                  .y = pd->world_position_orientation.position_y[i],
-                                  .vx = -ox * ed->thrust * 100.0f,
-                                  .vy = -oy * ed->thrust * 100.0f,
-                                  .ttl = 3 * TICKS_IN_SECOND,
+        // perpendicular vector for spread
+        float perp_x = -oy;
+        float perp_y = ox;
+
+        // velocity spread: cone angle ~15-20 degrees
+        float spread = randf_symmetric() * 0.3f;
+        float speed_variance = 0.7f + randf() * 0.6f;  // 70-130% speed
+
+        float base_speed = ed->thrust * 100.0f;
+        float vx = (-ox + perp_x * spread) * base_speed * speed_variance;
+        float vy = (-oy + perp_y * spread) * base_speed * speed_variance;
+
+        // position jitter: slight offset from exact engine position
+        float pos_jitter = 2.0f;
+        float px = pd->world_position_orientation.position_x[i] + perp_x * randf_symmetric() * pos_jitter;
+        float py = pd->world_position_orientation.position_y[i] + perp_y * randf_symmetric() * pos_jitter;
+
+        // TTL variance: 1.5 - 3.5 seconds
+        uint16_t ttl = (uint16_t)((1.5f + randf() * 2.0f) * TICKS_IN_SECOND);
+
+        // random orientation (full 360°)
+        float rot_ox = randf_symmetric();
+        float rot_oy = randf_symmetric();
+
+        particle_create_t pcm = { .x = px,
+                                  .y = py,
+                                  .vx = vx,
+                                  .vy = vy,
+                                  .ox = rot_ox,
+                                  .oy = rot_oy,
+                                  .ttl = ttl,
                                   .model_idx = MODEL_EXHAUST_IDX };
 
         particles_create_particle(&pcm);

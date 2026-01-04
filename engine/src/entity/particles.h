@@ -10,6 +10,9 @@ typedef struct {
   float vx;
   float vy;
 
+  float ox;
+  float oy;
+
   uint16_t ttl;
   uint16_t model_idx;
 } particle_create_t;

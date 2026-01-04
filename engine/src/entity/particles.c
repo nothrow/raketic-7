@@ -16,8 +16,8 @@ static void _spawn_particle(particle_create_t* pcm) {
   pd->velocity_x[idx] = pcm->vx;
   pd->velocity_y[idx] = pcm->vy;
 
-  pd->position_orientation.orientation_x[idx] = pcm->vx;
-  pd->position_orientation.orientation_y[idx] = pcm->vy;
+  pd->position_orientation.orientation_x[idx] = pcm->ox;
+  pd->position_orientation.orientation_y[idx] = pcm->oy;
 
   vec2_normalize_i(&pd->position_orientation.orientation_x[idx], &pd->position_orientation.orientation_y[idx], 1);
 
