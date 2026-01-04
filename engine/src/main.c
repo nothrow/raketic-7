@@ -3,13 +3,15 @@
 #include "physics/physics.h"
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
+#include "debug/debug.h"
 
 int run(void) {
   bool running = true;
 
+  debug_initialize();
   platform_initialize();
   messaging_initialize();
-  entity_manager_initialize();
+  entity_manager_initialize();  
 
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
@@ -29,6 +31,7 @@ int run(void) {
     }
 
     graphics_engine_draw();
+    debug_watch_draw();
 
     platform_frame_end();
   }

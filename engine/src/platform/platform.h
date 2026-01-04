@@ -39,3 +39,5 @@ bool platform_input_is_button_down(enum buttons button);
 // no assumptions about the memory being cleared are done
 void* platform_retrieve_memory(size_t memory_size);
 void platform_clear_memory(void* ptr, size_t size);
+
+void platform_debug_draw_line(float x1, float y1, float x2, float y2, color_t color);

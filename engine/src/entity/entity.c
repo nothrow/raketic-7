@@ -6,6 +6,7 @@
 #include "controller.h"
 #include "engine.h"
 #include "particles.h"
+#include "debug/debug.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -96,6 +97,7 @@ static void _generate_dummy_data(void) {
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x,
                    manager_.particles.position_orientation.orientation_y, manager_.particles.active);
 
+  debug_watch_set(player);
   controller_set_entity(player);
 }
 

@@ -23,6 +23,18 @@
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <ClCompile Include="src\core\vector.c" />
+    <ClCompile Include="src\debug\debug.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSDL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\debug\debug_font.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSDL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\debug\debug_stub.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Tests|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\entity\engine.c" />
     <ClCompile Include="src\entity\entity.c" />
@@ -68,6 +80,8 @@
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\core\core.h" />
+    <ClInclude Include="src\debug\debug.h" />
+    <ClInclude Include="src\debug\debug_font.h" />
     <ClInclude Include="src\entity\controller.h" />
     <ClInclude Include="src\entity\engine.h" />
     <ClInclude Include="src\entity\entity.h" />
