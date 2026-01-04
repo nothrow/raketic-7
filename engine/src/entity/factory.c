@@ -22,14 +22,14 @@ entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {
 
   _clear_position_orientation(new_idx);
 
-  entity_id_t ret = ID_WITH_TYPE(new_idx, type._);
+  entity_id_t ret = OBJECT_ID_WITH_TYPE(new_idx, type._);
 
   _generated_fill_slots(model, ret);
 
   // fill the models?
   for (size_t i = 0; i < od->parts_count[new_idx]; ++i) {
     uint32_t part_idx = od->parts_start_idx[new_idx] + i;
-    if (pd->type[part_idx]._ == PART_TYPE_ENGINE) {
+    if (pd->type[part_idx]._ == ENTITY_TYPE_PART_ENGINE) {
       pd->model_idx[part_idx] = MODEL_ENGINE_IDX;
     }
   }

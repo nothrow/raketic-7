@@ -18,6 +18,7 @@
     <ClCompile Include="generated\models.gen.c" />
     <ClCompile Include="src\core\vector.c" />
     <ClCompile Include="src\entity\controller.c" />
+    <ClCompile Include="src\entity\engine.c" />
     <ClCompile Include="src\entity\entity.c" />
     <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="src\entity\ship.c" />
@@ -52,6 +53,7 @@
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\entity\controller.h" />
+    <ClInclude Include="src\entity\engine.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\ship.h" />

@@ -12,23 +12,32 @@ typedef struct {
   uint8_t _;
 } entity_type_t;
 
-typedef struct {
-  uint8_t _;
-} part_type_t;
-
 static inline uint8_t GET_TYPE(entity_id_t tid) {
   return (uint8_t)(((tid._) >> 24) & 0xFF);
 }
 
-static inline uint32_t GET_ORDINAL(entity_id_t tid) {
-  return (uint32_t)((tid._) & 0x00FFFFFF);
+static inline bool IS_PART(entity_id_t tid) {
+  return (((tid._) >> 23) & 1);
 }
 
-static inline entity_id_t ID_WITH_TYPE(uint32_t id, uint8_t type) {
-  _ASSERT((id) <= 0x00FFFFFF);
+static inline uint32_t GET_ORDINAL(entity_id_t tid) {
+  return (uint32_t)((tid._) & 0x007FFFFF);
+}
+
+static inline entity_id_t OBJECT_ID_WITH_TYPE(uint32_t id, uint8_t type) {
+  _ASSERT((id) <= 0x007FFFFF);
   _ASSERT((type) <= 0xFF);
 
-  entity_id_t ret = { ._ = ((((type) & 0xFF) << 24) | ((id) & 0x00FFFFFF)) };
+  entity_id_t ret = { ._ = ((((type) & 0xFF) << 24) | ((id) & 0x007FFFFF)) };
+  return ret;
+}
+
+static inline entity_id_t PART_ID_WITH_TYPE(uint32_t id, uint8_t type) {
+  _ASSERT((id) <= 0x007FFFFF);
+  _ASSERT((type) <= 0xFF);
+
+  entity_id_t ret = { ._ = ((((type) & 0xFF) << 24) | 0x800000 | ((id) & 0x007FFFFF)) };
+
   return ret;
 }
 
@@ -43,14 +52,10 @@ enum entity_type {
   ENTITY_TYPE_ANY = 0,
   ENTITY_TYPE_SHIP,
   ENTITY_TYPE_CONTROLLER,
+  ENTITY_TYPE_PART_ENGINE,
   ENTITY_TYPE_COUNT,
 };
 
-enum part_type {
-  PART_TYPE_ENGINE = 0,
-  PART_TYPE_COUNT,
-};
-
 static entity_type_t ENTITY_TYPEREF_SHIP = { ENTITY_TYPE_SHIP };
+static entity_type_t PART_TYPEREF_ENGINE = { ENTITY_TYPE_PART_ENGINE };
 
-static part_type_t PART_TYPEREF_ENGINE = { PART_TYPE_ENGINE };

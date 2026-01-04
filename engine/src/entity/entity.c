@@ -4,6 +4,7 @@
 
 #include "ship.h"
 #include "controller.h"
+#include "engine.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -30,7 +31,7 @@ static void _position_orientation_initialize(position_orientation_t* position_or
 static void _parts_data_initialize(struct parts_data* data) {
   _position_orientation_initialize(&data->world_position_orientation);
   data->parent_id = platform_retrieve_memory(sizeof(entity_id_t) * MAXSIZE);
-  data->type = platform_retrieve_memory(sizeof(part_type_t) * MAXSIZE);
+  data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
   data->local_offset_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->local_offset_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->local_orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
@@ -96,13 +97,18 @@ static void _generate_dummy_data(void) {
   controller_set_entity(player);
 }
 
+static void _entity_manager_types_initialize(void) {
+  ship_entity_initialize();
+  controller_entity_initialize();
+  engine_part_entity_initialize();
+}
+
 void entity_manager_initialize(void) {
   _objects_data_initialize(&manager_.objects);
   _particles_data_initialize(&manager_.particles);
   _parts_data_initialize(&manager_.parts);
 
-  ship_entity_initialize();
-  controller_entity_initialize();
+  _entity_manager_types_initialize();
 
   _generate_dummy_data();
 }
@@ -162,9 +168,10 @@ void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {
       entity_manager_vtables[i].dispatch_message(recipient_id, msg);
     }
   } else if (entity_type != RECIPIENT_TYPE_ANY._) {
-    _ASSERT(entity_type < ENTITY_TYPE_COUNT);
+    _ASSERT(entity_type >= 0 && entity_type < ENTITY_TYPE_COUNT);
 
     entity_manager_vtables[entity_type].dispatch_message(recipient_id, msg);
+
   } else {
     _ASSERT(0 && "missing type in id");
   }
