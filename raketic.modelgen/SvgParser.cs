@@ -24,15 +24,15 @@ internal class SvgParser
         _ => throw new InvalidOperationException($"Unsupported SVG element: {elem.GetType().Name}"),
     };
 
-    private static Point GetCenter(SvgElement el)
+    private Point GetCenter(SvgElement el)
     {
         if (el is SvgCircle circle)
         {
-            return new Point(circle.CenterX.Value, circle.CenterY.Value);
+            return GetPoint(circle.CenterX.Value, circle.CenterY.Value);
         }
         else if (el is SvgRectangle rectangle)
         {
-            return new Point(rectangle.X + rectangle.Width / 2, rectangle.Y + rectangle.Height / 2);
+            return GetPoint(rectangle.X + rectangle.Width / 2, rectangle.Y + rectangle.Height / 2);
         }
         else
         {

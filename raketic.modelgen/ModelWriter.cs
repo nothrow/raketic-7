@@ -114,8 +114,8 @@ internal class ModelWriter
         for (int i = 0; i < model.Slots.Length; i++)
         {
             w.WriteLine($"  pd->parent_id[i + {i}] = parent;");
-            w.WriteLine($"  pd->local_offset_x[i + {i}] = {model.Slots[i].Position.X};");
-            w.WriteLine($"  pd->local_offset_y[i + {i}] = {model.Slots[i].Position.Y};");
+            w.WriteLine($"  pd->local_offset_x[i + {i}] = {model.Slots[i].Position.X:0.0#######}f;");
+            w.WriteLine($"  pd->local_offset_y[i + {i}] = {model.Slots[i].Position.Y:0.0#######}f;");
 
             w.WriteLine($"  pd->type[i + {i}] = {GetTypeRef(model.Slots[i].Type)};");
 

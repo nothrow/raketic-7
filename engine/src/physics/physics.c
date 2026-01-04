@@ -96,8 +96,10 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     __m256 local_ox = _mm256_load_ps(&pd->local_orientation_x[i]);
     __m256 local_oy = _mm256_load_ps(&pd->local_orientation_y[i]);
     // rotate local orientation by parent's orientation
-    __m256 world_ox = _mm256_fmsub_ps(local_ox, parent_ox, _mm256_mul_ps(local_oy, parent_oy));
-    __m256 world_oy = _mm256_fmadd_ps(local_ox, parent_oy, _mm256_mul_ps(local_oy, parent_ox));
+    // world_ox = local_ox * (parent_ox - parent_oy)
+    // world_oy = local_oy * (parent_ox + parent_oy)
+    __m256 world_ox = _mm256_fmsub_ps(local_ox, parent_ox, _mm256_mul_ps(local_ox, parent_oy));
+    __m256 world_oy = _mm256_fmadd_ps(local_oy, parent_ox, _mm256_mul_ps(local_oy, parent_oy));
 
     // normalize world orientation
     __m256 length_sq =
@@ -173,16 +175,16 @@ void physics_test__parts_world_transform_rotations(void) {
 
   _parts_world_transform(od, pd);
 
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_x[0]);
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_y[0]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, -1.0f, pd->world_position_orientation.orientation_x[0]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_y[0]);
 
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_x[1]);
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_y[1]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_x[1]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_y[1]);
 
   TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_x[8]);
   TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_y[8]);
 
   TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_x[9]);
-  TEST_ASSERT_FLOAT_WITHIN(0.001f, -1.0f, pd->world_position_orientation.orientation_y[9]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_y[9]);
 }
 #endif

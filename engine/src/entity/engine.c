@@ -38,21 +38,26 @@ static void _engine_set_thrust_percentage(entity_id_t id, float percentage) {
 
 static void _engine_tick() {
   struct parts_data* pd = entity_manager_get_parts();
+  struct objects_data* od = entity_manager_get_objects();
+
   for (size_t i = 0; i < pd->active; i++) {
     if (pd->type[i]._ == ENTITY_TYPE_PART_ENGINE) {
       struct engine_data* ed = (struct engine_data*)(pd->data[i].data);
 
       if (ed->thrust > 0.0f) {
-        message_t message = CREATE_MESSAGE(MESSAGE_PARTICLE_SPAWN, 0, 0);
-        particle_create_message_t* pcm = (particle_create_message_t*)&message;
-        pcm->x = pd->world_position_orientation.position_x[i];
-        pcm->y = pd->world_position_orientation.position_y[i];
-        pcm->vx = (int8_t)(-pd->world_position_orientation.orientation_x[i] * ed->thrust * 100.0f);
-        pcm->vy = (int8_t)(-pd->world_position_orientation.orientation_y[i] * ed->thrust * 100.0f);
-        pcm->ttl = 3 * TICKS_IN_SECOND;
-        pcm->model_idx = MODEL_EXHAUST_IDX;
+        float ox = od->position_orientation.orientation_x[GET_ORDINAL(pd->parent_id[i])];
+        float oy = od->position_orientation.orientation_y[GET_ORDINAL(pd->parent_id[i])];
 
-        messaging_send(TYPE_BROADCAST(ENTITY_TYPEREF_PARTICLES), message);
+        particle_create_t pcm = {
+          .x = pd->world_position_orientation.position_x[i],
+          .y = pd->world_position_orientation.position_y[i],
+          .vx = -ox * ed->thrust * 100.0f,
+          .vy = -oy * ed->thrust * 100.0f,
+          .ttl = 3 * TICKS_IN_SECOND,
+          .model_idx = MODEL_EXHAUST_IDX
+        };
+
+        particles_create_particle(&pcm);
       }
     }
   }

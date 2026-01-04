@@ -3,7 +3,7 @@
 
 #include "particles.h"
 
-static void _spawn_particle(particle_create_message_t* pcm) {
+static void _spawn_particle(particle_create_t* pcm) {
   struct particles_data* pd = entity_manager_get_particles();
 
   _ASSERT(pd->active < pd->capacity);
@@ -27,12 +27,17 @@ static void _spawn_particle(particle_create_message_t* pcm) {
   pd->active++;
 }
 
+void particles_create_particle(particle_create_t* pc)
+{
+  _spawn_particle(pc);
+}
+
 static void _particles_dispatch(entity_id_t id, message_t msg) {
   (void)id;
 
   switch (msg.message) {
   case MESSAGE_PARTICLE_SPAWN:
-    _spawn_particle((particle_create_message_t*)&msg);
+    _ASSERT(0 && "not yet implemented");
     break;
   }
 }
