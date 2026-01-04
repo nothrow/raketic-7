@@ -87,7 +87,7 @@ static void _generate_dummy_data(void) {
 
     manager_.particles.lifetime_ticks[i] = manager_.particles.lifetime_max[i] = (uint16_t)(3 * TICKS_IN_SECOND);
 
-    manager_.particles.model_idx[i] = 0;
+    manager_.particles.model_idx[i] = MODEL_EXHAUST_IDX;
   }
 
   vec2_normalize_i(manager_.particles.position_orientation.orientation_x,

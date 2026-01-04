@@ -4,8 +4,7 @@
 
 #define MAX_MESSAGES 1024
 
-struct message_with_recipient
-{
+struct message_with_recipient {
   message_t message;
   entity_id_t recipient_id;
 };
@@ -19,13 +18,11 @@ struct messaging_system {
 
 static struct messaging_system messaging_ = { 0 };
 
-void messaging_initialize(void)
-{
+void messaging_initialize(void) {
   messaging_.messages = platform_retrieve_memory(sizeof(struct message_with_recipient) * MAX_MESSAGES);
 }
 
-void messaging_send(entity_id_t recipient_id, message_t msg)
-{
+void messaging_send(entity_id_t recipient_id, message_t msg) {
   size_t next_tail = (messaging_.tail + 1) % MAX_MESSAGES;
   _ASSERT(next_tail != messaging_.head); // overflow
 
@@ -34,8 +31,7 @@ void messaging_send(entity_id_t recipient_id, message_t msg)
   messaging_.tail = next_tail;
 }
 
-void messaging_pump(void)
-{
+void messaging_pump(void) {
   while (messaging_.head != messaging_.tail) {
     struct message_with_recipient* mwr = &messaging_.messages[messaging_.head];
     // process message here

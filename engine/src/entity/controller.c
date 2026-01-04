@@ -5,7 +5,7 @@ static entity_id_t _controlled_entity = INVALID_ENTITY;
 static int _last_rot = 0;
 
 static void _process_mouse() {
-  const struct input_state * input = platform_get_input_state();
+  const struct input_state* input = platform_get_input_state();
 
   if (input->mdx != 0) {
     messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_BY, -input->mdx, 0));

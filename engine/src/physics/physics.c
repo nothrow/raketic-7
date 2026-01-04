@@ -100,7 +100,8 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     __m256 world_oy = _mm256_fmadd_ps(local_ox, parent_oy, _mm256_mul_ps(local_oy, parent_ox));
 
     // normalize world orientation
-    __m256 length_sq = _mm256_rsqrt_ps(_mm256_add_ps(_mm256_mul_ps(world_ox, world_ox), _mm256_mul_ps(world_oy, world_oy)));
+    __m256 length_sq =
+        _mm256_rsqrt_ps(_mm256_add_ps(_mm256_mul_ps(world_ox, world_ox), _mm256_mul_ps(world_oy, world_oy)));
     world_ox = _mm256_mul_ps(world_ox, length_sq);
     world_oy = _mm256_mul_ps(world_oy, length_sq);
     _mm256_store_ps(&pd->world_position_orientation.orientation_x[i], world_ox);

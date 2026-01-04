@@ -50,17 +50,25 @@ internal class ModelWriter
         int start = 0;
         float previousWidth = -1f;
 
+        int previousColorIndex = -2; // -1 is heat
+
         foreach (var linestrip in model.LineStrips)
         {
             var len = linestrip.Points.Length;
 
             if (linestrip.Class == "heat")
             {
-                w.WriteLine($"  glColor4ubv((GLubyte*)(&color));");
+                if (previousColorIndex != -1)
+                    w.WriteLine($"  glColor4ubv((GLubyte*)(&color));");
+
+                previousColorIndex = -1;
             }
             else
             {
-                w.WriteLine($"  glColor4ubv((GLubyte*)(_model_colors + {_colorIndexes[linestrip.Color] * 4}));");
+                if (previousColorIndex != _colorIndexes[linestrip.Color])
+                    w.WriteLine($"  glColor4ubv((GLubyte*)(_model_colors + {_colorIndexes[linestrip.Color] * 4}));");
+
+                previousColorIndex = _colorIndexes[linestrip.Color];
             }
             if (linestrip.StrokeWidth != previousWidth)
             {

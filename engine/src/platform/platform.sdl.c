@@ -100,6 +100,11 @@ bool platform_loop(void) {
       input_state_.mx = event.motion.x;
       input_state_.my = event.motion.y;
       break;
+    case SDL_KEYDOWN:
+      if (event.key.keysym.sym == SDLK_ESCAPE) {
+        return false;
+      }
+      break;
     }
   }
 
