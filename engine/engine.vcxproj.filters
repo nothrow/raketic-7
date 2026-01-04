@@ -30,6 +30,8 @@
     <ClCompile Include="generated\models.gen.c" />
     <ClCompile Include="src\entity\engine.c" />
     <ClCompile Include="src\entity\particles.c" />
+    <ClCompile Include="test\unity.c" />
+    <ClCompile Include="test\platform.test.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -47,5 +49,7 @@
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\entity\engine.h" />
     <ClInclude Include="src\entity\particles.h" />
+    <ClInclude Include="test\unity.h" />
+    <ClInclude Include="test\unity_internals.h" />
   </ItemGroup>
 </Project>
