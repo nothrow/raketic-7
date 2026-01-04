@@ -84,8 +84,8 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     __m256 local_y = _mm256_load_ps(&pd->local_offset_y[i]);
 
     // rotate local offset by parent's orientation
-    __m256 rotated_lx = _mm256_fmsub_ps(local_x, parent_ox, _mm256_mul_ps(local_y, parent_oy));
-    __m256 rotated_ly = _mm256_fmadd_ps(local_x, parent_oy, _mm256_mul_ps(local_y, parent_ox));
+    __m256 rotated_lx = _mm256_fmadd_ps(local_x, parent_ox, _mm256_mul_ps(local_y, parent_oy));
+    __m256 rotated_ly = _mm256_fmsub_ps(local_y, parent_ox, _mm256_mul_ps(local_x, parent_oy));
 
     // set world position
     __m256 world_px = _mm256_add_ps(parent_x, rotated_lx);
