@@ -77,25 +77,6 @@ static void _generate_dummy_data(void) {
   // will be deleted - just for testing
   entity_id_t player = _generate_entity_by_model(ENTITY_TYPEREF_SHIP, MODEL_SHIP_IDX);
 
-  for (int i = 0; i < 10; i++) {
-    manager_.particles.active++;
-    manager_.particles.position_orientation.position_x[i] =
-        ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 100.0f + 400.0f;
-    manager_.particles.position_orientation.position_y[i] =
-        ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 100.0f + 300.0f;
-    manager_.particles.velocity_x[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 3.0f;
-    manager_.particles.velocity_y[i] = ((float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f) * 3.0f;
-    manager_.particles.position_orientation.orientation_x[i] = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
-    manager_.particles.position_orientation.orientation_y[i] = (float)(rand32() % 1000) / 1000.0f * 2.0f - 1.0f;
-
-    manager_.particles.lifetime_ticks[i] = manager_.particles.lifetime_max[i] = (uint16_t)(3 * TICKS_IN_SECOND);
-
-    manager_.particles.model_idx[i] = MODEL_EXHAUST_IDX;
-  }
-
-  vec2_normalize_i(manager_.particles.position_orientation.orientation_x,
-                   manager_.particles.position_orientation.orientation_y, manager_.particles.active);
-
   debug_watch_set(player);
   controller_set_entity(player);
 }

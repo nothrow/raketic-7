@@ -22,7 +22,9 @@ static void _spawn_particle(particle_create_t* pcm) {
   vec2_normalize_i(&pd->position_orientation.orientation_x[idx], &pd->position_orientation.orientation_y[idx], 1);
 
   pd->model_idx[idx] = pcm->model_idx;
-  pd->lifetime_ticks[idx] = pcm->ttl;
+  pd->lifetime_ticks[idx] =
+    pd->lifetime_max[idx] = 
+    pcm->ttl;
 
   pd->active++;
 }

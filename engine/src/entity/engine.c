@@ -73,8 +73,8 @@ static void _engine_tick() {
         float px = pd->world_position_orientation.position_x[i] + perp_x * randf_symmetric() * pos_jitter;
         float py = pd->world_position_orientation.position_y[i] + perp_y * randf_symmetric() * pos_jitter;
 
-        // TTL variance: 1.5 - 3.5 seconds
-        uint16_t ttl = (uint16_t)((1.5f + randf() * 2.0f) * TICKS_IN_SECOND);
+        // TTL variance: 0.5 - 1.5 seconds
+        uint16_t ttl = (uint16_t)((0.5f + randf() * 1.0f) * TICKS_IN_SECOND);
 
         // random orientation (full 360°)
         float rot_ox = randf_symmetric();

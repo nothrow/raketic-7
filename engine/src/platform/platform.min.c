@@ -3,8 +3,6 @@
 #include <Windows.h>
 #include <gl/GL.h>
 
-#pragma comment(lib, "opengl32.lib")
-
 static uint64_t prev_time_;
 static double ticks_;
 

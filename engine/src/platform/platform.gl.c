@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <gl/GL.h>
 
+#pragma comment(lib, "opengl32.lib")
+
 #include "../generated/renderer.gen.h"
 #include "../entity/entity.h"
 

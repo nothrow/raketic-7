@@ -8,7 +8,6 @@
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "version.lib")
 #pragma comment(lib, "imm32.lib")
-#pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
 
