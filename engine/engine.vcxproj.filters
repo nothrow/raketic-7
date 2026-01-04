@@ -29,6 +29,7 @@
     <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="generated\models.gen.c" />
     <ClCompile Include="src\entity\engine.c" />
+    <ClCompile Include="src\entity\particles.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -45,5 +46,6 @@
     <ClInclude Include="src\platform\math.h" />
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\entity\engine.h" />
+    <ClInclude Include="src\entity\particles.h" />
   </ItemGroup>
 </Project>

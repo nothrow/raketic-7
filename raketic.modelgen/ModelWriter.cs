@@ -119,8 +119,8 @@ internal class ModelWriter
 
             w.WriteLine($"  pd->type[i + {i}] = {GetTypeRef(model.Slots[i].Type)};");
 
-            w.WriteLine($"  pd->local_orientation_x[i + {i}] = 0.0f;");
-            w.WriteLine($"  pd->local_orientation_y[i + {i}] = 1.0f;");
+            w.WriteLine($"  pd->local_orientation_x[i + {i}] = 1.0f;");
+            w.WriteLine($"  pd->local_orientation_y[i + {i}] = 0.0f;");
 
             w.WriteLine();
         }

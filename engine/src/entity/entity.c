@@ -5,6 +5,7 @@
 #include "ship.h"
 #include "controller.h"
 #include "engine.h"
+#include "particles.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -37,6 +38,7 @@ static void _parts_data_initialize(struct parts_data* data) {
   data->local_orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->local_orientation_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
+  data->data = platform_retrieve_memory(sizeof(struct _128bytes) * MAXSIZE);
   data->active = 0;
   data->capacity = MAXSIZE;
 }
@@ -98,6 +100,7 @@ static void _generate_dummy_data(void) {
 }
 
 static void _entity_manager_types_initialize(void) {
+  particles_entity_initialize();
   ship_entity_initialize();
   controller_entity_initialize();
   engine_part_entity_initialize();

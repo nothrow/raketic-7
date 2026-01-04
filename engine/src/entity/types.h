@@ -24,6 +24,12 @@ static inline uint32_t GET_ORDINAL(entity_id_t tid) {
   return (uint32_t)((tid._) & 0x007FFFFF);
 }
 
+static inline entity_id_t TYPE_BROADCAST(entity_type_t type) {
+  _ASSERT((type._) <= 0xFF);
+  entity_id_t ret = { ._ = (((type._) & 0xFF) << 24) | 0x007FFFFF };
+  return ret;
+}
+
 static inline entity_id_t OBJECT_ID_WITH_TYPE(uint32_t id, uint8_t type) {
   _ASSERT((id) <= 0x007FFFFF);
   _ASSERT((type) <= 0xFF);
@@ -45,7 +51,7 @@ static inline entity_id_t PART_ID_WITH_TYPE(uint32_t id, uint8_t type) {
 static inline entity_id_t PARTS_OF_TYPE(entity_id_t entity, entity_type_t part) {
   _ASSERT(!IS_PART(entity));
 
-  return PART_ID_WITH_TYPE(GET_ORDINAL(entity), part._);
+  return OBJECT_ID_WITH_TYPE(GET_ORDINAL(entity), part._);
 }
 
 static inline bool is_valid_id(entity_id_t id) {
@@ -57,12 +63,15 @@ static inline bool is_valid_id(entity_id_t id) {
 
 enum entity_type {
   ENTITY_TYPE_ANY = 0,
-  ENTITY_TYPE_SHIP,
   ENTITY_TYPE_CONTROLLER,
+  ENTITY_TYPE_PARTICLES,
+  ENTITY_TYPE_SHIP,
   ENTITY_TYPE_PART_ENGINE,
   ENTITY_TYPE_COUNT,
 };
 
 static entity_type_t ENTITY_TYPEREF_SHIP = { ENTITY_TYPE_SHIP };
+static entity_type_t ENTITY_TYPEREF_PARTICLES = { ENTITY_TYPE_PARTICLES };
 static entity_type_t PART_TYPEREF_ENGINE = { ENTITY_TYPE_PART_ENGINE };
+
 

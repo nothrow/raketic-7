@@ -11,7 +11,7 @@ static void _process_mouse() {
     messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_BY, -input->mdx, 0));
   }
 
-  if (platform_input_is_button_down(BUTTON_LEFT)) {
+  if (platform_input_is_button_down(BUTTON_RIGHT)) {
     messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_ENGINE),
                    CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 100, 0));
     // thrust on

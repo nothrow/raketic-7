@@ -57,7 +57,14 @@ const struct input_state* platform_get_input_state(void) {
 }
 
 bool platform_input_is_button_down(enum buttons button) {
-  return (input_state_.buttons & button) != 0;
+  if (button == BUTTON_LEFT) {
+    return SDL_BUTTON(SDL_BUTTON_LEFT) & input_state_.buttons;
+  }
+  else if (button == BUTTON_RIGHT) {
+    return SDL_BUTTON(SDL_BUTTON_RIGHT) & input_state_.buttons;
+  }
+  _ASSERT(0 && "invalid button");
+  return false;
 }
 
 void platform_frame_start(void) {

@@ -38,6 +38,8 @@ struct parts_data {
   float* local_orientation_x;
   float* local_orientation_y;
 
+  struct _128bytes* data;
+
   position_orientation_t world_position_orientation;
 
   uint16_t* model_idx;

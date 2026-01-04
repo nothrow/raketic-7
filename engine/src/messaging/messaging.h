@@ -13,6 +13,7 @@ typedef struct {
 
   int32_t data_a;
   int32_t data_b;
+  int64_t data_cd;
 } message_t;
 
 
@@ -27,8 +28,31 @@ enum message_codes_ship {
   MESSAGE_SHIP_ENGINES_THRUST = 0x11
 };
 
+enum message_codes_particles {
+  MESSAGE_PARTICLE_SPAWN = 0x10
+};
+
 static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t data_b) {
   message_t ret = { .message = (msg), .data_a = (data_a), .data_b = (data_b) };
+  return ret;
+}
+
+static inline uint32_t _f2i(float f) {
+  uint32_t ret;
+  float* fp = (float*)&ret;
+  *fp = f;
+  return ret;
+}
+
+static inline float _i2f(uint32_t i) {
+  float ret;
+  uint32_t* ip = (uint32_t*)&ret;
+  *ip = i;
+  return ret;
+}
+
+static inline message_t CREATE_MESSAGE_F(uint16_t msg, float x, float y) {
+  message_t ret = { .message = (msg), .data_a = _f2i(x), .data_b = _f2i(y) };
   return ret;
 }
 
