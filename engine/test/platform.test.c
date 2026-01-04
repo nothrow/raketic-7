@@ -42,18 +42,24 @@ bool platform_input_is_button_down(void) {
 }
 
 void* platform_retrieve_memory(size_t memory_size) {
-  (void)memory_size;
-  _ASSERT(0 && "not implemented");
-  return NULL;
+  return _aligned_malloc(memory_size, 16);
 }
 
-void setUp(void) {}
+void entity_manager_initialize(void);
+
+void setUp(void) {
+  entity_manager_initialize();
+}
+
 void tearDown(void) {}
+
+void physics_test__parts_world_transform_rotations(void);
 
 int __cdecl main(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
   UNITY_BEGIN();
+  RUN_TEST(physics_test__parts_world_transform_rotations);
   return UNITY_END();
 }

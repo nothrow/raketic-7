@@ -132,3 +132,57 @@ void physics_engine_tick(void) {
 
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_TICK, 0, 0));
 }
+
+#ifdef UNIT_TESTS
+#include "entity/types.h"
+#include "../test/unity.h"
+
+void physics_test__parts_world_transform_rotations(void) {
+  struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* pd = entity_manager_get_parts();
+
+  od->active = 2;
+  od->position_orientation.orientation_x[0] = 0.0f;
+  od->position_orientation.orientation_y[0] = 1.0f;
+
+  od->position_orientation.orientation_x[1] = 1.0f;
+  od->position_orientation.orientation_y[1] = 0.0f;
+
+  od->parts_start_idx[0] = 0;
+  od->parts_count[0] = 2;
+
+  od->parts_start_idx[1] = 8;
+  od->parts_count[1] = 2;
+
+
+  pd->active = 16;
+  for (int i = 0; i < 2; i++)
+  {
+    od->parts_start_idx[i] = 8*i;
+    od->parts_count[i] = 2;
+
+    pd->parent_id[8 * i] = OBJECT_ID_WITH_TYPE(i, ENTITY_TYPE_ANY);
+
+    pd->local_orientation_x[8 * i + 0] = 1.0f;
+    pd->local_orientation_y[8 * i + 0] = 0.0f;
+
+    pd->local_orientation_x[8 * i + 1] = 0.0f;
+    pd->local_orientation_y[8 * i + 1] = 1.0f;
+  }
+
+
+  _parts_world_transform(od, pd);
+
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_x[0]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_y[0]);
+
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_x[1]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_y[1]);
+
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, pd->world_position_orientation.orientation_x[8]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_y[8]);
+
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, pd->world_position_orientation.orientation_x[9]);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, -1.0f, pd->world_position_orientation.orientation_y[9]);
+}
+#endif
