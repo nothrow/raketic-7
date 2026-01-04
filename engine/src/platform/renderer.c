@@ -9,10 +9,12 @@
 static color_t white_ = { 255, 255, 255, 255 };
 
 void platform_renderer_draw_models(size_t model_count, const color_t* colors,
-  const position_orientation_t* position_orientation,
-  const uint16_t* model_indices)
-  {
+                                   const position_orientation_t* position_orientation, const uint16_t* model_indices) {
   for (size_t i = 0; i < model_count; i++) {
+    if (model_indices[i] == 0xFFFF) {
+      continue;
+    }
+
     glPushMatrix();
 
     // clang-format off

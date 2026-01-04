@@ -108,6 +108,9 @@ internal class ModelWriter
         w.WriteLine($"  pd->active += {reservedSlots};");
 
         w.WriteLine();
+        w.WriteLine($"  memset(&pd->model_idx[i], -1, sizeof(uint16_t) * {reservedSlots});");
+
+        w.WriteLine();
         for (int i = 0; i < model.Slots.Length; i++)
         {
             w.WriteLine($"  pd->parent_id[i + {i}] = parent;");

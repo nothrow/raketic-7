@@ -83,7 +83,14 @@ static void _graphics_objects_draw() {
   platform_renderer_draw_models(od->active, NULL, &od->position_orientation, od->model_idx);
 }
 
+static void _graphics_parts_draw() {
+  struct parts_data* pd = entity_manager_get_parts();
+
+  platform_renderer_draw_models(pd->active, NULL, &pd->world_position_orientation, pd->model_idx);
+}
+
 void graphics_engine_draw(void) {
   _graphics_particles_draw();
   _graphics_objects_draw();
+  _graphics_parts_draw();
 }
