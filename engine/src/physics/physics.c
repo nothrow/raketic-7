@@ -3,19 +3,10 @@
 
 #include <immintrin.h>
 
-#define YOSHIDA_C1 0.6756035959798289f
-#define YOSHIDA_C2 -0.1756035959798288f
-#define YOSHIDA_C3 -0.1756035959798288f
-#define YOSHIDA_C4 0.6756035959798289f
-
-#define YOSHIDA_D1 1.3512071919596578f
-#define YOSHIDA_D2 -1.7024143839193155f
-#define YOSHIDA_D3 1.3512071919596578f
-
 static const float yoshida_coef_[] = {
-  YOSHIDA_D1,
-  YOSHIDA_D2,
-  YOSHIDA_D3,
+  1.3512071919596578f,
+  -1.7024143839193155f,
+  1.3512071919596578f,
 };
 
 static void _particle_manager_euler(struct particles_data* pd) {
