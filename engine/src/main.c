@@ -36,7 +36,7 @@ int run(void) {
     }
 
     // TODO: Replace with actual camera position when implemented
-    graphics_engine_draw(x, 0.0f);
+    graphics_engine_draw(x, x*0.01f);
     debug_watch_draw();
 
     platform_frame_end();

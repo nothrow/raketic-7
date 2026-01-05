@@ -38,5 +38,5 @@ void platform_clear_memory(void* ptr, size_t size);
 
 void platform_debug_draw_line(float x1, float y1, float x2, float y2, color_t color);
 
-// Star field rendering
-void platform_renderer_draw_stars(size_t count, const float* x, const float* y, const uint8_t* alpha);
+// Star field rendering (vertices = interleaved x,y pairs)
+void platform_renderer_draw_stars(size_t count, const float* vertices, const color_t* colors);
