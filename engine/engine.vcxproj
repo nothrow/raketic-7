@@ -42,6 +42,7 @@
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
+    <ClCompile Include="src\graphics\stars.c" />
     <ClCompile Include="src\main.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Tests|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -90,6 +91,7 @@
     <ClInclude Include="src\entity\ship.h" />
     <ClInclude Include="src\entity\types.h" />
     <ClInclude Include="src\graphics\graphics.h" />
+    <ClInclude Include="src\graphics\stars.h" />
     <ClInclude Include="src\messaging\messaging.h" />
     <ClInclude Include="src\physics\physics.h" />
     <ClInclude Include="src\platform\math.h" />

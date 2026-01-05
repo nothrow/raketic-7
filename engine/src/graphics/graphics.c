@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "stars.h"
 #include "entity/entity.h"
 #include "platform/platform.h"
 
@@ -89,7 +90,14 @@ static void _graphics_parts_draw() {
   platform_renderer_draw_models(pd->active, NULL, &pd->world_position_orientation, pd->model_idx);
 }
 
-void graphics_engine_draw(void) {
+void graphics_initialize(void) {
+  stars_initialize();
+}
+
+void graphics_engine_draw(float camera_x, float camera_y) {
+  // Draw star background first (behind everything)
+  stars_draw(camera_x, camera_y);
+  
   _graphics_particles_draw();
   _graphics_objects_draw();
   _graphics_parts_draw();

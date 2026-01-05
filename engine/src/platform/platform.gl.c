@@ -55,3 +55,21 @@ void platform_debug_draw_line(float x1, float y1, float x2, float y2, color_t co
   glVertex2f(x2, y2);
   glEnd();
 }
+
+void platform_renderer_draw_stars(size_t count, const float* x, const float* y, const uint8_t* alpha) {
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glPointSize(1.0f);
+  
+  glBegin(GL_POINTS);
+  for (size_t i = 0; i < count; i++) {
+    // Only draw if on screen (simple culling)
+    if (x[i] >= 0 && x[i] < WINDOW_WIDTH && y[i] >= 0 && y[i] < WINDOW_HEIGHT) {
+      glColor4ub(255, 255, 255, alpha[i]);
+      glVertex2f(x[i], y[i]);
+    }
+  }
+  glEnd();
+  
+  glDisable(GL_BLEND);
+}
