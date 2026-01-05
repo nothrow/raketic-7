@@ -15,7 +15,11 @@ struct objects_data {
   float* thrust;
   entity_type_t* type;
 
-  position_orientation_t position_orientation;
+  position_orientation_t* position_orientation;
+  position_orientation_t* position_orientation_back;
+
+
+  position_orientation_t position_orientations[2];
 
   uint32_t* parts_start_idx;
   uint32_t* parts_count;

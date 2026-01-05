@@ -13,6 +13,15 @@ static const float sin_q[91] = {
   0.99939f, 0.99985f, 1.00000f,
 };
 
+static uint32_t rng_state = 2463534242u;
+
+uint32_t rand32(void) {
+  rng_state ^= rng_state << 13;
+  rng_state ^= rng_state >> 17;
+  rng_state ^= rng_state << 5;
+  return rng_state;
+}
+
 void _math_initialize(void) {}
 
 float lut_sin(int32_t deg) {

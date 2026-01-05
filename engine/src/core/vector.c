@@ -3,15 +3,6 @@
 #include <immintrin.h>
 #include <stdlib.h>
 
-static uint32_t rng_state = 2463534242u;
-
-uint32_t rand32(void) {
-  rng_state ^= rng_state << 13;
-  rng_state ^= rng_state >> 17;
-  rng_state ^= rng_state << 5;
-  return rng_state;
-}
-
 void vec2_normalize_i(float* xs, float* ys, int count) {
   float* x = xs;
   float* y = ys;

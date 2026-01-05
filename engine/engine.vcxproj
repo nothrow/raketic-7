@@ -22,7 +22,9 @@
     <ClCompile Include="generated\models.gen.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="src\core\vector.c" />
+    <ClCompile Include="src\core\vector.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\debug\debug.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSDL|Win32'">true</ExcludedFromBuild>
@@ -37,12 +39,16 @@
     </ClCompile>
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\entity\engine.c" />
-    <ClCompile Include="src\entity\entity.c" />
+    <ClCompile Include="src\entity\entity.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
-    <ClCompile Include="src\graphics\stars.c" />
+    <ClCompile Include="src\graphics\stars.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\main.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Tests|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -56,7 +62,9 @@
     <ClCompile Include="src\platform\math.c">
       <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="src\platform\platform.gl.c" />
+    <ClCompile Include="src\platform\platform.gl.c">
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
     <ClCompile Include="src\platform\platform.min.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Tests|Win32'">true</ExcludedFromBuild>

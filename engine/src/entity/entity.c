@@ -44,7 +44,12 @@ static void _parts_data_initialize(struct parts_data* data) {
 }
 
 static void _objects_data_initialize(struct objects_data* data) {
-  _position_orientation_initialize(&data->position_orientation);
+  _position_orientation_initialize(&data->position_orientations[0]);
+  _position_orientation_initialize(&data->position_orientations[1]);
+
+  data->position_orientation = &data->position_orientations[0];
+  data->position_orientation_back = &data->position_orientations[1];
+
   data->velocity_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->velocity_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);

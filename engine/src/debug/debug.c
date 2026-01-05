@@ -70,12 +70,12 @@ void debug_watch_draw(void) {
   if (idx >= od->active)
     return;
 
-  float px = od->position_orientation.position_x[idx];
-  float py = od->position_orientation.position_y[idx];
+  float px = 400;//  od->position_orientation->position_x[idx];
+  float py = 300;   //od->position_orientation->position_y[idx];
   float vx = od->velocity_x[idx];
   float vy = od->velocity_y[idx];
-  float ox = od->position_orientation.orientation_x[idx];
-  float oy = od->position_orientation.orientation_y[idx];
+  float ox = od->position_orientation->orientation_x[idx];
+  float oy = od->position_orientation->orientation_y[idx];
   float thrust = od->thrust[idx];
 
   draw_vector(px, py, vx, vy, COLOR_GREEN);
@@ -130,6 +130,11 @@ void debug_watch_draw(void) {
     debug_font_draw_string(tx + 10, ty, "loc:", TEXT_SCALE, COLOR_YELLOW);
     debug_font_draw_float(tx + 40, ty, plx, 1, TEXT_SCALE, COLOR_WHITE);
     debug_font_draw_float(tx + 90, ty, ply, 1, TEXT_SCALE, COLOR_WHITE);
+    ty += LINE_HEIGHT;
+
+    debug_font_draw_string(tx + 10, ty, "abs:", TEXT_SCALE, COLOR_YELLOW);
+    debug_font_draw_float(tx + 40, ty, wpx, 1, TEXT_SCALE, COLOR_WHITE);
+    debug_font_draw_float(tx + 90, ty, wpy, 1, TEXT_SCALE, COLOR_WHITE);
     ty += LINE_HEIGHT;
   }
 }
