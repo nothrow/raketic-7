@@ -88,8 +88,8 @@ static void _object_compute_yoshida(struct objects_data* od) {
 
     /*step1*/
     for (int i = 0; i < 3; i++) {
-      __m256 w = _mm256_set1_ps(yoshida_coef_[i]);
-      __m256 whalf = _mm256_set1_ps(yoshida_coef_[i] * 0.5f);
+      __m256 w = _mm256_set1_ps(yoshida_coef_[i] * TICK_S);
+      __m256 whalf = _mm256_set1_ps(yoshida_coef_[i] * 0.5f * TICK_S);
 
       velocity_x = _mm256_fmadd_ps(acc_x, whalf, velocity_x); // a*b+c
       velocity_y = _mm256_fmadd_ps(acc_y, whalf, velocity_y);
@@ -104,6 +104,9 @@ static void _object_compute_yoshida(struct objects_data* od) {
 
     _mm256_store_ps(pxt, pos_x);
     _mm256_store_ps(pyt, pos_y);
+
+    _mm256_store_ps(vx, velocity_x);
+    _mm256_store_ps(vy, velocity_y);
 
     _mm256_store_ps(oxt, orientations_x);
     _mm256_store_ps(oyt, orientations_y);
@@ -203,10 +206,13 @@ static void _particle_manager_tick(void) {
 }
 
 void physics_engine_tick(void) {
+  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS, 0, 0));
+
+
   _objects_tick();
   _particle_manager_tick();
 
-  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_TICK, 0, 0));
+  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS, 0, 0));
 }
 
 #ifdef UNIT_TESTS

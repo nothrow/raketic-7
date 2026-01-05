@@ -43,9 +43,9 @@ static void draw_arrow(float x1, float y1, float x2, float y2, color_t color) {
   platform_debug_draw_line(x2, y2, ax2, ay2, color);
 }
 
-static void draw_vector(float ox, float oy, float vx, float vy, color_t color) {
-  float ex = ox + vx * VECTOR_SCALE;
-  float ey = oy + vy * VECTOR_SCALE;
+static void draw_vector(float ox, float oy, float vx, float vy, float scale, color_t color) {
+  float ex = ox + vx * scale;
+  float ey = oy + vy * scale;
   draw_arrow(ox, oy, ex, ey, color);
 }
 
@@ -70,18 +70,18 @@ void debug_watch_draw(void) {
   if (idx >= od->active)
     return;
 
-  float px = 400;//  od->position_orientation->position_x[idx];
-  float py = 300;   //od->position_orientation->position_y[idx];
+  float px = od->position_orientation->position_x[idx];
+  float py = od->position_orientation->position_y[idx];
   float vx = od->velocity_x[idx];
   float vy = od->velocity_y[idx];
   float ox = od->position_orientation->orientation_x[idx];
   float oy = od->position_orientation->orientation_y[idx];
   float thrust = od->thrust[idx];
 
-  draw_vector(px, py, vx, vy, COLOR_GREEN);
-  draw_vector(px, py, ox, oy, COLOR_WHITE);
+  draw_vector(px, py, vx, vy, 1.0f, COLOR_GREEN);
+  draw_vector(px, py, ox, oy, VECTOR_SCALE, COLOR_WHITE);
   if (thrust > 0.001f) {
-    draw_vector(px, py, ox * thrust * 0.1f, oy * thrust * 0.1f, COLOR_RED);
+    draw_vector(px, py, ox * thrust * 0.1f, oy * thrust * 0.1f, VECTOR_SCALE, COLOR_RED);
   }
 
   float tx = px + 60.0f;
@@ -121,7 +121,7 @@ void debug_watch_draw(void) {
     float wox = pd->world_position_orientation.orientation_x[pi];
     float woy = pd->world_position_orientation.orientation_y[pi];
 
-    draw_vector(wpx, wpy, wox * 0.5f, woy * 0.5f, COLOR_CYAN);
+    draw_vector(wpx, wpy, wox * 0.5f, woy * 0.5f, VECTOR_SCALE, COLOR_CYAN);
 
     debug_font_draw_string(tx, ty, "part", TEXT_SCALE, COLOR_CYAN);
     debug_font_draw_float(tx + 30, ty, (float)p, 0, TEXT_SCALE, COLOR_CYAN);

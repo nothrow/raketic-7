@@ -5,10 +5,6 @@
 #include "particles.h"
 #include "../generated/renderer.gen.h"
 
-struct engine_data {
-  float thrust;
-};
-
 static void _set_part_thrust(uint32_t idx, float percentage) {
   struct parts_data* pd = entity_manager_get_parts();
 
@@ -107,7 +103,8 @@ static void _engine_part_dispatch(entity_id_t id, message_t msg) {
       _engine_set_thrust_percentage(id, 0.0f);
     }
     break;
-  case MESSAGE_BROADCAST_120HZ_TICK:
+  
+  case MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS:
     _engine_tick();
   }
 }

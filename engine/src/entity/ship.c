@@ -4,6 +4,7 @@
 
 #include "entity_internal.h"
 #include "entity.h"
+#include "engine.h"
 #include "ship.h"
 
 #define MAXSIZE 8192
@@ -27,10 +28,33 @@ static void _ship_rotate_by(entity_id_t idx, int32_t rotation) {
   vec2_normalize_i(&od->position_orientation->orientation_x[id], &od->position_orientation->orientation_y[id], 1);
 }
 
+static void _ship_apply_thrust_from_engines(void) {
+  struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* pd = entity_manager_get_parts();
+
+  for (size_t i = 0; i < od->active; i++) {
+    od->thrust[i] = 0.0f;
+
+    for (size_t j = 0; j < od->parts_count[i]; j++) {
+      uint32_t part_idx = od->parts_start_idx[i] + j;
+      if (pd->type[part_idx]._ != ENTITY_TYPE_PART_ENGINE) {
+        continue;
+      }
+      struct engine_data* ed = (struct engine_data*)(pd->data[part_idx].data);
+      od->thrust[i] += ed->thrust;
+    }  
+  }
+
+
+}
+
 static void _ship_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
   case MESSAGE_SHIP_ROTATE_BY:
     _ship_rotate_by(id, msg.data_a);
+    break;
+  case MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS:
+    _ship_apply_thrust_from_engines();
     break;
   }
 }

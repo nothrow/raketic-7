@@ -15,8 +15,6 @@ int run(void) {
   graphics_initialize();
 
 
-  float x = 0;
-
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
   while (running) {
@@ -31,12 +29,11 @@ int run(void) {
     while (platform_tick_pending()) {
       // update game
       physics_engine_tick();
-      x += 1.f;
       messaging_pump();
     }
 
     // TODO: Replace with actual camera position when implemented
-    graphics_engine_draw(x, x*0.01f);
+    graphics_engine_draw(0, 0);
     debug_watch_draw();
 
     platform_frame_end();
