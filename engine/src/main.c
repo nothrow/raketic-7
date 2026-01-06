@@ -20,11 +20,15 @@ int run(void) {
 
   while (running) {
     platform_frame_start();
+
+    PROFILE_FRAME_START("Platform loop");
     running = platform_loop();
+    PROFILE_FRAME_END("Platform loop");
 
     if (!running) // fail fast
       break;
 
+    PROFILE_FRAME_START("Physics");
     messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_FRAME_TICK, 0, 0));
 
     while (platform_tick_pending()) {
@@ -32,11 +36,16 @@ int run(void) {
       physics_engine_tick();
       messaging_pump();
     }
+    PROFILE_FRAME_END("Physics");
 
     // TODO: Replace with actual camera position when implemented
+
+    PROFILE_FRAME_START("Render");
     graphics_engine_draw(0, 0);
     debug_watch_draw();
+    PROFILE_FRAME_END("Render");
 
+    platform_renderer_report_stats();
     platform_frame_end();
     PROFILE_FRAME_MARK();
   }

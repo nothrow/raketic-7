@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "debug/profiler.h"
 
 #include <Windows.h>
 
@@ -20,5 +21,7 @@ void* platform_retrieve_memory(size_t memory_size) {
 
   void* ptr = (char*)fixed_heap_ + aligned_offset;
   allocated_size_ = aligned_offset + memory_size;
+
+  PROFILE_ALLOC(ptr, memory_size);
   return ptr;
 }

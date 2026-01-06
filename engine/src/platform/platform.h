@@ -40,3 +40,6 @@ void platform_debug_draw_line(float x1, float y1, float x2, float y2, color_t co
 
 // Star field rendering (vertices = interleaved x,y pairs)
 void platform_renderer_draw_stars(size_t count, const float* vertices, const color_t* colors);
+
+// Call at end of frame to report draw call stats to profiler
+void platform_renderer_report_stats(void);

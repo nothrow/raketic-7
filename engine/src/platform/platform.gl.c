@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "debug/profiler.h"
 
 #include <Windows.h>
 #include <gl/GL.h>
@@ -42,6 +43,7 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors,
     glMultMatrixf(m);
 
     _generated_draw_model(colors ? colors[i] : white_, model_indices[i]);
+    PROFILE_DRAW_CALL();
 
     glPopMatrix();
   }
@@ -70,8 +72,13 @@ void platform_renderer_draw_stars(size_t count, const float* vertices, const col
   glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors);
 
   glDrawArrays(GL_POINTS, 0, (GLsizei)count);
+  PROFILE_DRAW_CALL();
 
   glDisableClientState(GL_COLOR_ARRAY);
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisable(GL_BLEND);
+}
+
+void platform_renderer_report_stats(void) {
+  PROFILE_DRAW_CALLS_RESET();
 }
