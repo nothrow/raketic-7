@@ -1,6 +1,7 @@
 #include "graphics.h"
 #include "stars.h"
 #include "entity/entity.h"
+#include "entity/camera.h"
 #include "platform/platform.h"
 #include "debug/profiler.h"
 
@@ -103,10 +104,14 @@ void graphics_initialize(void) {
   stars_initialize();
 }
 
-void graphics_engine_draw(float camera_x, float camera_y) {
+void graphics_engine_draw(void) {
   PROFILE_ZONE("graphics_engine_draw");
+
+  double cam_x, cam_y;
+  camera_get_absolute_position(&cam_x, &cam_y);
+
   // Draw star background first (behind everything)
-  stars_draw(camera_x, camera_y);
+  stars_draw((float)cam_x, (float)cam_y);
 
   _graphics_particles_draw();
   _graphics_objects_draw();

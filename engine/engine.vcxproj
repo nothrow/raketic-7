@@ -44,6 +44,7 @@
     </ClCompile>
     <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="src\entity\particles.c" />
+    <ClCompile Include="src\entity\camera.c" />
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\graphics\stars.c">
@@ -98,6 +99,7 @@
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\particles.h" />
     <ClInclude Include="src\entity\ship.h" />
+    <ClInclude Include="src\entity\camera.h" />
     <ClInclude Include="src\entity\types.h" />
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\graphics\stars.h" />
@@ -253,7 +255,6 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
-      <CallingConvention>FastCall</CallingConvention>
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>

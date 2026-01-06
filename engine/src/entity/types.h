@@ -64,6 +64,7 @@ static inline bool is_valid_id(entity_id_t id) {
 enum entity_type {
   ENTITY_TYPE_ANY = 0,
   ENTITY_TYPE_CONTROLLER,
+  ENTITY_TYPE_CAMERA,
   ENTITY_TYPE_PARTICLES,
   ENTITY_TYPE_SHIP,
   ENTITY_TYPE_PART_ENGINE,

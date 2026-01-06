@@ -15,7 +15,6 @@ int run(void) {
   entity_manager_initialize();
   graphics_initialize();
 
-
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
   while (running) {
@@ -25,23 +24,20 @@ int run(void) {
     running = platform_loop();
     PROFILE_FRAME_END("Platform loop");
 
-    if (!running) // fail fast
+    if (!running)
       break;
 
     PROFILE_FRAME_START("Physics");
     messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_FRAME_TICK, 0, 0));
 
     while (platform_tick_pending()) {
-      // update game
       physics_engine_tick();
       messaging_pump();
     }
     PROFILE_FRAME_END("Physics");
 
-    // TODO: Replace with actual camera position when implemented
-
     PROFILE_FRAME_START("Render");
-    graphics_engine_draw(0, 0);
+    graphics_engine_draw();
     debug_watch_draw();
     PROFILE_FRAME_END("Render");
 

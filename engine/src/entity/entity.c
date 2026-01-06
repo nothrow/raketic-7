@@ -7,6 +7,7 @@
 #include "controller.h"
 #include "engine.h"
 #include "particles.h"
+#include "camera.h"
 #include "debug/debug.h"
 #include "debug/profiler.h"
 
@@ -80,6 +81,7 @@ static void _generate_dummy_data(void) {
 
   debug_watch_set(player);
   controller_set_entity(player);
+  camera_set_entity(player);
 }
 
 static void _entity_manager_types_initialize(void) {
@@ -87,6 +89,7 @@ static void _entity_manager_types_initialize(void) {
   ship_entity_initialize();
   controller_entity_initialize();
   engine_part_entity_initialize();
+  camera_entity_initialize();
 }
 
 void entity_manager_initialize(void) {

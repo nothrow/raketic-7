@@ -5,11 +5,14 @@
 #include "particles.h"
 #include "../generated/renderer.gen.h"
 
+#define THRUST_COEF 15
+#define THRUST_PARTICLE_COEF (1/15.0f)
+
 static void _set_part_thrust(uint32_t idx, float percentage) {
   struct parts_data* pd = entity_manager_get_parts();
 
   struct engine_data* ed = (struct engine_data*)(pd->data[idx].data);
-  ed->thrust = percentage;
+  ed->thrust = percentage * 15;
 }
 
 static void _engine_set_thrust_percentage(entity_id_t id, float percentage) {
@@ -52,6 +55,9 @@ static void _engine_tick() {
         float ox = od->position_orientation.orientation_x[GET_ORDINAL(pd->parent_id[i])];
         float oy = od->position_orientation.orientation_y[GET_ORDINAL(pd->parent_id[i])];
 
+        float pvx = od->velocity_x[GET_ORDINAL(pd->parent_id[i])];
+        float pvy = od->velocity_y[GET_ORDINAL(pd->parent_id[i])];
+
         // perpendicular vector for spread
         float perp_x = -oy;
         float perp_y = ox;
@@ -60,9 +66,9 @@ static void _engine_tick() {
         float spread = randf_symmetric() * 0.3f;
         float speed_variance = 0.7f + randf() * 0.6f;  // 70-130% speed
 
-        float base_speed = ed->thrust * 100.0f;
-        float vx = (-ox + perp_x * spread) * base_speed * speed_variance;
-        float vy = (-oy + perp_y * spread) * base_speed * speed_variance;
+        float base_speed = ed->thrust * 100.0f * THRUST_PARTICLE_COEF;
+        float vx = (-ox + perp_x * spread) * base_speed * speed_variance + pvx;
+        float vy = (-oy + perp_y * spread) * base_speed * speed_variance + pvy;
 
         // position jitter: slight offset from exact engine position
         float pos_jitter = 2.0f;
