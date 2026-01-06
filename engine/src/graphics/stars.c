@@ -1,5 +1,6 @@
 #include "stars.h"
 #include "platform/platform.h"
+#include "debug/profiler.h"
 
 // Configuration
 #define CHUNK_SIZE 128
@@ -89,6 +90,7 @@ static void generate_chunk_stars(int32_t cx, int32_t cy, int32_t layer,
 }
 
 void stars_draw(float camera_x, float camera_y) {
+  PROFILE_ZONE("stars_draw");
   star_count_ = 0;
 
   // Generate stars for each layer
@@ -120,4 +122,5 @@ void stars_draw(float camera_x, float camera_y) {
   if (star_count_ > 0) {
     platform_renderer_draw_stars(star_count_, star_vertices_, star_colors_);
   }
+  PROFILE_ZONE_END();
 }

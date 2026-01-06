@@ -4,6 +4,7 @@
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
 #include "debug/debug.h"
+#include "debug/profiler.h"
 
 int run(void) {
   bool running = true;
@@ -37,6 +38,7 @@ int run(void) {
     debug_watch_draw();
 
     platform_frame_end();
+    PROFILE_FRAME_MARK();
   }
   return 0;
 }

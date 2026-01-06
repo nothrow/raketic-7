@@ -1,5 +1,6 @@
 #include "physics.h"
 #include "entity/entity.h"
+#include "debug/profiler.h"
 
 #include <immintrin.h>
 
@@ -65,7 +66,7 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
     __m256 pos_x = _mm256_load_ps(px);
     __m256 pos_y = _mm256_load_ps(py);
 
-    
+
     __m256 w = _mm256_set1_ps(step);
     __m256 whalf = _mm256_set1_ps(hstep);
 
@@ -87,18 +88,27 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
 
     _mm256_store_ps(ox, orientations_x);
     _mm256_store_ps(oy, orientations_y);
+
   }
 }
 
 static void _objects_apply_yoshida(struct objects_data* od) {
+  PROFILE_ZONE("_objects_apply_yoshida");
+  PROFILE_PLOT_I("objects", od->active);
+
   _objects_apply_yoshida_step(od, YOSHIDA_C1 * TICK_S, YOSHIDA_C1 * 0.5f * TICK_S);
   // compute gravity
   _objects_apply_yoshida_step(od, YOSHIDA_C2 * TICK_S, YOSHIDA_C2 * 0.5f * TICK_S);
   // compute gravity
   _objects_apply_yoshida_step(od, YOSHIDA_C3 * TICK_S, YOSHIDA_C3 * 0.5f * TICK_S);
+
+  PROFILE_ZONE_END();
 }
 
 static uint32_t _particle_manager_ttl(struct particles_data* pd) {
+  PROFILE_ZONE("_particle_manager_ttl");
+  PROFILE_PLOT_I("particles", pd->active);
+
   __m256i zero = _mm256_setzero_si256();
   __m256i one = _mm256_set1_epi16(1);
 
@@ -117,10 +127,15 @@ static uint32_t _particle_manager_ttl(struct particles_data* pd) {
     alive_count += _mm_popcnt_u32(_mm256_movemask_epi8(alive_mask)) / 2; // /2 because 16-bit elements, 8-bit mask
   }
 
+  PROFILE_PLOT_I("survived", alive_count);
+  PROFILE_ZONE_END();
   return alive_count;
 }
 
 static void _parts_world_transform(struct objects_data* od, struct parts_data* pd) {
+  PROFILE_ZONE("_parts_world_transform");
+  PROFILE_PLOT_I("parts", pd->active);
+
   for (uint32_t i = 0; i < pd->active; i += 8) {
     uint32_t parent_idx = GET_ORDINAL(pd->parent_id[i]);
 
@@ -162,6 +177,7 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     _mm256_store_ps(&pd->world_position_orientation.orientation_x[i], world_ox);
     _mm256_store_ps(&pd->world_position_orientation.orientation_y[i], world_oy);
   }
+  PROFILE_ZONE_END();
 }
 
 static void _objects_tick(void) {
@@ -173,20 +189,25 @@ static void _objects_tick(void) {
 }
 
 static void _particle_manager_tick(void) {
+  PROFILE_ZONE("_particle_manager_tick");
   struct particles_data* pd = entity_manager_get_particles();
 
   _particle_manager_euler(pd);
   if (_particle_manager_ttl(pd) < pd->active) {
     entity_manager_pack_particles();
   }
+  PROFILE_ZONE_END();
 }
 
 void physics_engine_tick(void) {
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS, 0, 0));
 
+  PROFILE_ZONE("physics_engine_tick");
 
   _objects_tick();
   _particle_manager_tick();
+
+  PROFILE_ZONE_END();
 
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS, 0, 0));
 }
@@ -203,7 +224,7 @@ void physics_test__parts_world_transform_rotations(void) {
   od->position_orientation.orientation_x[0] = 0.0f;
   od->position_orientation.orientation_y[0] = 1.0f;
 
-  od->position_orientation.orientation_x[1] = 1.0f;
+  od->position_orientation.orientation_x[1] = 1.0f; 
   od->position_orientation.orientation_y[1] = 0.0f;
 
   od->parts_start_idx[0] = 0;

@@ -8,6 +8,7 @@
 #include "engine.h"
 #include "particles.h"
 #include "debug/debug.h"
+#include "debug/profiler.h"
 
 #define MAXSIZE 65535
 #define NONEXISTENT ((size_t)(-1))
@@ -123,6 +124,7 @@ static void _move_particle(struct particles_data* pd, size_t target, size_t sour
 }
 
 void entity_manager_pack_particles(void) {
+  PROFILE_ZONE("entity_manager_pack_particles");
   struct particles_data* pd = &manager_.particles;
 
   int32_t last_alive = (int32_t)(pd->active - 1);
@@ -143,6 +145,7 @@ void entity_manager_pack_particles(void) {
     }
   }
   pd->active = last_alive + 1;
+  PROFILE_ZONE_END();
 }
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {

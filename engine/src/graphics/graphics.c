@@ -2,10 +2,12 @@
 #include "stars.h"
 #include "entity/entity.h"
 #include "platform/platform.h"
+#include "debug/profiler.h"
 
 #include <immintrin.h>
 
 static void _particles_colors(const struct particles_data* pd, color_t* target) {
+  PROFILE_ZONE("_particles_colors");
   uint16_t* lifetime_ticks = pd->lifetime_ticks;
   uint16_t* lifetime_max = pd->lifetime_max;
 
@@ -66,9 +68,11 @@ static void _particles_colors(const struct particles_data* pd, color_t* target) 
     // r0 g0 b0 0 r1 g1 b1 0 r2 g2 b2 0 r3 g3 b3 0 r4 g4 b4 0 r5 g5 b5 0 r6 g6 b6 0 r7 g7 b7 0
     _mm256_storeu_si256((__m256i*)(target), rgba_shuffled);
   }
+  PROFILE_ZONE_END();
 }
 
 static void _graphics_particles_draw() {
+  PROFILE_ZONE("_graphics_particles_draw");
   struct particles_data* pd = entity_manager_get_particles();
   // compute colors!
   color_t* colors = (color_t*)pd->temporary;
@@ -76,18 +80,23 @@ static void _graphics_particles_draw() {
   _particles_colors(pd, colors);
 
   platform_renderer_draw_models(pd->active, colors, &pd->position_orientation, pd->model_idx);
+  PROFILE_ZONE_END();
 }
 
 static void _graphics_objects_draw() {
+  PROFILE_ZONE("_graphics_objects_draw");
   struct objects_data* od = entity_manager_get_objects();
 
   platform_renderer_draw_models(od->active, NULL, &od->position_orientation, od->model_idx);
+  PROFILE_ZONE_END();
 }
 
 static void _graphics_parts_draw() {
+  PROFILE_ZONE("_graphics_parts_draw");
   struct parts_data* pd = entity_manager_get_parts();
 
   platform_renderer_draw_models(pd->active, NULL, &pd->world_position_orientation, pd->model_idx);
+  PROFILE_ZONE_END();
 }
 
 void graphics_initialize(void) {
@@ -95,10 +104,12 @@ void graphics_initialize(void) {
 }
 
 void graphics_engine_draw(float camera_x, float camera_y) {
+  PROFILE_ZONE("graphics_engine_draw");
   // Draw star background first (behind everything)
   stars_draw(camera_x, camera_y);
-  
+
   _graphics_particles_draw();
   _graphics_objects_draw();
   _graphics_parts_draw();
+  PROFILE_ZONE_END();
 }

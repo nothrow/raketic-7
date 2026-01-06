@@ -1,7 +1,12 @@
 {
   "name": "raketic",
   "version": "0.1.0",
+  "builtin-baseline": "12ae26a216f4c922a8189ed5c691bdb3f8bab686",
   "dependencies": [
-    "sdl2"
+    "sdl2",
+    {
+      "name": "tracy",
+      "version>=": "0.11.1"
+    }
   ]
 }
