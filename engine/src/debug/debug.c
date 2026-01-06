@@ -70,12 +70,12 @@ void debug_watch_draw(void) {
   if (idx >= od->active)
     return;
 
-  float px = od->position_orientation->position_x[idx];
-  float py = od->position_orientation->position_y[idx];
+  float px = od->position_orientation.position_x[idx];
+  float py = od->position_orientation.position_y[idx];
   float vx = od->velocity_x[idx];
   float vy = od->velocity_y[idx];
-  float ox = od->position_orientation->orientation_x[idx];
-  float oy = od->position_orientation->orientation_y[idx];
+  float ox = od->position_orientation.orientation_x[idx];
+  float oy = od->position_orientation.orientation_y[idx];
   float thrust = od->thrust[idx];
 
   draw_vector(px, py, vx, vy, 1.0f, COLOR_GREEN);

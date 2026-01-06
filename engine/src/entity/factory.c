@@ -4,10 +4,10 @@
 
 static void _clear_position_orientation(uint32_t idx) {
   struct objects_data* od = entity_manager_get_objects();
-  od->position_orientation->position_x[idx] = 400.0f;
-  od->position_orientation->position_y[idx] = 300.0f;
-  od->position_orientation->orientation_x[idx] = 1.0f;
-  od->position_orientation->orientation_y[idx] = 0.0f;
+  od->position_orientation.position_x[idx] = 400.0f;
+  od->position_orientation.position_y[idx] = 300.0f;
+  od->position_orientation.orientation_x[idx] = 1.0f;
+  od->position_orientation.orientation_y[idx] = 0.0f;
 }
 
 entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {

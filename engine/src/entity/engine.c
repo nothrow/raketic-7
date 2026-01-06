@@ -49,8 +49,8 @@ static void _engine_tick() {
           continue;
         }
 
-        float ox = od->position_orientation->orientation_x[GET_ORDINAL(pd->parent_id[i])];
-        float oy = od->position_orientation->orientation_y[GET_ORDINAL(pd->parent_id[i])];
+        float ox = od->position_orientation.orientation_x[GET_ORDINAL(pd->parent_id[i])];
+        float oy = od->position_orientation.orientation_y[GET_ORDINAL(pd->parent_id[i])];
 
         // perpendicular vector for spread
         float perp_x = -oy;

@@ -3,11 +3,10 @@
 
 #include <immintrin.h>
 
-static const float yoshida_coef_[] = {
-  1.3512071919596578f,
-  -1.7024143839193155f,
-  1.3512071919596578f,
-};
+#define YOSHIDA_C1 1.3512071919596578f
+#define YOSHIDA_C2 -1.7024143839193155f
+#define YOSHIDA_C3 1.3512071919596578f
+
 
 static void _particle_manager_euler(struct particles_data* pd) {
   __m256 dt = _mm256_set1_ps(TICK_S);
@@ -35,17 +34,9 @@ static void _particle_manager_euler(struct particles_data* pd) {
   }
 }
 
-
-static void _object_compute_yoshida(struct objects_data* od) {
-  position_orientation_t* src = od->position_orientation;
-  position_orientation_t* tgt = od->position_orientation_back;
-
-
-  float* pxs = src->position_x;
-  float* pys = src->position_y;
-
-  float* pxt = tgt->position_x;
-  float* pyt = tgt->position_y;
+static void _objects_apply_yoshida_step(struct objects_data* od, float step, float hstep) {
+  float* px = od->position_orientation.position_x;
+  float* py = od->position_orientation.position_y;
 
   float* vx = od->velocity_x;
   float* vy = od->velocity_y;
@@ -53,19 +44,16 @@ static void _object_compute_yoshida(struct objects_data* od) {
   float* th = od->thrust;
   float* ms = od->mass;
 
-  float* oxs = src->orientation_x;
-  float* oys = src->orientation_y;
+  float* ox = od->position_orientation.orientation_x;
+  float* oy = od->position_orientation.orientation_y;
 
-  float* oxt = tgt->orientation_x;
-  float* oyt = tgt->orientation_y;
+  float* end_px = od->position_orientation.position_x + od->active;
 
-  float* end_px = src->position_x + od->active;
-
-  for (; pxs < end_px; pxs += 8, pys += 8, vx += 8, vy += 8, th += 8, oxs += 8, oys += 8, ms += 8, pxt += 8, pyt += 8) {
+  for (; px < end_px; px += 8, py += 8, vx += 8, vy += 8, th += 8, ox += 8, oy += 8, ms += 8) {
     __m256 thrusts = _mm256_load_ps(th);
     __m256 masses = _mm256_load_ps(ms);
-    __m256 orientations_x = _mm256_load_ps(oxs);
-    __m256 orientations_y = _mm256_load_ps(oys);
+    __m256 orientations_x = _mm256_load_ps(ox);
+    __m256 orientations_y = _mm256_load_ps(oy);
 
     // acceleration = thrust / mass
     __m256 acc_x = _mm256_div_ps(_mm256_mul_ps(thrusts, orientations_x), masses);
@@ -74,43 +62,40 @@ static void _object_compute_yoshida(struct objects_data* od) {
     __m256 velocity_x = _mm256_load_ps(vx);
     __m256 velocity_y = _mm256_load_ps(vy);
 
-    __m256 pos_x = _mm256_load_ps(pxs);
-    __m256 pos_y = _mm256_load_ps(pys);
+    __m256 pos_x = _mm256_load_ps(px);
+    __m256 pos_y = _mm256_load_ps(py);
 
-    /*step1*/
-    for (int i = 0; i < 3; i++) {
-      __m256 w = _mm256_set1_ps(yoshida_coef_[i] * TICK_S);
-      __m256 whalf = _mm256_set1_ps(yoshida_coef_[i] * 0.5f * TICK_S);
+    
+    __m256 w = _mm256_set1_ps(step);
+    __m256 whalf = _mm256_set1_ps(hstep);
 
-      velocity_x = _mm256_fmadd_ps(acc_x, whalf, velocity_x); // a*b+c
-      velocity_y = _mm256_fmadd_ps(acc_y, whalf, velocity_y);
+    velocity_x = _mm256_fmadd_ps(acc_x, whalf, velocity_x); // a*b+c
+    velocity_y = _mm256_fmadd_ps(acc_y, whalf, velocity_y);
 
-      pos_x = _mm256_fmadd_ps(velocity_x, w, pos_x);
-      pos_y = _mm256_fmadd_ps(velocity_y, w, pos_y);
+    pos_x = _mm256_fmadd_ps(velocity_x, w, pos_x);
+    pos_y = _mm256_fmadd_ps(velocity_y, w, pos_y);
 
-      // TODO COMPUTE GRAVITY
-      velocity_x = _mm256_fmadd_ps(acc_x, whalf, velocity_x);
-      velocity_y = _mm256_fmadd_ps(acc_y, whalf, velocity_y);
-    }
+    // TODO COMPUTE GRAVITY
+    velocity_x = _mm256_fmadd_ps(acc_x, whalf, velocity_x);
+    velocity_y = _mm256_fmadd_ps(acc_y, whalf, velocity_y);
 
-    _mm256_store_ps(pxt, pos_x);
-    _mm256_store_ps(pyt, pos_y);
+    _mm256_store_ps(px, pos_x);
+    _mm256_store_ps(py, pos_y);
 
     _mm256_store_ps(vx, velocity_x);
     _mm256_store_ps(vy, velocity_y);
 
-    _mm256_store_ps(oxt, orientations_x);
-    _mm256_store_ps(oyt, orientations_y);
+    _mm256_store_ps(ox, orientations_x);
+    _mm256_store_ps(oy, orientations_y);
   }
 }
 
 static void _objects_apply_yoshida(struct objects_data* od) {
-  _object_compute_yoshida(od);
-
-  // swap position/orientation buffers
-  position_orientation_t* temp = od->position_orientation;
-  od->position_orientation = od->position_orientation_back;
-  od->position_orientation_back = temp;
+  _objects_apply_yoshida_step(od, YOSHIDA_C1 * TICK_S, YOSHIDA_C1 * 0.5f * TICK_S);
+  // compute gravity
+  _objects_apply_yoshida_step(od, YOSHIDA_C2 * TICK_S, YOSHIDA_C2 * 0.5f * TICK_S);
+  // compute gravity
+  _objects_apply_yoshida_step(od, YOSHIDA_C3 * TICK_S, YOSHIDA_C3 * 0.5f * TICK_S);
 }
 
 static uint32_t _particle_manager_ttl(struct particles_data* pd) {
@@ -142,11 +127,11 @@ static void _parts_world_transform(struct objects_data* od, struct parts_data* p
     _ASSERT(parent_idx >= 0 && parent_idx <= od->active);
     _ASSERT(od->parts_start_idx[parent_idx] <= i && od->parts_start_idx[parent_idx] + od->parts_count[parent_idx] >= i);
 
-    __m256 parent_x = _mm256_set1_ps(od->position_orientation->position_x[parent_idx]);
-    __m256 parent_y = _mm256_set1_ps(od->position_orientation->position_y[parent_idx]);
+    __m256 parent_x = _mm256_set1_ps(od->position_orientation.position_x[parent_idx]);
+    __m256 parent_y = _mm256_set1_ps(od->position_orientation.position_y[parent_idx]);
 
-    __m256 parent_ox = _mm256_set1_ps(od->position_orientation->orientation_x[parent_idx]);
-    __m256 parent_oy = _mm256_set1_ps(od->position_orientation->orientation_y[parent_idx]);
+    __m256 parent_ox = _mm256_set1_ps(od->position_orientation.orientation_x[parent_idx]);
+    __m256 parent_oy = _mm256_set1_ps(od->position_orientation.orientation_y[parent_idx]);
 
     __m256 local_x = _mm256_load_ps(&pd->local_offset_x[i]);
     __m256 local_y = _mm256_load_ps(&pd->local_offset_y[i]);
