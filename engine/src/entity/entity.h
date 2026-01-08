@@ -12,6 +12,10 @@ struct objects_data {
 
   float* velocity_x;
   float* velocity_y;
+
+  float* acceleration_x;
+  float* acceleration_y;
+
   float* thrust;
   entity_type_t* type;
 

@@ -42,23 +42,16 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
   float* vx = od->velocity_x;
   float* vy = od->velocity_y;
 
-  float* th = od->thrust;
-  float* ms = od->mass;
-
-  float* ox = od->position_orientation.orientation_x;
-  float* oy = od->position_orientation.orientation_y;
+  float* ax = od->acceleration_x;
+  float* ay = od->acceleration_y;
 
   float* end_px = od->position_orientation.position_x + od->active;
 
-  for (; px < end_px; px += 8, py += 8, vx += 8, vy += 8, th += 8, ox += 8, oy += 8, ms += 8) {
-    __m256 thrusts = _mm256_load_ps(th);
-    __m256 masses = _mm256_load_ps(ms);
-    __m256 orientations_x = _mm256_load_ps(ox);
-    __m256 orientations_y = _mm256_load_ps(oy);
+  for (; px < end_px; px += 8, py += 8, vx += 8, vy += 8, ax += 8, ay += 8) {
 
     // acceleration = thrust / mass
-    __m256 acc_x = _mm256_div_ps(_mm256_mul_ps(thrusts, orientations_x), masses);
-    __m256 acc_y = _mm256_div_ps(_mm256_mul_ps(thrusts, orientations_y), masses);
+    __m256 acc_x = _mm256_load_ps(ax);
+    __m256 acc_y = _mm256_load_ps(ay);
 
     __m256 velocity_x = _mm256_load_ps(vx);
     __m256 velocity_y = _mm256_load_ps(vy);
@@ -86,20 +79,45 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
     _mm256_store_ps(vx, velocity_x);
     _mm256_store_ps(vy, velocity_y);
 
-    _mm256_store_ps(ox, orientations_x);
-    _mm256_store_ps(oy, orientations_y);
-
   }
 }
+
+static void _recompute_acceleration(struct objects_data* od) {
+
+  float* thrust = od->thrust;
+  float* mass = od->mass;
+  float* ox = od->position_orientation.orientation_x;
+  float* oy = od->position_orientation.orientation_y;
+  float* accx = od->acceleration_x;
+  float* accy = od->acceleration_y;
+
+  float *thrust_end = thrust + od->active;
+  for(; thrust < thrust_end; thrust += 8, mass += 8, ox += 8, oy += 8, accx += 8, accy += 8) {
+    __m256 thrusts = _mm256_load_ps(thrust);
+    __m256 masses = _mm256_load_ps(mass);
+    __m256 orientations_x = _mm256_load_ps(ox);
+    __m256 orientations_y = _mm256_load_ps(oy);
+
+    __m256 acc_x = _mm256_div_ps(_mm256_mul_ps(thrusts, orientations_x), masses);
+    __m256 acc_y = _mm256_div_ps(_mm256_mul_ps(thrusts, orientations_y), masses);
+
+    _mm256_store_ps(accx, acc_x);
+    _mm256_store_ps(accy, acc_y);
+  }
+}
+
 
 static void _objects_apply_yoshida(struct objects_data* od) {
   PROFILE_ZONE("_objects_apply_yoshida");
   PROFILE_PLOT_I("objects", od->active);
 
+  _recompute_acceleration(od);
   _objects_apply_yoshida_step(od, YOSHIDA_C1 * TICK_S, YOSHIDA_C1 * 0.5f * TICK_S);
   // compute gravity
+  _recompute_acceleration(od);
   _objects_apply_yoshida_step(od, YOSHIDA_C2 * TICK_S, YOSHIDA_C2 * 0.5f * TICK_S);
   // compute gravity
+  _recompute_acceleration(od);
   _objects_apply_yoshida_step(od, YOSHIDA_C3 * TICK_S, YOSHIDA_C3 * 0.5f * TICK_S);
 
   PROFILE_ZONE_END();
@@ -224,7 +242,7 @@ void physics_test__parts_world_transform_rotations(void) {
   od->position_orientation.orientation_x[0] = 0.0f;
   od->position_orientation.orientation_y[0] = 1.0f;
 
-  od->position_orientation.orientation_x[1] = 1.0f; 
+  od->position_orientation.orientation_x[1] = 1.0f;
   od->position_orientation.orientation_y[1] = 0.0f;
 
   od->parts_start_idx[0] = 0;

@@ -50,6 +50,10 @@ static void _objects_data_initialize(struct objects_data* data) {
   _position_orientation_initialize(&data->position_orientation);
   data->velocity_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->velocity_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+
+  data->acceleration_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->acceleration_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+
   data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
@@ -86,6 +90,7 @@ static void _generate_dummy_data(void) {
 
   // Test planet
   entity_id_t planet = _generate_entity_by_model(ENTITY_TYPEREF_PLANET, MODEL_PLANET_IDX);
+  entity_manager_get_objects()->mass[GET_ORDINAL(planet)] = 100000.0f;
   (void)planet;  // suppress unused warning for now
 }
 
