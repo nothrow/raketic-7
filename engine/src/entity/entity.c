@@ -91,6 +91,8 @@ static void _generate_dummy_data(void) {
   // Test planet
   entity_id_t planet = _generate_entity_by_model(ENTITY_TYPEREF_PLANET, MODEL_PLANET_IDX);
   entity_manager_get_objects()->mass[GET_ORDINAL(planet)] = 100000.0f;
+  entity_manager_get_objects()->position_orientation.position_x[GET_ORDINAL(planet)] = 100.0f;
+  entity_manager_get_objects()->position_orientation.position_y[GET_ORDINAL(planet)] = 100.0f;
   (void)planet;  // suppress unused warning for now
 }
 

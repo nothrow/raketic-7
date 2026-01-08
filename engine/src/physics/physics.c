@@ -82,8 +82,7 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
   }
 }
 
-static void _recompute_acceleration(struct objects_data* od) {
-
+static void _recompute_thrust(struct objects_data* od) {
   float* thrust = od->thrust;
   float* mass = od->mass;
   float* ox = od->position_orientation.orientation_x;
@@ -91,10 +90,12 @@ static void _recompute_acceleration(struct objects_data* od) {
   float* accx = od->acceleration_x;
   float* accy = od->acceleration_y;
 
-  float *thrust_end = thrust + od->active;
-  for(; thrust < thrust_end; thrust += 8, mass += 8, ox += 8, oy += 8, accx += 8, accy += 8) {
+  __m256 epsilon = _mm256_set1_ps(0.0001f); // avoid division by zero
+
+  float* thrust_end = thrust + od->active;
+  for (; thrust < thrust_end; thrust += 8, mass += 8, ox += 8, oy += 8, accx += 8, accy += 8) {
     __m256 thrusts = _mm256_load_ps(thrust);
-    __m256 masses = _mm256_load_ps(mass);
+    __m256 masses = _mm256_max_ps(_mm256_load_ps(mass), epsilon);
     __m256 orientations_x = _mm256_load_ps(ox);
     __m256 orientations_y = _mm256_load_ps(oy);
 
@@ -103,6 +104,60 @@ static void _recompute_acceleration(struct objects_data* od) {
 
     _mm256_store_ps(accx, acc_x);
     _mm256_store_ps(accy, acc_y);
+  }
+}
+
+#define GRAVITATIONAL_CONSTANT 6.67430e-1f
+
+static void _recompute_acceleration(struct objects_data* od) {
+  _recompute_thrust(od); // first, initialize accelerations
+
+  __m256 epsilon = _mm256_set1_ps(0.0001f);
+  __m256 g = _mm256_set1_ps(GRAVITATIONAL_CONSTANT);
+
+  float uax[8];
+  float uay[8];
+
+  for (size_t i = 0; i < od->active; i++) {
+    __m256 ipx = _mm256_set1_ps(od->position_orientation.position_x[i]);
+    __m256 ipy = _mm256_set1_ps(od->position_orientation.position_y[i]);
+
+    float* px = od->position_orientation.position_x;
+    float* py = od->position_orientation.position_y;
+    float* m = od->mass;
+
+    float* end_px = od->position_orientation.position_x + od->active;
+
+    __m256 axs = _mm256_set1_ps(0.0f);
+    __m256 ays = _mm256_set1_ps(0.0f);
+
+    for (; px < end_px; px += 8, py += 8, m += 8) {
+      __m256 jpx = _mm256_load_ps(px);
+      __m256 jpy = _mm256_load_ps(py);
+
+      __m256 dx = _mm256_sub_ps(jpx, ipx);
+      __m256 dy = _mm256_sub_ps(jpy, ipy);
+
+      __m256 jm = _mm256_load_ps(m);
+
+      __m256 dist_sq = _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy));
+      dist_sq = _mm256_max_ps(dist_sq, epsilon); // avoid singularity
+
+      __m256 inv_r = _mm256_rsqrt_ps(dist_sq);
+      __m256 inv_r3 = _mm256_mul_ps(inv_r, _mm256_mul_ps(inv_r, inv_r));
+
+      __m256 ax = _mm256_mul_ps(g, _mm256_mul_ps(jm, _mm256_mul_ps(dx, inv_r3)));
+      __m256 ay = _mm256_mul_ps(g, _mm256_mul_ps(jm, _mm256_mul_ps(dy, inv_r3)));
+
+      axs = _mm256_add_ps(axs, ax);
+      ays = _mm256_add_ps(ays, ay);
+    }
+
+    _mm256_store_ps(uax, axs);
+    _mm256_store_ps(uay, ays);
+
+    od->acceleration_x[i] += uax[0] + uax[1] + uax[2] + uax[3] + uax[4] + uax[5] + uax[6] + uax[7];
+    od->acceleration_y[i] += uay[0] + uay[1] + uay[2] + uay[3] + uay[4] + uay[5] + uay[6] + uay[7];
   }
 }
 
