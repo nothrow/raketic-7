@@ -45,9 +45,10 @@ var modelWriter = new ModelWriter();
 
 foreach (var model in models)
 {
-    Console.WriteLine($"Processing model: {model.FileName}");
+    Console.Write($"Processing model: {model.FileName}");
 
-    modelWriter.DumpModelData(cWriter, model);
+    var written = modelWriter.DumpModelData(cWriter, model);
+    Console.WriteLine($" - written {written} vertices");
 
     hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
 }

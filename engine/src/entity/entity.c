@@ -8,6 +8,7 @@
 #include "engine.h"
 #include "particles.h"
 #include "camera.h"
+#include "planet.h"
 #include "debug/debug.h"
 #include "debug/profiler.h"
 
@@ -82,6 +83,10 @@ static void _generate_dummy_data(void) {
   debug_watch_set(player);
   controller_set_entity(player);
   camera_set_entity(player);
+
+  // Test planet
+  entity_id_t planet = _generate_entity_by_model(ENTITY_TYPEREF_PLANET, MODEL_PLANET_IDX);
+  (void)planet;  // suppress unused warning for now
 }
 
 static void _entity_manager_types_initialize(void) {
@@ -90,6 +95,7 @@ static void _entity_manager_types_initialize(void) {
   controller_entity_initialize();
   engine_part_entity_initialize();
   camera_entity_initialize();
+  planet_entity_initialize();
 }
 
 void entity_manager_initialize(void) {

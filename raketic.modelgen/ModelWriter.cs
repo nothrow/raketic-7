@@ -5,8 +5,9 @@ namespace raketic.modelgen;
 internal class ModelWriter
 {
     private Dictionary<System.Drawing.Color, int> _colorIndexes = new();
-    public void DumpModelData(StreamWriter w, Model model)
+    public int DumpModelData(StreamWriter w, Model model)
     {
+        int points = 0;;
         w.WriteLine($"static const int8_t _model_{model.FileName}_vertices[] = {{");
         foreach (var linestrip in model.LineStrips)
         {
@@ -16,12 +17,14 @@ internal class ModelWriter
                 checked
                 {
                     w.Write($" {(sbyte)point.X}, {(sbyte)point.Y},");
+                    ++points;
                 }
             }
             w.WriteLine();
         }
         w.WriteLine("};");
         w.WriteLine();
+        return points;
     }
 
     public void DumpModelColors(StreamWriter w, IEnumerable<Model> models)

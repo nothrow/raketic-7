@@ -46,6 +46,7 @@
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="src\entity\camera.c" />
     <ClCompile Include="src\entity\ship.c" />
+    <ClCompile Include="src\entity\planet.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\graphics\stars.c">
       <AssemblerOutput>All</AssemblerOutput>
@@ -99,6 +100,7 @@
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\particles.h" />
     <ClInclude Include="src\entity\ship.h" />
+    <ClInclude Include="src\entity\planet.h" />
     <ClInclude Include="src\entity\camera.h" />
     <ClInclude Include="src\entity\types.h" />
     <ClInclude Include="src\graphics\graphics.h" />

@@ -6,6 +6,9 @@ namespace raketic.modelgen;
 
 internal class SvgParser
 {
+    private const int CircleSegments = 64; // number of segments for approximation of circle
+    private const int CurveSegments = 16;   // number of segments for approximation of Bezier curve
+
     private Matrix? _transform = null;
     private Point? _explicitCenter = null;
     private List<(string, Point)> _slots = new();
@@ -20,6 +23,8 @@ internal class SvgParser
         SvgPath path => ParsePath(path),
         SvgGroup group => ParseGroup(group),
         SvgRectangle rectangle => ParseRectangle(rectangle),
+        SvgCircle circle => ParseCircle(circle),
+        SvgEllipse ellipse => ParseEllipse(ellipse),
 
         _ => throw new InvalidOperationException($"Unsupported SVG element: {elem.GetType().Name}"),
     };
@@ -29,6 +34,10 @@ internal class SvgParser
         if (el is SvgCircle circle)
         {
             return GetPoint(circle.CenterX.Value, circle.CenterY.Value);
+        }
+        else if (el is SvgEllipse ellipse)
+        {
+            return GetPoint(ellipse.CenterX.Value, ellipse.CenterY.Value);
         }
         else if (el is SvgRectangle rectangle)
         {
@@ -122,6 +131,63 @@ internal class SvgParser
         ];
     }
 
+    private IEnumerable<LineStrip> ParseCircle(SvgCircle circle)
+    {
+        Console.WriteLine($"  ⚠️ CIRCLE! Rasterizing to {CircleSegments} segments.");
+
+        var cx = circle.CenterX.Value;
+        var cy = circle.CenterY.Value;
+        var r = circle.Radius.Value;
+
+        var points = new Point[CircleSegments];
+        for (int i = 0; i < CircleSegments; i++)
+        {
+            var angle = 2 * Math.PI * i / CircleSegments;
+            var x = cx + r * (float)Math.Cos(angle);
+            var y = cy + r * (float)Math.Sin(angle);
+            points[i] = GetPoint(x, y);
+        }
+
+        return [
+            new LineStrip(
+                Points: points,
+                IsClosed: true,
+                Color: GetColor(circle.Stroke),
+                StrokeWidth: circle.StrokeWidth,
+                Class: circle.TryGetAttribute("class", out var classAttr) ? classAttr : ""
+            )
+        ];
+    }
+
+    private IEnumerable<LineStrip> ParseEllipse(SvgEllipse ellipse)
+    {
+        Console.WriteLine($"  ⚠️ ELLIPSE! Rasterizing to {CircleSegments} segments.");
+
+        var cx = ellipse.CenterX.Value;
+        var cy = ellipse.CenterY.Value;
+        var rx = ellipse.RadiusX.Value;
+        var ry = ellipse.RadiusY.Value;
+
+        var points = new Point[CircleSegments];
+        for (int i = 0; i < CircleSegments; i++)
+        {
+            var angle = 2 * Math.PI * i / CircleSegments;
+            var x = cx + rx * (float)Math.Cos(angle);
+            var y = cy + ry * (float)Math.Sin(angle);
+            points[i] = GetPoint(x, y);
+        }
+
+        return [
+            new LineStrip(
+                Points: points,
+                IsClosed: true,
+                Color: GetColor(ellipse.Stroke),
+                StrokeWidth: ellipse.StrokeWidth,
+                Class: ellipse.TryGetAttribute("class", out var classAttr) ? classAttr : ""
+            )
+        ];
+    }
+
     private IEnumerable<LineStrip> ParsePath(SvgPath path)
     {
         var currentSegment = new List<Point>();
@@ -147,6 +213,10 @@ internal class SvgParser
                     break;
                 case SvgLineSegment lineTo:
                     currentSegment.Add(GetPoint(lineTo.End.X, lineTo.End.Y));
+                    break;
+                case SvgQuadraticCurveSegment quadratic:
+                    Console.WriteLine($"  ⚠️ QUADRATIC CURVE! Rasterizing to {CurveSegments} segments.");
+                    RasterizeQuadraticBezier(currentSegment, quadratic);
                     break;
                 case SvgClosePathSegment closePath:
                     if (currentSegment.Count > 0)
@@ -175,6 +245,36 @@ internal class SvgParser
                             StrokeWidth: path.StrokeWidth,
                             Class: @class
                         );
+        }
+    }
+
+    private void RasterizeQuadraticBezier(List<Point> currentSegment, SvgQuadraticCurveSegment quadratic)
+    {
+        if (currentSegment.Count == 0)
+            throw new InvalidOperationException("Quadratic curve segment requires a starting point.");
+
+        // P0 = start (last point in segment), P1 = control, P2 = end
+        var p0 = currentSegment[^1];
+        var p1x = quadratic.ControlPoint.X;
+        var p1y = quadratic.ControlPoint.Y;
+        var p2x = quadratic.End.X;
+        var p2y = quadratic.End.Y;
+
+        // B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+        for (int i = 1; i <= CurveSegments; i++)
+        {
+            float t = (float)i / CurveSegments;
+            float oneMinusT = 1 - t;
+
+            float x = oneMinusT * oneMinusT * p0.X
+                    + 2 * oneMinusT * t * p1x
+                    + t * t * p2x;
+
+            float y = oneMinusT * oneMinusT * p0.Y
+                    + 2 * oneMinusT * t * p1y
+                    + t * t * p2y;
+
+            currentSegment.Add(GetPoint(x, y));
         }
     }
 
