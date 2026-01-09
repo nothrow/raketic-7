@@ -107,16 +107,23 @@ static void _recompute_thrust(struct objects_data* od) {
   }
 }
 
-#define GRAVITATIONAL_CONSTANT 6.67430e-1f
+#define GRAVITATIONAL_CONSTANT 6.67430f // e-1f
+
+static inline float _hsum256(__m256 v) {
+  __m128 lo = _mm256_castps256_ps128(v);
+  __m128 hi = _mm256_extractf128_ps(v, 1);
+  __m128 sum = _mm_add_ps(lo, hi);                // 4 floaty
+  sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum)); // 2 floaty
+  sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 1));
+  return _mm_cvtss_f32(sum);
+}
 
 static void _recompute_acceleration(struct objects_data* od) {
   _recompute_thrust(od); // first, initialize accelerations
 
-  __m256 epsilon = _mm256_set1_ps(0.0001f);
+  //__m256 epsilon = _mm256_set1_ps(0.0001f);
+  __m256 epsilon = _mm256_set1_ps(100.0f);
   __m256 g = _mm256_set1_ps(GRAVITATIONAL_CONSTANT);
-
-  float uax[8];
-  float uay[8];
 
   for (size_t i = 0; i < od->active; i++) {
     __m256 ipx = _mm256_set1_ps(od->position_orientation.position_x[i]);
@@ -153,11 +160,8 @@ static void _recompute_acceleration(struct objects_data* od) {
       ays = _mm256_add_ps(ays, ay);
     }
 
-    _mm256_store_ps(uax, axs);
-    _mm256_store_ps(uay, ays);
-
-    od->acceleration_x[i] += uax[0] + uax[1] + uax[2] + uax[3] + uax[4] + uax[5] + uax[6] + uax[7];
-    od->acceleration_y[i] += uay[0] + uay[1] + uay[2] + uay[3] + uay[4] + uay[5] + uay[6] + uay[7];
+    od->acceleration_x[i] += _hsum256(axs);
+    od->acceleration_y[i] += _hsum256(ays);
   }
 }
 
