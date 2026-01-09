@@ -50,6 +50,28 @@ internal class ModelWriter
         w.WriteLine($"  glEnableClientState(GL_VERTEX_ARRAY);");
         w.WriteLine($"  glVertexPointer(2, GL_BYTE, 0, _model_{model.FileName}_vertices);");
 
+        // First pass: draw filled black polygons for "hull" class (to occlude stars)
+        int hullStart = 0;
+        bool hasHull = model.LineStrips.Any(ls => ls.Class == "hull");
+        if (hasHull)
+        {
+            w.WriteLine();
+            w.WriteLine($"  //  hull fill (occludes background)");
+            w.WriteLine($"  glColor4ub(0, 0, 0, 255);");
+            foreach (var linestrip in model.LineStrips)
+            {
+                if (linestrip.Class == "hull" && linestrip.IsClosed)
+                {
+                    w.WriteLine($"  glDrawArrays(GL_TRIANGLE_FAN, {hullStart}, {linestrip.Points.Length});");
+                }
+                hullStart += linestrip.Points.Length;
+            }
+        }
+
+        w.WriteLine();
+        w.WriteLine($"  //  wireframe lines");
+
+        // Second pass: draw wireframe lines
         int start = 0;
         float previousWidth = -1f;
 

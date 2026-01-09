@@ -76,6 +76,8 @@ void debug_watch_draw(void) {
   float vy = od->velocity_y[idx];
   float ox = od->position_orientation.orientation_x[idx];
   float oy = od->position_orientation.orientation_y[idx];
+  float ax = od->acceleration_x[idx];
+  float ay = od->acceleration_y[idx];
   float thrust = od->thrust[idx];
 
   draw_vector(px, py, vx, vy, 1.0f, COLOR_GREEN);
@@ -100,6 +102,11 @@ void debug_watch_draw(void) {
   debug_font_draw_string(tx, ty, "ori:", TEXT_SCALE, COLOR_YELLOW);
   debug_font_draw_float(tx + 30, ty, ox, 2, TEXT_SCALE, COLOR_WHITE);
   debug_font_draw_float(tx + 80, ty, oy, 2, TEXT_SCALE, COLOR_WHITE);
+  ty += LINE_HEIGHT;
+
+  debug_font_draw_string(tx, ty, "acc:", TEXT_SCALE, COLOR_YELLOW);
+  debug_font_draw_float(tx + 30, ty, ax, 2, TEXT_SCALE, COLOR_WHITE);
+  debug_font_draw_float(tx + 80, ty, ay, 2, TEXT_SCALE, COLOR_WHITE);
   ty += LINE_HEIGHT;
 
   debug_font_draw_string(tx, ty, "thr:", TEXT_SCALE, COLOR_YELLOW);
