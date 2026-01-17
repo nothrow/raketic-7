@@ -74,6 +74,8 @@ struct particles_data* entity_manager_get_particles(void);
 struct objects_data* entity_manager_get_objects(void);
 struct parts_data* entity_manager_get_parts(void);
 
+void entity_manager_get_vectors(entity_id_t entity_id, float* pos, float* vel);
+
 void entity_manager_pack_particles(void);
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg);

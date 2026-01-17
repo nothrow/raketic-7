@@ -20,13 +20,15 @@ typedef struct {
 enum message_codes_system {
   MESSAGE_BROADCAST_SYSTEM_INITIALIZED = 0,
   MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS = 1,
-  MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3,
   MESSAGE_BROADCAST_FRAME_TICK = 2,
+  MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3
 };
 
 enum message_codes_ship {
-  MESSAGE_SHIP_ROTATE_BY = 0x10,
-  MESSAGE_SHIP_ENGINES_THRUST = 0x11
+  MESSAGE_SHIP_ROTATE_BY = 0x10, // data_a = delta angle in degrees
+  MESSAGE_SHIP_ROTATE_TO =
+      0x11, // data_a = target vector x * 65535 (fixed int), data_b = target vector y * 65535 (fixed int)
+  MESSAGE_SHIP_ENGINES_THRUST = 0x12, // data_a = thrust percentage 0-100
 };
 
 enum message_codes_particles {

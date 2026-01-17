@@ -55,6 +55,10 @@ const struct input_state* platform_get_input_state(void) {
   return &input_state_;
 }
 
+bool platform_input_is_key_down(enum keys key) {
+  return input_state_.keyPressed[key];
+}
+
 bool platform_input_is_button_down(enum buttons button) {
   if (button == BUTTON_LEFT) {
     return SDL_BUTTON(SDL_BUTTON_LEFT) & input_state_.buttons;
@@ -90,6 +94,12 @@ bool platform_tick_pending(void) {
   return false;
 }
 
+static void _map_keystates(const Uint8* k)
+{
+  platform_clear_memory(input_state_.keyPressed, sizeof(input_state_.keyPressed));
+  input_state_.keyPressed[KEY_SPACE] = k[SDL_SCANCODE_SPACE];
+}
+
 bool platform_loop(void) {
   // Reset delta každý frame
   input_state_.mdx = 0;
@@ -115,6 +125,7 @@ bool platform_loop(void) {
   }
 
   input_state_.buttons = SDL_GetMouseState(NULL, NULL);
+  _map_keystates(SDL_GetKeyboardState(NULL));
   return true;
 }
 

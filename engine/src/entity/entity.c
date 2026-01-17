@@ -127,6 +127,20 @@ struct parts_data* entity_manager_get_parts(void) {
   return &manager_.parts;
 }
 
+void entity_manager_get_vectors(entity_id_t entity_id, float* pos, float* vel) {
+  struct objects_data* od = &manager_.objects;
+  size_t idx = GET_ORDINAL(entity_id);
+  if (pos != NULL) {
+    pos[0] = od->position_orientation.position_x[idx];
+    pos[1] = od->position_orientation.position_y[idx];
+  }
+
+  if (vel != NULL) {
+    vel[0] = od->velocity_x[idx];
+    vel[1] = od->velocity_y[idx];
+  }
+}
+
 static void _move_particle(struct particles_data* pd, size_t target, size_t source) {
   pd->position_orientation.position_x[target] = pd->position_orientation.position_x[source];
   pd->position_orientation.position_y[target] = pd->position_orientation.position_y[source];

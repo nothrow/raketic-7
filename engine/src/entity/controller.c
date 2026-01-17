@@ -22,6 +22,17 @@ static void _process_mouse() {
   }
 }
 
+static void _process_keyboard() {
+  if (platform_input_is_key_down(KEY_SPACE)) {
+
+    // reverse
+    float velocity[2];
+    entity_manager_get_vectors(_controlled_entity, NULL, velocity);
+
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_TO, _f2i(-velocity[0]), _f2i(-velocity[1])));
+  }
+}
+
 static void _controller_dispatch(entity_id_t id, message_t msg) {
   (void)id;
 
@@ -29,6 +40,7 @@ static void _controller_dispatch(entity_id_t id, message_t msg) {
   case MESSAGE_BROADCAST_FRAME_TICK:
     if (is_valid_id(_controlled_entity)) {
       _process_mouse();
+      _process_keyboard();
     }
     break;
   }

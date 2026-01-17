@@ -5,17 +5,25 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-struct input_state {
-  int mx, my;
-  int mdx, mdy;
-  unsigned int buttons;
-};
-
 enum buttons {
   BUTTON_LEFT = 0x1,
   BUTTON_RIGHT = 0x2,
   BUTTON_MIDDLE = 0x4,
 };
+
+enum keys {
+  KEY_SPACE = 0x20,
+  KEY_COUNT
+};
+
+
+struct input_state {
+  int mx, my;
+  int mdx, mdy;
+  unsigned int buttons;
+  uint8_t keyPressed[KEY_COUNT];
+};
+
 
 void platform_initialize(void);
 bool platform_loop(void);
@@ -29,6 +37,7 @@ void platform_renderer_draw_models(size_t model_count, const color_t* colors,
 
 const struct input_state* platform_get_input_state(void);
 bool platform_input_is_button_down(enum buttons button);
+bool platform_input_is_key_down(enum keys key);
 
 // Memory management (fixed heap, no dynamic allocation)
 // the returned memory is aligned to 16 bytes
