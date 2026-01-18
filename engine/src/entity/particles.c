@@ -23,7 +23,7 @@ static void _spawn_particle(particle_create_t* pcm) {
 
   pd->model_idx[idx] = pcm->model_idx;
   pd->lifetime_ticks[idx] =
-    pd->lifetime_max[idx] = 
+    pd->lifetime_max[idx] =
     pcm->ttl;
 
   pd->active++;

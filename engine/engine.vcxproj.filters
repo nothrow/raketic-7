@@ -31,6 +31,13 @@
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="test\unity.c" />
     <ClCompile Include="test\platform.test.c" />
+    <ClCompile Include="src\debug\debug.c" />
+    <ClCompile Include="src\debug\debug_font.c" />
+    <ClCompile Include="src\debug\debug_stub.c" />
+    <ClCompile Include="src\entity\camera.c" />
+    <ClCompile Include="src\entity\planet.c" />
+    <ClCompile Include="src\graphics\stars.c" />
+    <ClCompile Include="src\collisions\collisions.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\platform\platform.h" />
@@ -50,5 +57,12 @@
     <ClInclude Include="src\entity\particles.h" />
     <ClInclude Include="test\unity.h" />
     <ClInclude Include="test\unity_internals.h" />
+    <ClInclude Include="src\debug\debug.h" />
+    <ClInclude Include="src\debug\debug_font.h" />
+    <ClInclude Include="src\debug\profiler.h" />
+    <ClInclude Include="src\entity\planet.h" />
+    <ClInclude Include="src\entity\camera.h" />
+    <ClInclude Include="src\graphics\stars.h" />
+    <ClInclude Include="src\collisions\collisions.h" />
   </ItemGroup>
 </Project>

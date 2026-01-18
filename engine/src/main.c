@@ -1,5 +1,6 @@
 #include "platform/platform.h"
 #include "entity/entity.h"
+#include "collisions/collisions.h"
 #include "physics/physics.h"
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
@@ -14,6 +15,7 @@ int run(void) {
   messaging_initialize();
   entity_manager_initialize();
   graphics_initialize();
+  collisions_engine_initialize();
 
   messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_SYSTEM_INITIALIZED, 0, 0));
 
@@ -32,6 +34,7 @@ int run(void) {
 
     while (platform_tick_pending()) {
       physics_engine_tick();
+      collisions_engine_tick();
       messaging_pump();
     }
     PROFILE_FRAME_END("Physics");

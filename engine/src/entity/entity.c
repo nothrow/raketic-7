@@ -76,6 +76,9 @@ static void _particles_data_initialize(struct particles_data* data) {
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->temporary = platform_retrieve_memory(sizeof(struct _128bytes) * MAXSIZE);
 
+  platform_clear_memory(data->lifetime_max, sizeof(uint16_t) * MAXSIZE);
+  platform_clear_memory(data->lifetime_ticks, sizeof(uint16_t) * MAXSIZE);
+
   data->active = 0;
   data->capacity = MAXSIZE;
 }
@@ -151,6 +154,8 @@ static void _move_particle(struct particles_data* pd, size_t target, size_t sour
   pd->model_idx[target] = pd->model_idx[source];
   pd->position_orientation.orientation_x[target] = pd->position_orientation.orientation_x[source];
   pd->position_orientation.orientation_y[target] = pd->position_orientation.orientation_y[source];
+
+  pd->lifetime_ticks[source] = 0;
 }
 
 void entity_manager_pack_particles(void) {
@@ -169,6 +174,7 @@ void entity_manager_pack_particles(void) {
 
       if (i < last_alive) {
         _move_particle(pd, i, last_alive);
+        --last_alive;  // Consumed this particle, move to next
       } else {
         break;
       }
