@@ -91,51 +91,52 @@ void collisions_engine_initialize(void) {
   _collisions_engine_data_initialize(&culled_particles_, pd->capacity);
 }
 
-static void _check_collisions_step(
-  struct collision_buffer* collision_buffer,
-  const position_orientation_t* pa,
-  const position_orientation_t* pb,
-  const struct collisions_engine_data* target,
-  const size_t idx,
-    const size_t from) // where to start. when doing particle<->object, from=0; when doing object<->object, from=idx+1
-{
-    __m256 px = _mm256_set1_ps(pa->position_x[idx]);
-    __m256 py = _mm256_set1_ps(pa->position_y[idx]);
-    __m256 pr = _mm256_set1_ps(pa->radius[idx]);
+static void
+_check_collisions_step(struct collision_buffer* collision_buffer, const position_orientation_t* pa,
+                       const position_orientation_t* pb, const struct collisions_engine_data* target, const size_t idx,
+                       // where to start. when doing particle<->object, from=0; when doing object<->object, from=idx+1
+                       const size_t from) {
+  uint32_t source_obj_idx = culled_objects_.idx[idx];
+  __m256 px = _mm256_set1_ps(pa->position_x[source_obj_idx]);
+  __m256 py = _mm256_set1_ps(pa->position_y[source_obj_idx]);
+  __m256 pr = _mm256_set1_ps(pa->radius[source_obj_idx]);
 
 
-    size_t remaining = target->active - from;
-    // start aligned to 8
-    // we will remove j<=idx in postprocessing
-    for (size_t j = from; j < target->active; j += 8, remaining -= 8) {
-      __m256 pxj = _mm256_load_ps(&pb->position_x[j]);
-      __m256 pyj = _mm256_load_ps(&pb->position_y[j]);
+  size_t remaining = target->active - from;
+  // start aligned to 8
+  // we will remove j<=idx in postprocessing
+  for (size_t j =  (from + 1) & ~(size_t)0x7; j < target->active; j += 8, remaining -= 8) {
 
-      __m256 dx = _mm256_sub_ps(px, pxj);
-      __m256 dy = _mm256_sub_ps(py, pyj);
+    __m256i offsets = _mm256_loadu_si256((__m256i*)&target->idx[j]);
 
-      __m256 d = _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy));
-      __m256 r = _mm256_add_ps(pr, _mm256_load_ps(&pb->radius[j]));
+    __m256 pxj = _mm256_i32gather_ps(pb->position_x, offsets, 4);
+    __m256 pyj = _mm256_i32gather_ps(pb->position_y, offsets, 4);
 
-      __m256 cmp = _mm256_cmp_ps(d, _mm256_mul_ps(r, r), _CMP_LE_OQ);
-      int mask = _mm256_movemask_ps(cmp);
-      for (size_t i = 0; i < MIN(remaining, 8); i++) {
-        size_t obj_idx = j + i;
-        if (mask & (1 << i) && obj_idx > from) {
-          collision_buffer->idx[collision_buffer->active].idxa = (uint32_t)idx;
-          collision_buffer->idx[collision_buffer->active].idxb = (uint32_t)obj_idx;
-          collision_buffer->active++;
-        }
+    __m256 dx = _mm256_sub_ps(px, pxj);
+    __m256 dy = _mm256_sub_ps(py, pyj);
+
+    __m256 d = _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy));
+    __m256 r = _mm256_add_ps(pr, _mm256_i32gather_ps(pb->radius, offsets, 4));
+
+    __m256 cmp = _mm256_cmp_ps(d, _mm256_mul_ps(r, r), _CMP_LE_OQ);
+
+    int mask = _mm256_movemask_ps(cmp);
+    for (size_t i = 0; i < MIN(remaining, 8); i++) {
+
+      if (mask & (1 << i) && (j + i) > from) {
+        size_t target_obj_idx = target->idx[j + i];
+
+        collision_buffer->idx[collision_buffer->active].idxa = (uint32_t)source_obj_idx;
+        collision_buffer->idx[collision_buffer->active].idxb = (uint32_t)target_obj_idx;
+        collision_buffer->active++;
       }
     }
+  }
 }
 
-void _check_collisions(
-  const position_orientation_t* po,
-  const position_orientation_t* pp
-) {
+void _check_collisions(const position_orientation_t* po, const position_orientation_t* pp) {
   for (size_t i = 0; i < culled_objects_.active; i++) {
-    _check_collisions_step(&collision_buffer_objects_, po, po, &culled_objects_, i, (i + 1) & ~(size_t)0x7);
+    _check_collisions_step(&collision_buffer_objects_, po, po, &culled_objects_, i, i + 1);
     _check_collisions_step(&collision_buffer_particles_, po, pp, &culled_particles_, i, 0);
   }
 }
@@ -187,4 +188,3 @@ void collisions_engine_tick(void) {
 
   PROFILE_ZONE_END();
 }
-
