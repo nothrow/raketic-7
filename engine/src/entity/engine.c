@@ -70,10 +70,11 @@ static void _engine_tick() {
         float vx = (-ox + perp_x * spread) * base_speed * speed_variance + pvx;
         float vy = (-oy + perp_y * spread) * base_speed * speed_variance + pvy;
 
-        // position jitter: slight offset from exact engine position
+        // position: spawn behind engine to avoid ship collision
+        float backward_offset = 8.0f;  // offset behind the ship
         float pos_jitter = 2.0f;
-        float px = pd->world_position_orientation.position_x[i] + perp_x * randf_symmetric() * pos_jitter;
-        float py = pd->world_position_orientation.position_y[i] + perp_y * randf_symmetric() * pos_jitter;
+        float px = pd->world_position_orientation.position_x[i] - ox * backward_offset + perp_x * randf_symmetric() * pos_jitter;
+        float py = pd->world_position_orientation.position_y[i] - oy * backward_offset + perp_y * randf_symmetric() * pos_jitter;
 
         // TTL variance: 0.5 - 1.5 seconds
         uint16_t ttl = (uint16_t)((0.5f + randf() * 1.0f) * TICKS_IN_SECOND);
@@ -109,7 +110,7 @@ static void _engine_part_dispatch(entity_id_t id, message_t msg) {
       _engine_set_thrust_percentage(id, 0.0f);
     }
     break;
-  
+
   case MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS:
     _engine_tick();
   }

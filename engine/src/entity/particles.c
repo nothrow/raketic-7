@@ -2,6 +2,7 @@
 #include "controller.h"
 #include "particles.h"
 #include "messaging/messaging.h"
+#include "debug/profiler.h"
 
 #include "../generated/renderer.gen.h" // todo remove
 
@@ -38,6 +39,7 @@ void particles_create_particle(particle_create_t* pc) {
 static void _particles_dispatch(entity_id_t id, message_t msg) {
   (void)id;
 
+
   switch (msg.message) {
   case MESSAGE_COLLIDE_OBJECT_PARTICLE: {
     uint32_t particle_idx = (uint32_t)(msg.data_b);
@@ -47,6 +49,48 @@ static void _particles_dispatch(entity_id_t id, message_t msg) {
     }
   } break;
   }
+}
+
+static void _move_particle(struct particles_data* pd, size_t target, size_t source) {
+  pd->position_orientation.position_x[target] = pd->position_orientation.position_x[source];
+  pd->position_orientation.position_y[target] = pd->position_orientation.position_y[source];
+  pd->position_orientation.orientation_x[target] = pd->position_orientation.orientation_x[source];
+  pd->position_orientation.orientation_y[target] = pd->position_orientation.orientation_y[source];
+  pd->position_orientation.radius[target] = pd->position_orientation.radius[source];
+
+  pd->velocity_x[target] = pd->velocity_x[source];
+  pd->velocity_y[target] = pd->velocity_y[source];
+  pd->lifetime_ticks[target] = pd->lifetime_ticks[source];
+  pd->lifetime_max[target] = pd->lifetime_max[source];
+  pd->model_idx[target] = pd->model_idx[source];
+
+  pd->lifetime_ticks[source] = 0;
+}
+
+void entity_manager_pack_particles(void) {
+  PROFILE_ZONE("entity_manager_pack_particles");
+  struct particles_data* pd = entity_manager_get_particles();
+
+  int32_t last_alive = (int32_t)(pd->active - 1);
+
+  for (int32_t i = 0; i < last_alive; ++i) {
+    if (pd->lifetime_ticks[i] == 0) {
+      for (; last_alive >= i; --last_alive) {
+        if (pd->lifetime_ticks[last_alive] > 0) {
+          break;
+        }
+      }
+
+      if (i < last_alive) {
+        _move_particle(pd, i, last_alive);
+        --last_alive; // Consumed this particle, move to next
+      } else {
+        break;
+      }
+    }
+  }
+  pd->active = last_alive + 1;
+  PROFILE_ZONE_END();
 }
 
 void particles_entity_initialize(void) {

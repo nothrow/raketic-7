@@ -176,9 +176,9 @@ void collisions_engine_tick(void) {
     messaging_send(idxb, collision);
   }
 
-  for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
-    entity_id_t idxa = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxa);
-    size_t particleidx = collision_buffer_objects_.idx[i].idxb;
+  for (size_t i = 0; i < collision_buffer_particles_.active; i++) {
+    entity_id_t idxa = entity_manager_resolve_object(collision_buffer_particles_.idx[i].idxa);
+    size_t particleidx = collision_buffer_particles_.idx[i].idxb;
 
     message_t collision = CREATE_MESSAGE(MESSAGE_COLLIDE_OBJECT_PARTICLE, idxa._, particleidx);
     messaging_send(idxa, collision);
