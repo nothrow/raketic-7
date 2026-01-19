@@ -32,13 +32,13 @@
 
 // for easier passing to renderer
 typedef struct {
-  float* position_x;
-  float* position_y;
+  float* __restrict position_x;
+  float* __restrict position_y;
 
-  float* orientation_x;
-  float* orientation_y;
+  float* __restrict orientation_x;
+  float* __restrict orientation_y;
 
-  float* radius;
+  float* __restrict radius;
 } position_orientation_t;
 
 typedef struct {

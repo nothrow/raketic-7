@@ -36,14 +36,14 @@ static void _particle_manager_euler(struct particles_data* pd) {
 }
 
 static void _objects_apply_yoshida_step(struct objects_data* od, float step, float hstep) {
-  float* px = od->position_orientation.position_x;
-  float* py = od->position_orientation.position_y;
+  float* __restrict px = od->position_orientation.position_x;
+  float* __restrict py = od->position_orientation.position_y;
 
-  float* vx = od->velocity_x;
-  float* vy = od->velocity_y;
+  float* __restrict vx = od->velocity_x;
+  float* __restrict vy = od->velocity_y;
 
-  float* ax = od->acceleration_x;
-  float* ay = od->acceleration_y;
+  float* __restrict ax = od->acceleration_x;
+  float* __restrict ay = od->acceleration_y;
 
   float* end_px = od->position_orientation.position_x + od->active;
 
@@ -83,12 +83,12 @@ static void _objects_apply_yoshida_step(struct objects_data* od, float step, flo
 }
 
 static void _recompute_thrust(struct objects_data* od) {
-  float* thrust = od->thrust;
-  float* mass = od->mass;
-  float* ox = od->position_orientation.orientation_x;
-  float* oy = od->position_orientation.orientation_y;
-  float* accx = od->acceleration_x;
-  float* accy = od->acceleration_y;
+  float* __restrict thrust = od->thrust;
+  float* __restrict mass = od->mass;
+  float* __restrict ox = od->position_orientation.orientation_x;
+  float* __restrict oy = od->position_orientation.orientation_y;
+  float* __restrict accx = od->acceleration_x;
+  float* __restrict accy = od->acceleration_y;
 
   __m256 epsilon = _mm256_set1_ps(0.0001f); // avoid division by zero
 
@@ -129,9 +129,9 @@ static void _recompute_acceleration(struct objects_data* od) {
     __m256 ipx = _mm256_set1_ps(od->position_orientation.position_x[i]);
     __m256 ipy = _mm256_set1_ps(od->position_orientation.position_y[i]);
 
-    float* px = od->position_orientation.position_x;
-    float* py = od->position_orientation.position_y;
-    float* m = od->mass;
+    float* __restrict px = od->position_orientation.position_x;
+    float* __restrict py = od->position_orientation.position_y;
+    float* __restrict m = od->mass;
 
     float* end_px = od->position_orientation.position_x + od->active;
 
@@ -189,8 +189,8 @@ static uint32_t _particle_manager_ttl(struct particles_data* pd) {
   __m256i zero = _mm256_setzero_si256();
   __m256i one = _mm256_set1_epi16(1);
 
-  uint16_t* lifetime_ticks = pd->lifetime_ticks;
-  uint16_t* end_life = pd->lifetime_ticks + pd->active;
+  uint16_t* __restrict lifetime_ticks = pd->lifetime_ticks;
+  uint16_t* __restrict end_life = pd->lifetime_ticks + pd->active;
 
   uint32_t alive_count = 0;
 

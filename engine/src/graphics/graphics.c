@@ -9,8 +9,8 @@
 
 static void _particles_colors(const struct particles_data* pd, color_t* target) {
   PROFILE_ZONE("_particles_colors");
-  uint16_t* lifetime_ticks = pd->lifetime_ticks;
-  uint16_t* lifetime_max = pd->lifetime_max;
+  uint16_t* __restrict lifetime_ticks = pd->lifetime_ticks;
+  uint16_t* __restrict lifetime_max = pd->lifetime_max;
 
   uint16_t* end_life = pd->lifetime_ticks + pd->active;
 

@@ -10,23 +10,23 @@ struct objects_data {
   uint32_t active;
   uint32_t capacity;
 
-  float* velocity_x;
-  float* velocity_y;
+  float* __restrict velocity_x;
+  float* __restrict velocity_y;
 
-  float* acceleration_x;
-  float* acceleration_y;
+  float* __restrict acceleration_x;
+  float* __restrict acceleration_y;
 
-  float* thrust;
-  entity_type_t* type;
+  float* __restrict thrust;
+  entity_type_t* __restrict type;
 
   position_orientation_t position_orientation;
 
-  uint32_t* parts_start_idx;
-  uint32_t* parts_count;
+  uint32_t* __restrict parts_start_idx;
+  uint32_t* __restrict parts_count;
 
-  uint16_t* model_idx;
+  uint16_t* __restrict model_idx;
 
-  float* mass;
+  float* __restrict mass;
 };
 
 struct parts_data {
