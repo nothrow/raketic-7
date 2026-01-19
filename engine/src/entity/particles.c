@@ -1,6 +1,7 @@
 #include "platform/platform.h"
 #include "controller.h"
 #include "particles.h"
+#include "messaging/messaging.h"
 
 #include "../generated/renderer.gen.h" // todo remove
 
@@ -38,9 +39,13 @@ static void _particles_dispatch(entity_id_t id, message_t msg) {
   (void)id;
 
   switch (msg.message) {
-  case MESSAGE_PARTICLE_SPAWN:
-    _ASSERT(0 && "not yet implemented");
-    break;
+  case MESSAGE_COLLIDE_OBJECT_PARTICLE: {
+    uint32_t particle_idx = (uint32_t)(msg.data_b);
+    struct particles_data* pd = entity_manager_get_particles();
+    if (particle_idx < pd->active) {
+      pd->lifetime_ticks[particle_idx] = 0; // kill particle
+    }
+  } break;
   }
 }
 

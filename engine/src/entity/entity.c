@@ -184,6 +184,15 @@ void entity_manager_pack_particles(void) {
   PROFILE_ZONE_END();
 }
 
+entity_id_t entity_manager_resolve_object(uint32_t ordinal) {
+  struct objects_data* od = &manager_.objects;
+  _ASSERT(ordinal < od->active);
+
+  entity_type_t type = od->type[ordinal];
+  entity_id_t ret = OBJECT_ID_WITH_TYPE(ordinal, type._);
+  return ret;
+}
+
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {
   uint8_t entity_type = GET_TYPE(recipient_id);
 

@@ -2,6 +2,7 @@
 #include "debug/profiler.h"
 #include "entity/entity.h"
 #include "platform/platform.h"
+#include "messaging/messaging.h"
 
 #include <immintrin.h>
 
@@ -165,6 +166,24 @@ void collisions_engine_tick(void) {
 
   PROFILE_PLOT("collisions_objects", collision_buffer_objects_.active);
   PROFILE_PLOT("collisions_particles", collision_buffer_particles_.active);
+
+  for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
+    entity_id_t idxa = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxa);
+    entity_id_t idxb = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxb);
+
+    message_t collision = CREATE_MESSAGE(MESSAGE_COLLIDE_OBJECT_OBJECT, idxa._, idxb._);
+    messaging_send(idxa, collision);
+    messaging_send(idxb, collision);
+  }
+
+  for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
+    entity_id_t idxa = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxa);
+    size_t particleidx = collision_buffer_objects_.idx[i].idxb;
+
+    message_t collision = CREATE_MESSAGE(MESSAGE_COLLIDE_OBJECT_PARTICLE, idxa._, particleidx);
+    messaging_send(idxa, collision);
+    messaging_send(TYPE_BROADCAST(ENTITY_TYPEREF_PARTICLES), collision);
+  }
 
   PROFILE_ZONE_END();
 }

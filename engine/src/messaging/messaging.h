@@ -21,7 +21,9 @@ enum message_codes_system {
   MESSAGE_BROADCAST_SYSTEM_INITIALIZED = 0,
   MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS = 1,
   MESSAGE_BROADCAST_FRAME_TICK = 2,
-  MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3
+  MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3,
+  MESSAGE_COLLIDE_OBJECT_OBJECT = 4, // data_a = this entity id, data_b = other entity id
+  MESSAGE_COLLIDE_OBJECT_PARTICLE = 5 // data_a = this entity id, data_b = particle id
 };
 
 enum message_codes_ship {
@@ -29,10 +31,6 @@ enum message_codes_ship {
   MESSAGE_SHIP_ROTATE_TO =
       0x11, // data_a = target vector x * 65535 (fixed int), data_b = target vector y * 65535 (fixed int)
   MESSAGE_SHIP_ENGINES_THRUST = 0x12, // data_a = thrust percentage 0-100
-};
-
-enum message_codes_particles {
-  MESSAGE_PARTICLE_SPAWN = 0x10
 };
 
 static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t data_b) {

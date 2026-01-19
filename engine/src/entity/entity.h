@@ -78,3 +78,4 @@ void entity_manager_get_vectors(entity_id_t entity_id, float* pos, float* vel);
 void entity_manager_pack_particles(void);
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg);
+entity_id_t entity_manager_resolve_object(uint32_t ordinal);
