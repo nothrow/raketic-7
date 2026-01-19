@@ -188,3 +188,239 @@ void collisions_engine_tick(void) {
 
   PROFILE_ZONE_END();
 }
+
+#ifdef UNIT_TESTS
+#include "../test/unity.h"
+#include <string.h>
+
+// Helper to check if a collision pair exists in the buffer (order-independent)
+static int _collision_exists(struct collision_buffer* buf, uint32_t a, uint32_t b) {
+  for (uint32_t i = 0; i < buf->active; i++) {
+    if ((buf->idx[i].idxa == a && buf->idx[i].idxb == b) ||
+        (buf->idx[i].idxa == b && buf->idx[i].idxb == a)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+// Helper to count how many times a pair appears
+static int _collision_count(struct collision_buffer* buf, uint32_t a, uint32_t b) {
+  int count = 0;
+  for (uint32_t i = 0; i < buf->active; i++) {
+    if ((buf->idx[i].idxa == a && buf->idx[i].idxb == b) ||
+        (buf->idx[i].idxa == b && buf->idx[i].idxb == a)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Test: No duplicate collision pairs
+void collision_test__no_duplicates(void) {
+  // Setup: 4 objects all at origin with radius 10 (all collide with each other)
+  struct objects_data* od = entity_manager_get_objects();
+
+  // Clear and setup positions - all at (0,0) so they all collide
+  memset(od->position_orientation.position_x, 0, sizeof(float) * 32);
+  memset(od->position_orientation.position_y, 0, sizeof(float) * 32);
+  for (int i = 0; i < 16; i++) {
+    od->position_orientation.radius[i] = 10.0f;
+  }
+  od->active = 16;
+
+  // Manually set culled indices: 0, 1, 2, 3 (contiguous)
+  culled_objects_.idx[0] = 0;
+  culled_objects_.idx[1] = 1;
+  culled_objects_.idx[2] = 2;
+  culled_objects_.idx[3] = 3;
+  culled_objects_.active = 4;
+
+  // Pad with zeros to avoid reading garbage
+  for (int i = 4; i < 16; i++) {
+    culled_objects_.idx[i] = 0;
+  }
+
+  // Clear collision buffer
+  collision_buffer_objects_.active = 0;
+
+  // Run collision detection
+  _check_collisions(&od->position_orientation, &od->position_orientation);
+
+  // Expected pairs: (0,1), (0,2), (0,3), (1,2), (1,3), (2,3) = 6 pairs
+  // Each should appear exactly once
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 0, 1));
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 0, 2));
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 0, 3));
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 1, 2));
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 1, 3));
+  TEST_ASSERT_EQUAL_INT(1, _collision_count(&collision_buffer_objects_, 2, 3));
+
+  // Total should be exactly 6
+  TEST_ASSERT_EQUAL_UINT32(6, collision_buffer_objects_.active);
+}
+
+// Test: Gather works correctly with scattered/non-contiguous indices
+void collision_test__scattered_indices(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  // Setup: Objects at scattered positions
+  // Object 0: (0, 0)
+  // Object 5: (1, 0)   <- close to 0, should collide
+  // Object 10: (100, 100) <- far away
+  // Object 15: (2, 0)  <- close to 0 and 5, should collide with both
+  memset(od->position_orientation.position_x, 0, sizeof(float) * 64);
+  memset(od->position_orientation.position_y, 0, sizeof(float) * 64);
+
+  od->position_orientation.position_x[0] = 0.0f;
+  od->position_orientation.position_y[0] = 0.0f;
+  od->position_orientation.radius[0] = 5.0f;
+
+  od->position_orientation.position_x[5] = 1.0f;
+  od->position_orientation.position_y[5] = 0.0f;
+  od->position_orientation.radius[5] = 5.0f;
+
+  od->position_orientation.position_x[10] = 100.0f;
+  od->position_orientation.position_y[10] = 100.0f;
+  od->position_orientation.radius[10] = 5.0f;
+
+  od->position_orientation.position_x[15] = 2.0f;
+  od->position_orientation.position_y[15] = 0.0f;
+  od->position_orientation.radius[15] = 5.0f;
+
+  od->active = 24;  // Must be multiple of 8
+
+  // Set scattered culled indices (holes in the array)
+  culled_objects_.idx[0] = 0;
+  culled_objects_.idx[1] = 5;
+  culled_objects_.idx[2] = 10;
+  culled_objects_.idx[3] = 15;
+  culled_objects_.active = 4;
+
+  // Pad to avoid garbage reads
+  for (int i = 4; i < 16; i++) {
+    culled_objects_.idx[i] = 0;
+  }
+
+  collision_buffer_objects_.active = 0;
+
+  _check_collisions(&od->position_orientation, &od->position_orientation);
+
+  // Expected collisions:
+  // - 0 and 5: distance=1, radii=10 -> collide
+  // - 0 and 15: distance=2, radii=10 -> collide
+  // - 5 and 15: distance=1, radii=10 -> collide
+  // - 10 is far from everyone -> no collisions
+  TEST_ASSERT_TRUE(_collision_exists(&collision_buffer_objects_, 0, 5));
+  TEST_ASSERT_TRUE(_collision_exists(&collision_buffer_objects_, 0, 15));
+  TEST_ASSERT_TRUE(_collision_exists(&collision_buffer_objects_, 5, 15));
+
+  // Object 10 should not collide with anyone
+  TEST_ASSERT_FALSE(_collision_exists(&collision_buffer_objects_, 0, 10));
+  TEST_ASSERT_FALSE(_collision_exists(&collision_buffer_objects_, 5, 10));
+  TEST_ASSERT_FALSE(_collision_exists(&collision_buffer_objects_, 10, 15));
+
+  TEST_ASSERT_EQUAL_UINT32(3, collision_buffer_objects_.active);
+}
+
+// Test: Don't read beyond active count
+void collision_test__respects_active_count(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  // Setup: Put colliding objects beyond the active count
+  // These should NOT be detected
+  memset(od->position_orientation.position_x, 0, sizeof(float) * 64);
+  memset(od->position_orientation.position_y, 0, sizeof(float) * 64);
+
+  // Object 0 and 1: both at origin, will collide
+  od->position_orientation.position_x[0] = 0.0f;
+  od->position_orientation.position_y[0] = 0.0f;
+  od->position_orientation.radius[0] = 10.0f;
+
+  od->position_orientation.position_x[1] = 0.0f;
+  od->position_orientation.position_y[1] = 0.0f;
+  od->position_orientation.radius[1] = 10.0f;
+
+  // Object 2: also at origin (would collide if included)
+  od->position_orientation.position_x[2] = 0.0f;
+  od->position_orientation.position_y[2] = 0.0f;
+  od->position_orientation.radius[2] = 10.0f;
+
+  od->active = 24;
+
+  // Only include objects 0 and 1 in culled array
+  culled_objects_.idx[0] = 0;
+  culled_objects_.idx[1] = 1;
+  culled_objects_.active = 2;  // Only 2 objects!
+
+  // Put object 2's index beyond active (should be ignored)
+  culled_objects_.idx[2] = 2;
+
+  // Pad rest
+  for (int i = 3; i < 16; i++) {
+    culled_objects_.idx[i] = 0;
+  }
+
+  collision_buffer_objects_.active = 0;
+
+  _check_collisions(&od->position_orientation, &od->position_orientation);
+
+  // Should only detect collision between 0 and 1
+  TEST_ASSERT_EQUAL_UINT32(1, collision_buffer_objects_.active);
+  TEST_ASSERT_TRUE(_collision_exists(&collision_buffer_objects_, 0, 1));
+
+  // Object 2 should NOT appear in any collisions
+  TEST_ASSERT_FALSE(_collision_exists(&collision_buffer_objects_, 0, 2));
+  TEST_ASSERT_FALSE(_collision_exists(&collision_buffer_objects_, 1, 2));
+}
+
+// Test: Edge case - exactly 8 objects (aligned)
+void collision_test__aligned_8_objects(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  // All 8 objects at origin - all collide
+  for (int i = 0; i < 8; i++) {
+    od->position_orientation.position_x[i] = 0.0f;
+    od->position_orientation.position_y[i] = 0.0f;
+    od->position_orientation.radius[i] = 10.0f;
+    culled_objects_.idx[i] = i;
+  }
+  od->active = 8;
+  culled_objects_.active = 8;
+
+  // Pad
+  for (int i = 8; i < 16; i++) {
+    culled_objects_.idx[i] = 0;
+  }
+
+  collision_buffer_objects_.active = 0;
+
+  _check_collisions(&od->position_orientation, &od->position_orientation);
+
+  // 8 choose 2 = 28 pairs
+  TEST_ASSERT_EQUAL_UINT32(28, collision_buffer_objects_.active);
+}
+
+// Test: Edge case - 9 objects (not aligned, tests boundary)
+void collision_test__unaligned_9_objects(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  // 9 objects at origin - all collide
+  for (int i = 0; i < 16; i++) {
+    od->position_orientation.position_x[i] = 0.0f;
+    od->position_orientation.position_y[i] = 0.0f;
+    od->position_orientation.radius[i] = 10.0f;
+    culled_objects_.idx[i] = i;
+  }
+  od->active = 16;
+  culled_objects_.active = 9;  // Only 9 objects
+
+  collision_buffer_objects_.active = 0;
+
+  _check_collisions(&od->position_orientation, &od->position_orientation);
+
+  // 9 choose 2 = 36 pairs
+  TEST_ASSERT_EQUAL_UINT32(36, collision_buffer_objects_.active);
+}
+
+#endif

@@ -114,8 +114,9 @@ void entity_manager_initialize(void) {
   _parts_data_initialize(&manager_.parts);
 
   _entity_manager_types_initialize();
-
+#ifndef UNIT_TESTS
   _generate_dummy_data();
+#endif
 }
 
 struct particles_data* entity_manager_get_particles(void) {
