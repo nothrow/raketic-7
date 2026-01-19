@@ -19,6 +19,7 @@ entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {
   uint32_t new_idx = od->active;
   od->type[new_idx] = type;
   od->model_idx[new_idx] = model;
+  od->position_orientation.radius[new_idx] = _generated_get_model_radius(model);
   od->mass[new_idx] = 1; // todo
 
   _clear_position_orientation(new_idx);

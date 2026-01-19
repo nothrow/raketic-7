@@ -25,7 +25,8 @@ struct collision_buffer {
 static struct collisions_engine_data culled_objects_;
 static struct collisions_engine_data culled_particles_;
 
-static struct collision_buffer collision_buffer_;
+static struct collision_buffer collision_buffer_objects_;
+static struct collision_buffer collision_buffer_particles_;
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -66,52 +67,60 @@ void _cull_visible_objects(position_orientation_t* po, size_t active, struct col
   }
 }
 
+void _collision_buffer_initialize(struct collision_buffer* buffer, size_t capacity) {
+  buffer->capacity = (uint32_t)capacity;
+  buffer->active = 0;
+  buffer->idx = platform_retrieve_memory(sizeof(uint32_t) * 2 * buffer->capacity);
+}
+
+void _collisions_engine_data_initialize(struct collisions_engine_data* data, size_t capacity) {
+  data->capacity = (uint32_t)capacity;
+  data->active = 0;
+  data->idx = platform_retrieve_memory(sizeof(uint32_t) * data->capacity);
+}
+
 void collisions_engine_initialize(void) {
   struct objects_data* od = entity_manager_get_objects();
   struct particles_data* pd = entity_manager_get_particles();
 
-  collision_buffer_.capacity = od->capacity;
-  collision_buffer_.active = 0;
-  collision_buffer_.idx = platform_retrieve_memory(sizeof(uint32_t) * 2 * collision_buffer_.capacity);
+  _collision_buffer_initialize(&collision_buffer_objects_, od->capacity);
+  _collision_buffer_initialize(&collision_buffer_particles_, pd->capacity);
 
-  culled_objects_.capacity = od->capacity;
-  culled_objects_.active = 0;
-  culled_objects_.idx = platform_retrieve_memory(sizeof(uint32_t) * culled_objects_.capacity);
-
-  culled_particles_.capacity = pd->capacity;
-  culled_particles_.active = 0;
-  culled_particles_.idx = platform_retrieve_memory(sizeof(uint32_t) * culled_particles_.capacity);
+  _collisions_engine_data_initialize(&culled_objects_, od->capacity);
+  _collisions_engine_data_initialize(&culled_particles_, pd->capacity);
 }
 
 static void _check_collisions_step(
   struct collision_buffer* collision_buffer,
-  const position_orientation_t* po,
-  const float* radius,
+  const position_orientation_t* pa,
+  const position_orientation_t* pb,
   const struct collisions_engine_data* target,
-  const size_t idx) {
-    __m256 px = _mm256_set1_ps(po->position_x[idx]);
-    __m256 py = _mm256_set1_ps(po->position_y[idx]);
-    __m256 pr = _mm256_set1_ps(radius[idx]);
+  const size_t idx,
+    const size_t from) // where to start. when doing particle<->object, from=0; when doing object<->object, from=idx+1
+{
+    __m256 px = _mm256_set1_ps(pa->position_x[idx]);
+    __m256 py = _mm256_set1_ps(pa->position_y[idx]);
+    __m256 pr = _mm256_set1_ps(pa->radius[idx]);
 
 
-    size_t remaining = target->active - ((idx + 1) & ~(size_t)0x7);
+    size_t remaining = target->active - from;
     // start aligned to 8
     // we will remove j<=idx in postprocessing
-    for (size_t j = (idx + 1) & ~(size_t)0x7; j < target->active; j += 8, remaining -= 8) {
-      __m256 pxj = _mm256_load_ps(&po->position_x[j]);
-      __m256 pyj = _mm256_load_ps(&po->position_y[j]);
+    for (size_t j = from; j < target->active; j += 8, remaining -= 8) {
+      __m256 pxj = _mm256_load_ps(&pb->position_x[j]);
+      __m256 pyj = _mm256_load_ps(&pb->position_y[j]);
 
       __m256 dx = _mm256_sub_ps(px, pxj);
       __m256 dy = _mm256_sub_ps(py, pyj);
 
       __m256 d = _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy));
-      __m256 r = _mm256_add_ps(pr, _mm256_load_ps(&radius[j]));
+      __m256 r = _mm256_add_ps(pr, _mm256_load_ps(&pb->radius[j]));
 
       __m256 cmp = _mm256_cmp_ps(d, _mm256_mul_ps(r, r), _CMP_LE_OQ);
       int mask = _mm256_movemask_ps(cmp);
       for (size_t i = 0; i < MIN(remaining, 8); i++) {
         size_t obj_idx = j + i;
-        if (mask & (1 << i) && obj_idx > idx) {
+        if (mask & (1 << i) && obj_idx > from) {
           collision_buffer->idx[collision_buffer->active].idxa = (uint32_t)idx;
           collision_buffer->idx[collision_buffer->active].idxb = (uint32_t)obj_idx;
           collision_buffer->active++;
@@ -120,12 +129,15 @@ static void _check_collisions_step(
     }
 }
 
-void _check_collisions(struct collision_buffer* collision_buffer, const position_orientation_t* po, const float* radius, const struct collisions_engine_data* target) {
-  for (size_t i = 0; i < target->active; i++) {
-    _check_collisions_step(collision_buffer, po, radius, target, i);
+void _check_collisions(
+  const position_orientation_t* po,
+  const position_orientation_t* pp
+) {
+  for (size_t i = 0; i < culled_objects_.active; i++) {
+    _check_collisions_step(&collision_buffer_objects_, po, po, &culled_objects_, i, (i + 1) & ~(size_t)0x7);
+    _check_collisions_step(&collision_buffer_particles_, po, pp, &culled_particles_, i, 0);
   }
 }
-
 
 void collisions_engine_tick(void) {
   struct objects_data* od = entity_manager_get_objects();
@@ -143,14 +155,16 @@ void collisions_engine_tick(void) {
   PROFILE_PLOT("culled_objects", culled_objects_.active);
   PROFILE_PLOT("culled_particles", culled_particles_.active);
 
-  collision_buffer_.active = 0;
+  collision_buffer_objects_.active = 0;
+  collision_buffer_particles_.active = 0;
   {
     PROFILE_ZONE("checking collisions");
-    _check_collisions(&collision_buffer_, &od->position_orientation, od->radius, &culled_objects_);
+    _check_collisions(&od->position_orientation, &pd->position_orientation);
     PROFILE_ZONE_END();
   }
 
-  PROFILE_PLOT("collisions_objects", collision_buffer_.active);
+  PROFILE_PLOT("collisions_objects", collision_buffer_objects_.active);
+  PROFILE_PLOT("collisions_particles", collision_buffer_particles_.active);
 
   PROFILE_ZONE_END();
 }

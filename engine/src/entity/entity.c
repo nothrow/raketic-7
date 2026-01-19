@@ -30,6 +30,7 @@ static void _position_orientation_initialize(position_orientation_t* position_or
   position_orientation->position_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   position_orientation->orientation_x = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   position_orientation->orientation_y = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  position_orientation->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
 }
 
 static void _parts_data_initialize(struct parts_data* data) {
@@ -57,7 +58,6 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->thrust = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->model_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
   data->mass = platform_retrieve_memory(sizeof(float) * MAXSIZE);
-  data->radius = platform_retrieve_memory(sizeof(float) * MAXSIZE);
   data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
   data->parts_start_idx = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
   data->parts_count = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
@@ -93,7 +93,7 @@ static void _generate_dummy_data(void) {
 
   // Test planet
   entity_id_t planet = _generate_entity_by_model(ENTITY_TYPEREF_PLANET, MODEL_PLANET_IDX);
-  entity_manager_get_objects()->mass[GET_ORDINAL(planet)] = 10.0f;
+  entity_manager_get_objects()->mass[GET_ORDINAL(planet)] = 10000.0f;
   entity_manager_get_objects()->position_orientation.position_x[GET_ORDINAL(planet)] = 100.0f;
   entity_manager_get_objects()->position_orientation.position_y[GET_ORDINAL(planet)] = 100.0f;
   (void)planet;  // suppress unused warning for now

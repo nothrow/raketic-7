@@ -17,6 +17,10 @@ void _memory_initialize(void);
 void _math_initialize(void);
 void _gl_initialize(void);
 
+bool platform_input_is_key_down(enum keys key) {
+  return input_state_.keyPressed[key];
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
   switch (msg) {
   case WM_INPUT: {

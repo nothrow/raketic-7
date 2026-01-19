@@ -1,7 +1,8 @@
 #include "platform/platform.h"
 #include "controller.h"
-
 #include "particles.h"
+
+#include "../generated/renderer.gen.h" // todo remove
 
 static void _spawn_particle(particle_create_t* pcm) {
   struct particles_data* pd = entity_manager_get_particles();
@@ -11,7 +12,7 @@ static void _spawn_particle(particle_create_t* pcm) {
   uint32_t idx = pd->active;
   pd->position_orientation.position_x[idx] = pcm->x;
   pd->position_orientation.position_y[idx] = pcm->y;
-
+  pd->position_orientation.radius[idx] = _generated_get_model_radius(pcm->model_idx);
 
   pd->velocity_x[idx] = pcm->vx;
   pd->velocity_y[idx] = pcm->vy;

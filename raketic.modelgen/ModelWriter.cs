@@ -159,4 +159,30 @@ internal class ModelWriter
         SlotType.Engine => "PART_TYPEREF_ENGINE",
         _ => throw new InvalidOperationException($"Unknown slot type: {type}"),
     };
+
+    public void DumpModelRadius(StreamWriter w, Model model)
+    {
+        // Compute bounding radius: max distance from origin to any vertex
+        double maxDistSq = 0;
+        foreach (var linestrip in model.LineStrips)
+        {
+            foreach (var point in linestrip.Points)
+            {
+                double distSq = point.X * point.X + point.Y * point.Y;
+                if (distSq > maxDistSq)
+                    maxDistSq = distSq;
+            }
+        }
+
+        // Ceiling to be conservative, clamp to uint8 range
+        int radius = (int)Math.Ceiling(Math.Sqrt(maxDistSq));
+        if (radius > 65535)
+            throw new InvalidOperationException($"Model {model.FileName} has a radius greater than 65535");
+        else if (radius > 255)
+            w.WriteLine($"static const uint16_t _model_{model.FileName}_radius = (uint16_t){radius};");
+        else
+            w.WriteLine($"static const uint8_t _model_{model.FileName}_radius = (uint8_t){radius};");
+
+        w.WriteLine();
+    }
 }

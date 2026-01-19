@@ -35,6 +35,8 @@ hsWriter.WriteLine("void _generated_fill_slots(uint16_t index, entity_id_t paren
 hWriter.WriteLine("#pragma once");
 hWriter.WriteLine("#include \"platform/platform.h\"");
 hWriter.WriteLine("void _generated_draw_model(color_t color, uint16_t index);");
+hWriter.WriteLine("uint16_t _generated_get_model_radius(uint16_t index);");
+hWriter.WriteLine();
 
 cWriter.WriteLine("#include \"renderer.gen.h\"");
 cWriter.WriteLine("#include \"slots.gen.h\"");
@@ -48,6 +50,8 @@ foreach (var model in models)
     Console.Write($"Processing model: {model.FileName}");
 
     var written = modelWriter.DumpModelData(cWriter, model);
+    modelWriter.DumpModelRadius(cWriter, model);
+
     Console.WriteLine($" - written {written} vertices");
 
     hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
@@ -65,6 +69,8 @@ foreach(var model in models)
     modelWriter.DumpModelSlots(cWriter, model);
 }
 
+
+
 cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
 cWriter.WriteLine($"  switch (index) {{");
 foreach (var model in models)
@@ -75,6 +81,17 @@ foreach (var model in models)
 cWriter.WriteLine($"    default: _ASSERT(0);");
 cWriter.WriteLine($"  }}");
 cWriter.WriteLine($"}}");
+cWriter.WriteLine();
+cWriter.WriteLine($"uint16_t _generated_get_model_radius(uint16_t index) {{");
+cWriter.WriteLine($"  switch (index) {{");
+foreach (var model in models)
+{
+    cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX: return _model_{model.FileName}_radius;");
+}
+cWriter.WriteLine($"    default: _ASSERT(0); return 0;");
+cWriter.WriteLine($"  }}");
+cWriter.WriteLine($"}}");
+cWriter.WriteLine();
 
 cWriter.WriteLine($"void _generated_fill_slots(uint16_t index, entity_id_t parent) {{");
 cWriter.WriteLine($"  switch (index) {{");

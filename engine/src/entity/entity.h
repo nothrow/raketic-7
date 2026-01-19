@@ -27,7 +27,6 @@ struct objects_data {
   uint16_t* model_idx;
 
   float* mass;
-  float* radius;
 };
 
 struct parts_data {

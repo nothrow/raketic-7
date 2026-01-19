@@ -37,6 +37,8 @@ typedef struct {
 
   float* orientation_x;
   float* orientation_y;
+
+  float* radius;
 } position_orientation_t;
 
 typedef struct {
