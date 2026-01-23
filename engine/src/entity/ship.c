@@ -59,6 +59,15 @@ static void _ship_rotate_to(entity_id_t id, float x, float y) {
   vec2_normalize_i(&od->position_orientation.orientation_x[obj_idx], &od->position_orientation.orientation_y[obj_idx], 1);
 }
 
+static void _ship_handle_collision(entity_id_t id, const message_t* msg) {
+  (id);
+
+  entity_id_t other = { msg->data_b };
+  if (GET_TYPE(other) == ENTITY_TYPEREF_PLANET._) {
+    // destroy
+  }
+}
+
 static void _ship_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
   case MESSAGE_SHIP_ROTATE_BY:
@@ -66,6 +75,9 @@ static void _ship_dispatch(entity_id_t id, message_t msg) {
     break;
   case MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS:
     _ship_apply_thrust_from_engines();
+    break;
+  case MESSAGE_COLLIDE_OBJECT_OBJECT:
+    _ship_handle_collision(id, &msg);
     break;
   case MESSAGE_SHIP_ROTATE_TO:
     _ship_rotate_to(id, _i2f(msg.data_a), _i2f(msg.data_b));
