@@ -1,5 +1,4 @@
 using raketic.modelgen;
-using System.Runtime.CompilerServices;
 
 // relative paths:
 // sln/models/ for all svgs
@@ -21,8 +20,9 @@ var models = svgFiles.Select(SvgParser.ParseSvg).ToArray();
 
 int i = 0;
 
-using var hWriter = new StreamWriter(paths.OutputHRenderer, false);
 using var hsWriter = new StreamWriter(paths.OutputHSlots, false);
+
+using var hWriter = new StreamWriter(paths.OutputHRenderer, false);
 using var cWriter = new StreamWriter(paths.OutputC, false);
 
 Console.WriteLine();
@@ -43,55 +43,8 @@ cWriter.WriteLine("#include \"slots.gen.h\"");
 cWriter.WriteLine("#include <Windows.h>");
 cWriter.WriteLine("#include <gl/GL.h>");
 
-var modelWriter = new ModelWriter();
-
-foreach (var model in models)
-{
-    Console.Write($"Processing model: {model.FileName}");
-
-    var written = modelWriter.DumpModelData(cWriter, model);
-    modelWriter.DumpModelRadius(cWriter, model);
-
-    Console.WriteLine($" - written {written} vertices");
-
-    hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
-}
-
-modelWriter.DumpModelColors(cWriter, models);
-
-foreach (var model in models)
-{
-    modelWriter.DumpModel(cWriter, model);
-}
-
-foreach(var model in models)
-{
-    modelWriter.DumpModelSlots(cWriter, model);
-}
-
-
-
-cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
-cWriter.WriteLine($"  switch (index) {{");
-foreach (var model in models)
-{
-    cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX:");
-    cWriter.WriteLine($"      _model_{model.FileName}(color); break;");
-}
-cWriter.WriteLine($"    default: _ASSERT(0);");
-cWriter.WriteLine($"  }}");
-cWriter.WriteLine($"}}");
-cWriter.WriteLine();
-cWriter.WriteLine($"uint16_t _generated_get_model_radius(uint16_t index) {{");
-cWriter.WriteLine($"  switch (index) {{");
-foreach (var model in models)
-{
-    cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX: return _model_{model.FileName}_radius;");
-}
-cWriter.WriteLine($"    default: _ASSERT(0); return 0;");
-cWriter.WriteLine($"  }}");
-cWriter.WriteLine($"}}");
-cWriter.WriteLine();
+var svgWriter = new SvgModelWriter(cWriter, hWriter);
+svgWriter.Write(models);
 
 cWriter.WriteLine($"void _generated_fill_slots(uint16_t index, entity_id_t parent) {{");
 cWriter.WriteLine($"  switch (index) {{");
@@ -108,28 +61,3 @@ foreach (var model in models)
 cWriter.WriteLine($"    default: _ASSERT(0);");
 cWriter.WriteLine($"  }}");
 cWriter.WriteLine($"}}");
-
-static class Paths
-{
-    public static PathInfo Get([CallerFilePath] string thisFile = "")
-    {
-        var projDir = Path.GetDirectoryName(thisFile)!;
-        var slnDir = Path.GetFullPath(Path.Combine(projDir, ".."));
-
-        return new PathInfo
-        {
-            ModelsDir = Path.Combine(slnDir, "models"),
-            OutputC = Path.Combine(slnDir, "engine", "generated", "models.gen.c"),
-            OutputHRenderer = Path.Combine(slnDir, "engine", "generated", "renderer.gen.h"),
-            OutputHSlots = Path.Combine(slnDir, "engine", "generated", "slots.gen.h")
-        };
-    }
-}
-
-record PathInfo
-{
-    public required string ModelsDir { get; init; }
-    public required string OutputC { get; init; }
-    public required string OutputHRenderer { get; init; }
-    public required string OutputHSlots { get; init; }
-}
