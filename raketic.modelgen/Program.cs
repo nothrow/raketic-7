@@ -1,4 +1,7 @@
 using raketic.modelgen;
+using raketic.modelgen.Entity;
+using raketic.modelgen.Svg;
+using raketic.modelgen.World;
 
 // relative paths:
 // sln/models/ for all svgs
@@ -7,11 +10,27 @@ using raketic.modelgen;
 
 var paths = Paths.Get();
 
-Console.WriteLine($"Models directory: {paths.ModelsDir}");
+Console.WriteLine($"Data directory:   {paths.DataDir}");
 Console.WriteLine($"Output C file:    {paths.OutputC}");
 Console.WriteLine($"Output H file:    {paths.OutputHRenderer}");
 Console.WriteLine($"                  {paths.OutputHSlots}");
 Console.WriteLine();
+
+
+var modelContext = new ModelContext(paths);
+var entityContext = new EntityContext(paths, modelContext);
+var worldsParser = new WorldsParser(modelContext, entityContext);
+
+foreach(var world in Directory.GetFiles(Path.Combine(paths.DataDir, "worlds"), "*.lua"))
+{
+    Console.WriteLine($"Found world: {Path.GetFileName(world)}");
+
+    worldsParser.ParseWorld(world);
+}
+return;
+
+
+
 
 var svgFiles = Directory.GetFiles(paths.ModelsDir, "*.svg");
 

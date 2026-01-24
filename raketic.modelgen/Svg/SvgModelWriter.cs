@@ -4,12 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace raketic.modelgen;
+namespace raketic.modelgen.Svg;
 
 internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
 {
     private ModelWriter modelWriter = new ModelWriter();
-
 
     public void Write(Model[] models)
     {

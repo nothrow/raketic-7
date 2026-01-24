@@ -1,8 +1,55 @@
+using KeraLua;
 using Svg;
 using Svg.Pathing;
 using System.Drawing.Drawing2D;
 
-namespace raketic.modelgen;
+namespace raketic.modelgen.Svg;
+
+internal class ModelContext(PathInfo paths)
+{
+    private readonly Dictionary<string, Model> _modelCache = new();
+
+
+    public void RegisterForLua(Lua lua)
+    {
+        lua.NewTable();
+
+        lua.NewTable();
+
+        lua.PushString("__index");
+        lua.PushCFunction(ModelsGetRef);
+
+        lua.SetTable(-3);
+        lua.SetMetaTable(-2);
+
+        lua.SetGlobal("models");
+    }
+
+    private int ModelsGetRef(nint luaState)
+    {
+        var lua = Lua.FromIntPtr(luaState);
+        var key = lua.ToString(2);
+        lua.Pop(2);
+
+        var fullPath = Path.Combine(paths.ModelsDir, Path.ChangeExtension(key, ".svg"));
+
+        if (!_modelCache.TryGetValue(fullPath, out var cached))
+        {
+            _modelCache[fullPath] = cached = SvgParser.ParseSvg(fullPath);
+        }
+
+        lua.NewTable();
+        lua.PushString("radius");
+        lua.PushNumber(cached.GetRadius());
+        lua.SetTable(-3);
+
+        lua.PushString("__key");
+        lua.PushString(fullPath);
+        lua.SetTable(-3);
+
+        return 1;
+    }
+}
 
 internal class SvgParser
 {
@@ -343,6 +390,8 @@ internal class SvgParser
                 Points = ls.Points.Select(p => new Point(p.X - center.X, p.Y - center.Y)).ToArray()
             })
             .ToArray();
+
+
 
         return new Model(
             FileName: filename,

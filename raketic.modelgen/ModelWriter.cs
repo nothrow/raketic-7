@@ -162,20 +162,8 @@ internal class ModelWriter
 
     public void DumpModelRadius(StreamWriter w, Model model)
     {
-        // Compute bounding radius: max distance from origin to any vertex
-        double maxDistSq = 0;
-        foreach (var linestrip in model.LineStrips)
-        {
-            foreach (var point in linestrip.Points)
-            {
-                double distSq = point.X * point.X + point.Y * point.Y;
-                if (distSq > maxDistSq)
-                    maxDistSq = distSq;
-            }
-        }
-
         // Ceiling to be conservative, clamp to uint8 range
-        int radius = (int)Math.Ceiling(Math.Sqrt(maxDistSq));
+        int radius = model.GetRadius();
         if (radius > 65535)
             throw new InvalidOperationException($"Model {model.FileName} has a radius greater than 65535");
         else if (radius > 255)

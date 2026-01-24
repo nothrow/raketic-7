@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 static class Paths
 {
@@ -9,10 +9,11 @@ static class Paths
 
         return new PathInfo
         {
+            DataDir = Path.Combine(slnDir, "data"),
             ModelsDir = Path.Combine(slnDir, "data", "models"),
             OutputC = Path.Combine(slnDir, "engine", "generated", "models.gen.c"),
             OutputHRenderer = Path.Combine(slnDir, "engine", "generated", "renderer.gen.h"),
-            OutputHSlots = Path.Combine(slnDir, "engine", "generated", "slots.gen.h")
+            OutputHSlots = Path.Combine(slnDir, "engine", "generated", "slots.gen.h"),
         };
     }
 }
