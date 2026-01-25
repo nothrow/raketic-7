@@ -5,10 +5,47 @@ using System.Drawing.Drawing2D;
 
 namespace raketic.modelgen.Svg;
 
+internal record ModelRef(string CacheKey, Model Model);
+
 internal class ModelContext(PathInfo paths)
 {
-    private readonly Dictionary<string, Model> _modelCache = new();
+    private static readonly Dictionary<string, Model> _modelCache = new();
 
+    public static ModelRef ModelFromTable(Lua lua)
+    {
+        Model model;
+        string modelKey;
+
+        lua.PushString("__modelKey");
+        if (lua.GetTable(-2) != LuaType.String)
+        {
+            throw new InvalidOperationException("Invalid model table: missing __modelKey");
+        }
+
+        modelKey = lua.ToString(-1);
+        lua.Pop(1);
+
+        model = _modelCache[modelKey];
+        return new ModelRef(modelKey, model);
+    }
+
+    public static void ModelToTable(Lua lua, Model model, string modelKey)
+    {
+        lua.NewTable();
+        lua.PushString("radius");
+        lua.PushNumber(model.GetRadius());
+        lua.SetTable(-3);
+
+        lua.PushString("__modelKey");
+        lua.PushString(modelKey);
+        lua.SetTable(-3);
+
+        if (lua.NewMetaTable("ModelMetadata"))
+        {
+        }
+
+        lua.SetMetaTable(-2);
+    }
 
     public void RegisterForLua(Lua lua)
     {
@@ -38,14 +75,7 @@ internal class ModelContext(PathInfo paths)
             _modelCache[fullPath] = cached = SvgParser.ParseSvg(fullPath);
         }
 
-        lua.NewTable();
-        lua.PushString("radius");
-        lua.PushNumber(cached.GetRadius());
-        lua.SetTable(-3);
-
-        lua.PushString("__key");
-        lua.PushString(fullPath);
-        lua.SetTable(-3);
+        ModelToTable(lua, cached, fullPath);
 
         return 1;
     }
