@@ -9,43 +9,8 @@ internal record ModelRef(string CacheKey, Model Model);
 
 internal class ModelContext(PathInfo paths)
 {
-    private static readonly Dictionary<string, Model> _modelCache = new();
-
-    public static ModelRef ModelFromTable(Lua lua)
-    {
-        Model model;
-        string modelKey;
-
-        lua.PushString("__modelKey");
-        if (lua.GetTable(-2) != LuaType.String)
-        {
-            throw new InvalidOperationException("Invalid model table: missing __modelKey");
-        }
-
-        modelKey = lua.ToString(-1);
-        lua.Pop(1);
-
-        model = _modelCache[modelKey];
-        return new ModelRef(modelKey, model);
-    }
-
-    public static void ModelToTable(Lua lua, Model model, string modelKey)
-    {
-        lua.NewTable();
-        lua.PushString("radius");
-        lua.PushNumber(model.GetRadius());
-        lua.SetTable(-3);
-
-        lua.PushString("__modelKey");
-        lua.PushString(modelKey);
-        lua.SetTable(-3);
-
-        if (lua.NewMetaTable("ModelMetadata"))
-        {
-        }
-
-        lua.SetMetaTable(-2);
-    }
+    private readonly List<Model> _modelCache = new();
+    private readonly Dictionary<string, int> _modelCacheKeys = new();
 
     public void RegisterForLua(Lua lua)
     {
@@ -54,7 +19,7 @@ internal class ModelContext(PathInfo paths)
         lua.NewTable();
 
         lua.PushString("__index");
-        lua.PushCFunction(ModelsGetRef);
+        lua.PushCFunction(ModelsRetrieve);
 
         lua.SetTable(-3);
         lua.SetMetaTable(-2);
@@ -62,7 +27,40 @@ internal class ModelContext(PathInfo paths)
         lua.SetGlobal("models");
     }
 
-    private int ModelsGetRef(nint luaState)
+    private void PushModel(Lua lua, int modelIndex)
+    {
+        var userDataPtr = lua.NewUserData(sizeof(int));
+
+        System.Runtime.InteropServices.Marshal.WriteInt32(userDataPtr, modelIndex);
+
+        if (lua.NewMetaTable("Model"))
+        {
+            lua.PushString("__index");
+            lua.PushCFunction((nint state) =>
+            {
+                var l = Lua.FromIntPtr(state);
+                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(l.ToUserData(1));
+                var model = _modelCache[modelIdx];
+                var key = l.ToString(2);
+
+                l.Pop(2);
+                switch (key)
+                {
+                    case "radius":
+                        l.PushNumber(model.GetRadius());
+                        return 1;
+                    default:
+                        l.PushString($"Unknown field {key}");
+                        l.Error();
+                        return 1;
+                }
+            });
+            lua.SetTable(-3);
+        }
+        lua.SetMetaTable(-2);
+    }
+
+    private int ModelsRetrieve(nint luaState)
     {
         var lua = Lua.FromIntPtr(luaState);
         var key = lua.ToString(2);
@@ -70,13 +68,15 @@ internal class ModelContext(PathInfo paths)
 
         var fullPath = Path.Combine(paths.ModelsDir, Path.ChangeExtension(key, ".svg"));
 
-        if (!_modelCache.TryGetValue(fullPath, out var cached))
+        if (!_modelCacheKeys.TryGetValue(fullPath, out var modelIndex))
         {
-            _modelCache[fullPath] = cached = SvgParser.ParseSvg(fullPath);
+            var modelParsed = SvgParser.ParseSvg(fullPath);
+            modelIndex = _modelCache.Count;
+            _modelCacheKeys[fullPath] = modelIndex;
+            _modelCache.Add(modelParsed);
         }
 
-        ModelToTable(lua, cached, fullPath);
-
+        PushModel(lua, modelIndex);
         return 1;
     }
 }
@@ -404,7 +404,7 @@ internal class SvgParser
         Point center;
         if (parser._explicitCenter != null)
         {
-            center = parser._explicitCenter;
+            center = parser._explicitCenter.Value;
             Console.WriteLine($"  Using explicit center: ({center.X}, {center.Y})");
         }
         else

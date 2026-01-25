@@ -18,7 +18,7 @@ Console.WriteLine();
 
 
 var modelContext = new ModelContext(paths);
-var entityContext = new EntityContext(paths, modelContext);
+var entityContext = new EntityContext(paths);
 var worldsParser = new WorldsParser(modelContext, entityContext);
 
 foreach(var world in Directory.GetFiles(Path.Combine(paths.DataDir, "worlds"), "*.lua"))

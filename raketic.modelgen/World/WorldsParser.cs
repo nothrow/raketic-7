@@ -18,6 +18,8 @@ internal class WorldsParser(ModelContext _modelContext, EntityContext _entityCon
         _modelContext.RegisterForLua(lua);
         _entityContext.RegisterForLua(lua);
 
+        PointLuaBinding.RegisterForLua(lua);
+
         var worldName = Path.GetFileNameWithoutExtension(worldPath);
 
         if (lua.LoadFile(worldPath) != LuaStatus.OK)

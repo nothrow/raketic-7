@@ -1,10 +1,4 @@
 using KeraLua;
-using raketic.modelgen.Svg;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace raketic.modelgen.Entity;
 
@@ -17,38 +11,95 @@ internal record EntityData(
 )
 {
     public static EntityData Empty { get; } = new EntityData(null, null, null, null, null);
+}
 
-    public void WriteToTable(Lua lua)
+internal class PointLuaBinding
+{
+    private static int PointConstructor(nint luaState)
     {
-        if (Type != null)
+        var lua = Lua.FromIntPtr(luaState);
+        var argc = lua.GetTop();
+
+        double x, y;
+        if (argc == 1 && lua.IsTable(1))
         {
-            lua.PushString("type");
-            lua.PushString(Type);
-            lua.SetTable(-3);
+            // vec { x = 10, y = 20 } nebo vec { 10, 20 }
+            lua.GetField(1, "x");
+            if (lua.IsNumber(-1))
+            {
+                x = lua.ToNumber(-1);
+                lua.Pop(1);
+                lua.GetField(1, "y");
+                if (!lua.IsNumber(-1))
+                {
+                    lua.PushString("vec: missing y");
+                    lua.Error();
+                }
+                y = lua.ToNumber(-1);
+                lua.Pop(1);
+            }
+            else
+            {
+                lua.Pop(1);
+                lua.GetInteger(1, 1);
+                if (!lua.IsNumber(-1))
+                {
+                    lua.PushString("vec: missing [1]");
+                    lua.Error();
+                }
+                x = lua.ToNumber(-1);
+                lua.Pop(1);
+                lua.GetInteger(1, 2);
+                if (!lua.IsNumber(-1))
+                {
+                    lua.PushString("vec: missing [2]");
+                    lua.Error();
+                }
+                y = lua.ToNumber(-1);
+                lua.Pop(1);
+            }
         }
-        if (ModelRef != null)
+        else if (argc == 2 && lua.IsNumber(1) && lua.IsNumber(2))
         {
-            lua.PushString("model");
-            lua.PushString(ModelRef);
-            lua.SetTable(-3);
+            x = lua.ToNumber(1);
+            y = lua.ToNumber(2);
         }
-        if (Mass != null)
+        else
         {
-            lua.PushString("mass");
-            lua.PushInteger(Mass.Value);
-            lua.SetTable(-3);
+            lua.PushString("vec: expected vec(x, y) or vec { x = .., y = .. }");
+            lua.Error();
+            return 1;
         }
-        if (Radius != null)
+
+        var px = (int)x;
+        var py = (int)y;
+
+        var userDataPtr = lua.NewUserData(System.Runtime.InteropServices.Marshal.SizeOf<Point>());
+        System.Runtime.InteropServices.Marshal.StructureToPtr(new Point(px, py), userDataPtr, false);
+        if (lua.NewMetaTable("Point"))
         {
-            lua.PushString("radius");
-            lua.PushInteger(Radius.Value);
-            lua.SetTable(-3);
+            // add methods or properties if needed
         }
+        lua.SetMetaTable(-2);
+        return 1;
     }
 
-    public static EntityData ReadFromTable(Lua lua)
+
+    public static void RegisterForLua(Lua lua)
     {
-        var ret = Empty;
+        lua.PushCFunction(PointConstructor);
+        lua.SetGlobal("vec");
+    }
+}
+
+internal class EntityContext(PathInfo paths)
+{
+    private readonly List<EntityData> _entityCache = new();
+    private readonly Dictionary<string, int> _entityCacheKeys = new();
+
+    private static EntityData ReadFromTable(EntityData start, Lua lua)
+    {
+        var ret = start;
 
         lua.PushNil();
         while (lua.Next(-2))
@@ -62,13 +113,16 @@ internal record EntityData(
 
                     ret = ret with { Type = lua.ToString(-1) };
                     break;
+                case "position":
+                    var pointer = lua.CheckUserData(-1, "Point");
+                    if (pointer == IntPtr.Zero)
+                        throw new InvalidOperationException($"Invalid type for 'position' field in entity definition, expected Point but got {lua.Type(-1)}");
+
+                    var point = System.Runtime.InteropServices.Marshal.PtrToStructure<Point>(pointer);
+                    ret = ret with { Position = point };
+                    break;
                 case "model":
-                    if (lua.Type(-1) != LuaType.Table)
-                        throw new InvalidOperationException($"Invalid type for 'model' field in entity definition, expected model but got {lua.Type(-1)}");
 
-                    var (_, modelKey) = ModelContext.ModelFromTable(lua);
-
-                    ret = ret with { ModelRef = modelKey };
                     break;
                 case "mass":
                     if (lua.Type(-1) != LuaType.Number)
@@ -76,7 +130,7 @@ internal record EntityData(
 
                     ret = ret with { Mass = (int?)lua.ToIntegerX(-1) };
                     break;
-                        
+
                 case "radius":
                     if (lua.Type(-1) != LuaType.Number)
                         throw new InvalidOperationException($"Invalid type for 'radius' field in entity definition, expected number but got {lua.Type(-1)}");
@@ -90,21 +144,14 @@ internal record EntityData(
         }
         return ret;
     }
-}
-
-
-internal class EntityContext(PathInfo paths, ModelContext models)
-{
-    private Dictionary<string, EntityData> _entityCache = new Dictionary<string, EntityData>();
 
     public void RegisterForLua(Lua lua)
     {
         lua.NewTable();
-
         lua.NewTable();
 
         lua.PushString("__index");
-        lua.PushCFunction(EntitiesGetRef);
+        lua.PushCFunction(EntitiesRetrieve);
 
         lua.SetTable(-3);
         lua.SetMetaTable(-2);
@@ -115,38 +162,21 @@ internal class EntityContext(PathInfo paths, ModelContext models)
         lua.SetGlobal("Entity");
     }
 
-    private static void WriteMetaTable(Lua lua)
-    {
-        if (lua.NewMetaTable("EntityData"))
-        {
-            // 'record with'
-            lua.PushString("__call");
-            lua.PushCFunction(EntityWith);
-            lua.SetTable(-3);
-        }
-    }
-
-    private static int EntityWith(nint luaState)
+    private int EntityWith(nint luaState)
     {
         var lua = Lua.FromIntPtr(luaState);
-        var original = EntityData.ReadFromTable(lua);
-        lua.Pop(1);
-        var updates = EntityData.ReadFromTable(lua);
-        lua.Pop(1);
+        var self = lua.CheckUserData(1, "Entity");
+        if (self == IntPtr.Zero)
+            throw new InvalidOperationException("Expected Entity instance as first argument to 'with'");
 
-        var merged = new EntityData(
-            Type: updates.Type ?? original.Type,
-            ModelRef: updates.ModelRef ?? original.ModelRef,
-            Mass: updates.Mass ?? original.Mass,
-            Radius: updates.Radius ?? original.Radius,
-            Position: updates.Position ?? original.Position
-        );
+        var entityIndex = System.Runtime.InteropServices.Marshal.ReadInt32(self);
+        var original = _entityCache[entityIndex];
 
-        lua.NewTable();
-        merged.WriteToTable(lua);
-        WriteMetaTable(lua);
-        lua.SetMetaTable(-2);
+        var overrideData = ReadFromTable(original, lua);
 
+        _entityCache.Add(overrideData);
+
+        PushEntity(lua, _entityCache.Count - 1);
         return 1;
     }
 
@@ -154,23 +184,51 @@ internal class EntityContext(PathInfo paths, ModelContext models)
     {
         var lua = Lua.FromIntPtr(luaState);
 
-        var entityData = EntityData.ReadFromTable(lua);
+        var entityData = ReadFromTable(EntityData.Empty, lua);
         lua.Pop(1);
 
-        EntityDataToLuaStack(lua, entityData);
+        var entityIndex = _entityCache.Count;
+        _entityCache.Add(entityData);
 
+        PushEntity(lua, entityIndex);
         return 1;
     }
 
-    private static void EntityDataToLuaStack(Lua lua, EntityData entity)
+    private void PushEntity(Lua lua, int entityIndex)
     {
-        lua.NewTable();
-        entity.WriteToTable(lua);
-        WriteMetaTable(lua);
+        var userDataPtr = lua.NewUserData(sizeof(int));
+
+        System.Runtime.InteropServices.Marshal.WriteInt32(userDataPtr, entityIndex);
+
+        if (lua.NewMetaTable("Entity"))
+        {
+            lua.PushString("__index");
+            lua.PushCFunction((nint state) =>
+            {
+                var l = Lua.FromIntPtr(state);
+                var entityIdx = System.Runtime.InteropServices.Marshal.ReadInt32(l.ToUserData(1));
+                var entity = _entityCache[entityIdx];
+                var key = l.ToString(2);
+
+                l.Pop(2);
+                switch (key)
+                {
+                    default:
+                        l.PushString($"Unknown field {key}");
+                        l.Error();
+                        return 1;
+                }
+            });
+            lua.SetTable(-3);
+
+            lua.PushString("__call");
+            lua.PushCFunction(EntityWith);
+            lua.SetTable(-3);
+        }
         lua.SetMetaTable(-2);
     }
 
-    private int EntitiesGetRef(nint luaState)
+    private int EntitiesRetrieve(nint luaState)
     {
         var lua = Lua.FromIntPtr(luaState);
         var key = lua.ToString(2);
@@ -178,19 +236,28 @@ internal class EntityContext(PathInfo paths, ModelContext models)
 
         var fullPath = Path.Combine(paths.DataDir, "entities", Path.ChangeExtension(key, ".lua"));
 
-        if (!_entityCache.TryGetValue(fullPath, out var cached))
+        if (!_entityCacheKeys.TryGetValue(fullPath, out var entityIndex))
         {
-            _entityCache[fullPath] = cached = EntityParser.LoadEntity(fullPath, lua);
+            LoadEntity(fullPath, lua);
+
+
+            var entityRef = lua.CheckUserData(1, "Entity");
+            if (entityRef == IntPtr.Zero)
+                throw new InvalidOperationException($"Entity file '{fullPath}' did not return an Entity instance");
+            var entityIdx = System.Runtime.InteropServices.Marshal.ReadInt32(entityRef);
+            _entityCacheKeys[fullPath] = entityIdx;
+            // keep the entity on top of the stack
+        }
+        else
+        {
+            PushEntity(lua, entityIndex);
         }
 
-        EntityDataToLuaStack(lua, cached);
 
         return 1;
     }
-}
-internal class EntityParser
-{
-    public static EntityData LoadEntity(string entityPath, Lua lua)
+
+    private static void LoadEntity(string entityPath, Lua lua)
     {
         if (lua.LoadFile(entityPath) != LuaStatus.OK)
         {
@@ -204,9 +271,5 @@ internal class EntityParser
             var error = lua.ToString(-1);
             throw new InvalidOperationException($"Error executing entity file '{entityPath}': {error}");
         }
-
-        var ret = EntityData.ReadFromTable(lua);
-        lua.Pop(1);
-        return ret;
     }
 }

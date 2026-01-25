@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace raketic.modelgen;
 
 
-internal record Point(
+internal record struct Point(
     float X,
     float Y
 );
