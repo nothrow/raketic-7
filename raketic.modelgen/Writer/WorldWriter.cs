@@ -26,7 +26,7 @@ internal class WorldWriter(PathInfo paths) : IDisposable
 void _generated_draw_model(color_t color, uint16_t index);
 uint16_t _generated_get_model_radius(uint16_t index);
 
-void _generated_load_map_data(uint16_t index);
+void _generated_load_world_data(uint16_t index);
 ");
 
         _cWriter.WriteLine(@"
@@ -73,14 +73,30 @@ void _generated_load_map_data(uint16_t index);
 
             Console.WriteLine($" written {world.Entities.Length} entities");
         }
+
+
+        _cWriter.WriteLine($"void _generated_load_map_data(uint16_t index) {{");
+        _cWriter.WriteLine($"  static void (*_data[])(struct objects_data*, struct particles_data*) = {{");
+        foreach (var world in worlds)
+        {
+            _cWriter.WriteLine($"    _world_{world.WorldName},");
+        }
+        _cWriter.WriteLine($"  }};");
+        _cWriter.WriteLine($"  _ASSERT(index >= 0 && index < {worlds.Count()});");
+        _cWriter.WriteLine($"  _data[index](entity_manager_get_objects(), entity_manager_get_parts());");
+        _cWriter.WriteLine($"}}");
+        _cWriter.WriteLine();
     }
 
     private void WriteWorldContent(WorldsData world, int i)
     {
+        _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct particles_data* pd) {{");
+        _cWriter!.WriteLine($"}}");
+        _cWriter!.WriteLine();
     }
 
     private void WriteWorldHeaders(WorldsData world, int i)
     {
-        _hWriter!.WriteLine($"#define WORLD_{world.WorldName.ToUpper()}_IDX ((size_t){i})");
+        _hWriter!.WriteLine($"#define WORLD_{world.WorldName.ToUpper()}_IDX ((uint16_t){i})");
     }
 }
