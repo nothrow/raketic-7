@@ -91,6 +91,22 @@ void _generated_load_world_data(uint16_t index);
     private void WriteWorldContent(WorldsData world, int i)
     {
         _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct particles_data* pd) {{");
+        _cWriter!.WriteLine($"  uint32_t new_idx;");
+
+        foreach (var entity in world.Entities)
+        {
+            _cWriter!.WriteLine();
+            _cWriter!.WriteLine($"  new_idx = od->active++;");
+            _cWriter!.WriteLine($"  od->type[new_idx] = {entity!.Type};");
+            _cWriter!.WriteLine($"  od->model_idx[new_idx] = MODEL_{entity.Model!.FileName.ToUpper()}_IDX;");
+            _cWriter!.WriteLine($"  od->position_orientation.position_x[new_idx] = {entity.Position?.X:0.0#######}f;");
+            _cWriter!.WriteLine($"  od->position_orientation.position_y[new_idx] = {entity.Position?.Y:0.0#######}f;");
+            /*_cWriter!.WriteLine($"  od->position_orientation.orientation_x[new_idx] = 0.0f;");
+            _cWriter!.WriteLine($"  od->position_orientation.orientation_y[new_idx] = 0.0f;");*/
+            _cWriter!.WriteLine($"  od->position_orientation.radius[new_idx] = {entity.Model!.GetRadius()};");
+            _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
+        }
+
         _cWriter!.WriteLine($"}}");
         _cWriter!.WriteLine();
     }
