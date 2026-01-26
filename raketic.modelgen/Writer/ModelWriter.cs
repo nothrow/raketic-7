@@ -1,13 +1,11 @@
-
-
-namespace raketic.modelgen;
+namespace raketic.modelgen.Writer;
 
 internal class ModelWriter
 {
     private Dictionary<System.Drawing.Color, int> _colorIndexes = new();
     public int DumpModelData(StreamWriter w, Model model)
     {
-        int points = 0;;
+        int points = 0; ;
         w.WriteLine($"static const int8_t _model_{model.FileName}_vertices[] = {{");
         foreach (var linestrip in model.LineStrips)
         {
@@ -123,7 +121,7 @@ internal class ModelWriter
 
         // reserve nearest multiple of 8 slots (for better computations)
         int slotCount = model.Slots.Length;
-        int reservedSlots = (slotCount + 7) & ~7;
+        int reservedSlots = slotCount + 7 & ~7;
 
         w.WriteLine();
 

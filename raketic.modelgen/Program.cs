@@ -2,6 +2,7 @@ using raketic.modelgen;
 using raketic.modelgen.Entity;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
+using raketic.modelgen.Writer;
 
 // relative paths:
 // sln/models/ for all svgs
@@ -27,43 +28,17 @@ foreach(var world in Directory.GetFiles(Path.Combine(paths.DataDir, "worlds"), "
 
     worldsParser.ParseWorld(world);
 }
+
+Console.WriteLine($"Worlds contain {worldsParser.Entities.Count} entities using {worldsParser.Models.Count} unique models.");
+
+using var writer = new WorldWriter(paths);
+
+writer.WriteHeaders();
+writer.WriteModels(worldsParser.Models);
+
 return;
 
-
-
-
-var svgFiles = Directory.GetFiles(paths.ModelsDir, "*.svg");
-
-Console.WriteLine($"Found {svgFiles.Length} SVG file(s):");
-var models = svgFiles.Select(SvgParser.ParseSvg).ToArray();
-
-int i = 0;
-
-using var hsWriter = new StreamWriter(paths.OutputHSlots, false);
-
-using var hWriter = new StreamWriter(paths.OutputHRenderer, false);
-using var cWriter = new StreamWriter(paths.OutputC, false);
-
-Console.WriteLine();
-
-hsWriter.WriteLine("#pragma once");
-hsWriter.WriteLine("#include \"platform/platform.h\"");
-hsWriter.WriteLine("#include \"entity/entity.h\"");
-hsWriter.WriteLine("void _generated_fill_slots(uint16_t index, entity_id_t parent);");
-
-hWriter.WriteLine("#pragma once");
-hWriter.WriteLine("#include \"platform/platform.h\"");
-hWriter.WriteLine("void _generated_draw_model(color_t color, uint16_t index);");
-hWriter.WriteLine("uint16_t _generated_get_model_radius(uint16_t index);");
-hWriter.WriteLine();
-
-cWriter.WriteLine("#include \"renderer.gen.h\"");
-cWriter.WriteLine("#include \"slots.gen.h\"");
-cWriter.WriteLine("#include <Windows.h>");
-cWriter.WriteLine("#include <gl/GL.h>");
-
-var svgWriter = new SvgModelWriter(cWriter, hWriter);
-svgWriter.Write(models);
+/*
 
 cWriter.WriteLine($"void _generated_fill_slots(uint16_t index, entity_id_t parent) {{");
 cWriter.WriteLine($"  switch (index) {{");
@@ -80,3 +55,4 @@ foreach (var model in models)
 cWriter.WriteLine($"    default: _ASSERT(0);");
 cWriter.WriteLine($"  }}");
 cWriter.WriteLine($"}}");
+*/

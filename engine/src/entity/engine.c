@@ -90,7 +90,7 @@ static void _engine_tick() {
                                   .ox = rot_ox,
                                   .oy = rot_oy,
                                   .ttl = ttl,
-                                  .model_idx = MODEL_EXHAUST_IDX };
+                                  .model_idx = ed->particle_model };
 
         particles_create_particle(&pcm);
       }

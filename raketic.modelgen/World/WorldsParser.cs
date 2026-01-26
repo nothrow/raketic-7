@@ -13,13 +13,25 @@ internal class WorldsParser(ModelContext _modelContext, EntityContext _entityCon
 {
     private List<EntityData> _entities = new();
 
+    public IReadOnlyList<EntityData> Entities => _entities;
+    public IReadOnlyList<Model> Models => _entities.Select(x => x.Model!).Where(x => x != null).Distinct().ToList();
+
     private int Spawn(nint luaState)
     {
         var lua = Lua.FromIntPtr(luaState);
         var argc = lua.GetTop();
         for(int i = 1; i <= argc; i++)
         {
-            _entities.Add(_entityContext.GetEntityData(lua, i));
+            var entity = _entityContext.GetEntityData(lua, i);
+            if (entity.ModelRef.HasValue)
+            {
+                var model = _modelContext[entity.ModelRef.Value];
+                entity = entity with { Model = model };
+            }
+
+            _entities.Add(
+                entity
+            );
         }
         return argc;
     }

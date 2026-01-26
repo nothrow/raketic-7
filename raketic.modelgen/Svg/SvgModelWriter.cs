@@ -1,3 +1,4 @@
+using raketic.modelgen.Writer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,6 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
             Console.Write($"Processing model: {model.FileName}");
 
             var written = modelWriter.DumpModelData(cWriter, model);
-            modelWriter.DumpModelRadius(cWriter, model);
 
             Console.WriteLine($" - written {written} vertices");
 
@@ -36,28 +36,32 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         {
             modelWriter.DumpModelSlots(cWriter, model);
         }
-
-
-
+        
+        cWriter.WriteLine();
         cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
-        cWriter.WriteLine($"  switch (index) {{");
+
+        cWriter.WriteLine($"  static void (*_data[])(color_t) = {{");
         foreach (var model in models)
         {
-            cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX:");
-            cWriter.WriteLine($"      _model_{model.FileName}(color); break;");
+            cWriter.WriteLine($"    _model_{model.FileName},");
         }
-        cWriter.WriteLine($"    default: _ASSERT(0);");
-        cWriter.WriteLine($"  }}");
+        cWriter.WriteLine($"  }};");
+
+        cWriter.WriteLine($"  _ASSERT(index >= 0 && index < {models.Length});");
+        cWriter.WriteLine($"  _data[index](color);");
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
+
         cWriter.WriteLine($"uint16_t _generated_get_model_radius(uint16_t index) {{");
-        cWriter.WriteLine($"  switch (index) {{");
+        cWriter.WriteLine($"  static uint16_t _data[] = {{");
         foreach (var model in models)
         {
-            cWriter.WriteLine($"    case MODEL_{model.FileName.ToUpper()}_IDX: return _model_{model.FileName}_radius;");
+            cWriter.WriteLine($"    {model.GetRadius()},");
         }
-        cWriter.WriteLine($"    default: _ASSERT(0); return 0;");
-        cWriter.WriteLine($"  }}");
+        cWriter.WriteLine($"  }};");
+
+        cWriter.WriteLine($"  _ASSERT(index >= 0 && index < {models.Length});");
+        cWriter.WriteLine($"  return _data[index];");
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
     }

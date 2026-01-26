@@ -1,16 +1,18 @@
 using KeraLua;
+using raketic.modelgen.Svg;
 
 namespace raketic.modelgen.Entity;
 
 internal record EntityData(
     string? Type,
     int? ModelRef,
+    Model? Model,
     int? Mass,
     int? Radius,
     Point? Position
 )
 {
-    public static EntityData Empty { get; } = new EntityData(null, null, null, null, null);
+    public static EntityData Empty { get; } = new EntityData(null, null, null, null, null, null);
 }
 
 internal class EntityContext(PathInfo paths)

@@ -5,8 +5,20 @@ namespace raketic.modelgen.Svg;
 
 internal class ModelContext(PathInfo paths)
 {
+    private const string ModelMetaTableName = "Model";
+
     private readonly List<Model> _modelCache = new();
     private readonly Dictionary<string, int> _modelCacheKeys = new();
+
+    public Model this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= _modelCache.Count)
+                throw new IndexOutOfRangeException($"Model index {index} is out of range (0..{_modelCache.Count - 1})");
+            return _modelCache[index];
+        }
+    }
 
     public void RegisterForLua(Lua lua)
     {
@@ -29,7 +41,7 @@ internal class ModelContext(PathInfo paths)
 
         System.Runtime.InteropServices.Marshal.WriteInt32(userDataPtr, modelIndex);
 
-        if (lua.NewMetaTable("Model"))
+        if (lua.NewMetaTable(ModelMetaTableName))
         {
             lua.PushString("__index");
             lua.PushCFunction((nint state) =>
@@ -58,9 +70,9 @@ internal class ModelContext(PathInfo paths)
 
     public Model GetModelData(Lua lua, int id)
     {
-        var entityRef = lua.CheckUserData(id, "Model");
+        var entityRef = lua.CheckUserData(id, ModelMetaTableName);
         if (entityRef == IntPtr.Zero)
-            throw new InvalidOperationException($"Expected Model instance at index {id}");
+            throw new InvalidOperationException($"Expected Model instance on stack at index {id}");
 
         var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(entityRef);
         return _modelCache[modelIdx];
