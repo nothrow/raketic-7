@@ -29,12 +29,13 @@ foreach(var world in Directory.GetFiles(Path.Combine(paths.DataDir, "worlds"), "
     worldsParser.ParseWorld(world);
 }
 
-Console.WriteLine($"Worlds contain {worldsParser.Entities.Count} entities using {worldsParser.Models.Count} unique models.");
+Console.WriteLine($"Worlds contain {worldsParser.Worlds.Sum(x => x.Entities.Length)} entities using {worldsParser.Models.Count} unique models.");
 
 using var writer = new WorldWriter(paths);
 
 writer.WriteHeaders();
 writer.WriteModels(worldsParser.Models);
+writer.WriteWorlds(worldsParser.Worlds);
 
 return;
 

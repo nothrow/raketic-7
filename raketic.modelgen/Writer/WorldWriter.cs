@@ -1,4 +1,5 @@
 using raketic.modelgen.Svg;
+using raketic.modelgen.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,8 @@ internal class WorldWriter(PathInfo paths) : IDisposable
 #include ""platform/platform.h""
 void _generated_draw_model(color_t color, uint16_t index);
 uint16_t _generated_get_model_radius(uint16_t index);
+
+void _generated_load_map_data(uint16_t index);
 ");
 
         _cWriter.WriteLine(@"
@@ -52,5 +55,32 @@ uint16_t _generated_get_model_radius(uint16_t index);
     {
         _hWriter?.Dispose();
         _cWriter?.Dispose();
+    }
+
+    internal void WriteWorlds(IEnumerable<WorldsData> worlds)
+    {
+        if (_cWriter == null || _hWriter == null)
+            throw new InvalidOperationException("Writers not initialized. Call WriteHeaders() first.");
+
+        int i = 0;
+        foreach(var world in worlds)
+        {
+            Console.Write($"Processing world: {world.WorldName} -");
+
+            WriteWorldHeaders(world, i);
+            WriteWorldContent(world, i);
+            ++i;
+
+            Console.WriteLine($" written {world.Entities.Length} entities");
+        }
+    }
+
+    private void WriteWorldContent(WorldsData world, int i)
+    {
+    }
+
+    private void WriteWorldHeaders(WorldsData world, int i)
+    {
+        _hWriter!.WriteLine($"#define WORLD_{world.WorldName.ToUpper()}_IDX ((size_t){i})");
     }
 }
