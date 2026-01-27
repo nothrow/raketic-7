@@ -1,11 +1,7 @@
 using raketic.modelgen.Entity;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 
 namespace raketic.modelgen.Writer;
 
@@ -58,7 +54,7 @@ void _generated_load_world_data(uint16_t index);
         _cWriter?.Dispose();
     }
 
-    internal void WriteWorlds(IEnumerable<WorldsData> worlds)
+    internal void WriteWorlds(IEnumerable<WorldsData> worlds, EntityContext entityContext, ModelContext modelContext)
     {
         if (_cWriter == null || _hWriter == null)
             throw new InvalidOperationException("Writers not initialized. Call WriteHeaders() first.");
@@ -69,7 +65,7 @@ void _generated_load_world_data(uint16_t index);
             Console.Write($"Processing world: {world.WorldName} -");
 
             WriteWorldHeaders(world, i);
-            WriteWorldContent(world, i);
+            WriteWorldContent(world, i, entityContext, modelContext);
             ++i;
 
             Console.WriteLine($" written {world.Entities.Length} entities");
@@ -77,7 +73,7 @@ void _generated_load_world_data(uint16_t index);
 
 
         _cWriter.WriteLine($"void _generated_load_map_data(uint16_t index) {{");
-        _cWriter.WriteLine($"  static void (*_data[])(struct objects_data*, struct particles_data*) = {{");
+        _cWriter.WriteLine($"  static void (*_data[])(struct objects_data*, struct parts_data*) = {{");
         foreach (var world in worlds)
         {
             _cWriter.WriteLine($"    _world_{world.WorldName},");
@@ -89,10 +85,11 @@ void _generated_load_world_data(uint16_t index);
         _cWriter.WriteLine();
     }
 
-    private void WriteWorldContent(WorldsData world, int i)
+    private void WriteWorldContent(WorldsData world, int i, EntityContext entityContext, ModelContext modelContext)
     {
-        _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct particles_data* pd) {{");
+        _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct parts_data* pd) {{");
         _cWriter!.WriteLine($"  uint32_t new_idx;");
+        _cWriter!.WriteLine($"  uint32_t new_pidx;");
 
         foreach (EntityData entity in world.Entities)
         {
@@ -106,7 +103,94 @@ void _generated_load_world_data(uint16_t index);
             _cWriter!.WriteLine($"  od->position_orientation.orientation_y[new_idx] = 0.0f;");*/
             _cWriter!.WriteLine($"  od->position_orientation.radius[new_idx] = {entity.Model!.GetRadius()};");
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
+
+            if (entity is EntityWithSlotsData entityWithSlots)
+            {
+                var slotCount = entityWithSlots.Slots.Length;
+                var reservedSlots = slotCount + 7 & ~7;
+                var paddingSlots = reservedSlots - slotCount;
+
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"  _ASSERT(pd->active + {reservedSlots} < pd->capacity);");
+                _cWriter!.WriteLine($"  od->parts_start_idx[new_idx] = pd->active;");
+                _cWriter!.WriteLine($"  od->parts_count[new_idx] = {slotCount};");
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"  memset(&pd->model_idx[pd->active], -1, sizeof(uint16_t) * {reservedSlots});");
+                _cWriter!.WriteLine();
+                var w = _cWriter!;
+
+                foreach (var slot in entityWithSlots.Slots)
+                {
+                    var model = entityWithSlots.Model!;
+                    var slotRef = slot.SlotRef!.Value;
+                    var slotEntity = entityContext[slot.EntityRef].ResolveModels(modelContext);
+
+                    w.WriteLine($"  new_pidx = pd->active++;");
+                    w.WriteLine($"  pd->parent_id[new_pidx] = OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._);");
+                    w.WriteLine($"  pd->local_offset_x[new_pidx] = {model.Slots[slotRef].Position.X:0.0#######}f;");
+                    w.WriteLine($"  pd->local_offset_y[new_pidx] = {model.Slots[slotRef].Position.Y:0.0#######}f;");
+                    w.WriteLine($"  pd->model_idx[new_pidx] = MODEL_{slotEntity.Model!.FileName.ToUpper()}_IDX;");
+
+                    w.WriteLine($"  pd->type[new_pidx] = {slotEntity.Type};");
+
+                    w.WriteLine($"  pd->local_orientation_x[new_pidx] = 1.0f;"); // todo: ?!
+                    w.WriteLine($"  pd->local_orientation_y[new_pidx] = 0.0f;");
+
+                    w.WriteLine();
+                }
+
+
+                _cWriter!.WriteLine($"  pd->active += {paddingSlots};");
+
+            }
+
+
+            /*
+        if (model.Slots.Length == 0)
+            return;
+
+        //struct objects_data*od = entity_manager_get_objects();
+        w.WriteLine($"static void _model_{model.FileName}_slots(entity_id_t parent) {{");
+        w.WriteLine($"  struct objects_data* od = entity_manager_get_objects();");
+        w.WriteLine($"  struct parts_data* pd = entity_manager_get_parts();");
+        w.WriteLine($"  uint32_t parent_idx = GET_ORDINAL(parent);");
+        w.WriteLine($"  uint32_t i = pd->active;");
+
+        // reserve nearest multiple of 8 slots (for better computations)
+        int slotCount = model.Slots.Length;
+        int reservedSlots = slotCount + 7 & ~7;
+
+        w.WriteLine();
+
+        w.WriteLine($"  _ASSERT(pd->active + {reservedSlots} < pd->capacity);");
+        w.WriteLine($"  od->parts_start_idx[parent_idx] = i;");
+        w.WriteLine($"  od->parts_count[parent_idx] = {slotCount};");
+        w.WriteLine($"  pd->active += {reservedSlots};");
+
+        w.WriteLine();
+        w.WriteLine($"  memset(&pd->model_idx[i], -1, sizeof(uint16_t) * {reservedSlots});");
+
+        w.WriteLine();
+        for (int i = 0; i < model.Slots.Length; i++)
+        {
+            w.WriteLine($"  pd->parent_id[i + {i}] = parent;");
+            w.WriteLine($"  pd->local_offset_x[i + {i}] = {model.Slots[i].Position.X:0.0#######}f;");
+            w.WriteLine($"  pd->local_offset_y[i + {i}] = {model.Slots[i].Position.Y:0.0#######}f;");
+
+            w.WriteLine($"  pd->type[i + {i}] = {GetTypeRef(model.Slots[i].Type)};");
+
+            w.WriteLine($"  pd->local_orientation_x[i + {i}] = 1.0f;");
+            w.WriteLine($"  pd->local_orientation_y[i + {i}] = 0.0f;");
+
+            w.WriteLine();
         }
+
+        w.WriteLine($"}}");
+        w.WriteLine();
+        */
+
+        }
+
 
         _cWriter!.WriteLine($"}}");
         _cWriter!.WriteLine();

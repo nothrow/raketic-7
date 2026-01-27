@@ -221,6 +221,17 @@ internal class EntityContext(PathInfo paths)
     private readonly Dictionary<string, int> _entityCacheKeys = new();
     private readonly Dictionary<string, int> _partsCacheKeys = new();
 
+
+    public BaseEntityWithModelData this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= _entityCache.Count)
+                throw new IndexOutOfRangeException($"Entity index {index} is out of range (0..{_entityCache.Count - 1})");
+            return _entityCache[index];
+        }
+    }
+
     private BaseEntityWithModelData ReadFromTable(BaseEntityWithModelData start, Lua lua)
     {
         BaseEntityWithModelData ret = start;
