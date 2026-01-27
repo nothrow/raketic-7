@@ -4,19 +4,64 @@ using raketic.modelgen.Utils;
 
 namespace raketic.modelgen.Entity;
 
-internal abstract class BaseData
+internal abstract record BaseData
 {
+    public string? Type { get; init; }
+
     public virtual BaseData ReadFromTable(string key, LuaType type, Lua lua)
     {
-        throw new InvalidOperationException($"Unknown field '{key}' in entity definition");
+        switch (key)
+        {
+            case "__dataType": // skip
+                return this;
+
+            case "type":
+                if (type != LuaType.String)
+                    throw new InvalidOperationException($"Invalid type for 'type' field in entity definition, expected string but got {type}");
+
+                return this with { Type = lua.ToString(-1) };
+            default:
+                throw new InvalidOperationException(
+                    $"Unknown field '{key}' in entity definition of type '{this.GetType().Name}'");
+
+        }
     }
 }
 
-internal class EntityData : BaseData
+internal record BaseEntityWithModelData : BaseData
 {
-    public string? Type { get; init; }
     public int? ModelRef { get; init; }
     public Model? Model { get; init; }
+
+    public override BaseData ReadFromTable(string key, LuaType type, Lua lua)
+    {
+        switch (key)
+        {
+            case "model":
+                var modelPtr = lua.CheckUserData(-1, "Model");
+                if (modelPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'model' field in entity definition, expected Model but got {type}");
+
+                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
+                return this with { ModelRef = modelIdx };
+            default:
+                return base.ReadFromTable(key, type, lua);
+        }
+    }
+}
+
+internal record PartData : BaseEntityWithModelData
+{
+
+}
+
+internal record EnginePartData : PartData
+{
+    public static EnginePartData Empty { get; } = new EnginePartData();
+}
+
+internal record EntityData : BaseEntityWithModelData
+{
     public int? Mass { get; init; }
     public int? Radius { get; init; }
     public Point? Position { get; init; }
@@ -30,52 +75,27 @@ internal class EntityData : BaseData
             case "dataType":
                 // skip
                 return this;
-            case "type":
-                if (type != LuaType.String)
-                    throw new InvalidOperationException($"Invalid type for 'type' field in entity definition, expected string but got {type}");
-
-                return Extend(new EntityData { Type = lua.ToString(-1) });
             case "position":
                 var pointer = lua.CheckUserData(-1, "Point");
                 if (pointer == IntPtr.Zero)
                     throw new InvalidOperationException($"Invalid type for 'position' field in entity definition, expected Point but got {type}");
 
                 var point = System.Runtime.InteropServices.Marshal.PtrToStructure<Point>(pointer);
-                return Extend(new EntityData { Position = point });
-            case "model":
-                var modelPtr = lua.CheckUserData(-1, "Model");
-                if (modelPtr == IntPtr.Zero)
-                    throw new InvalidOperationException($"Invalid type for 'model' field in entity definition, expected Model but got {type}");
-
-                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
-                return Extend(new EntityData { ModelRef = modelIdx });
+                return this with { Position = point };
             case "mass":
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'mass' field in entity definition, expected number but got {type}");
 
-                return Extend(new EntityData { Mass = (int?)lua.ToIntegerX(-1) });
+                return this with { Mass = (int?)lua.ToIntegerX(-1) };
 
             case "radius":
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'radius' field in entity definition, expected number but got {type}");
 
-                return Extend(new EntityData { Radius = (int?)lua.ToInteger(-1) });
+                return this with { Radius = (int?)lua.ToInteger(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }
-    }
-
-    public virtual EntityData Extend(EntityData other)
-    {
-        return new EntityData
-        {
-            Type = other.Type ?? Type,
-            ModelRef = other.ModelRef ?? ModelRef,
-            Model = other.Model ?? Model,
-            Mass = other.Mass ?? Mass,
-            Radius = other.Radius ?? Radius,
-            Position = other.Position ?? Position
-        };
     }
 }
 
@@ -85,34 +105,17 @@ internal class SlotData
     public EntityData? Entity { get; init; }
 }
 
-internal class EntityWithSlotsData : EntityData
+internal record EntityWithSlotsData : EntityData
 {
     public SlotData[] Slots { get; init; } = Array.Empty<SlotData>();
 
     public static new EntityWithSlotsData Empty { get; } = new EntityWithSlotsData();
-
-    public override EntityData Extend(EntityData other)
-    {
-        var slots = (other as EntityWithSlotsData)?.Slots ?? Slots;
-        return new EntityWithSlotsData
-        {
-            Type = other.Type ?? Type,
-            ModelRef = other.ModelRef ?? ModelRef,
-            Model = other.Model ?? Model,
-            Mass = other.Mass ?? Mass,
-            Radius = other.Radius ?? Radius,
-            Position = other.Position ?? Position,
-            Slots = slots
-        };
-    }
 }
 
 internal class EntityContext(PathInfo paths)
 {
     private readonly List<BaseData> _entityCache = new();
     private readonly Dictionary<string, int> _entityCacheKeys = new();
-
-    private readonly List<BaseData> _partsCache = new();
     private readonly Dictionary<string, int> _partsCacheKeys = new();
 
     private BaseData ReadFromTable(BaseData start, Lua lua)
@@ -140,7 +143,7 @@ internal class EntityContext(PathInfo paths)
     private int EntityWith(nint luaState)
     {
         var lua = Lua.FromIntPtr(luaState);
-        var self = lua.CheckUserData(1, "Entity");
+        var self = lua.CheckUserData(1, "BaseEntity");
         if (self == IntPtr.Zero)
             throw new InvalidOperationException("Expected Entity instance as first argument to 'with'");
 
@@ -155,26 +158,7 @@ internal class EntityContext(PathInfo paths)
         return 1;
     }
 
-
-    private int PartWith(nint luaState)
-    {
-        var lua = Lua.FromIntPtr(luaState);
-        var self = lua.CheckUserData(1, "Part");
-        if (self == IntPtr.Zero)
-            throw new InvalidOperationException("Expected Part instance as first argument to 'with'");
-
-        var partIndex = System.Runtime.InteropServices.Marshal.ReadInt32(self);
-        var original = _partsCache[partIndex];
-
-        var overrideData = ReadFromTable(original, lua);
-
-        _partsCache.Add(overrideData);
-
-        PushPart(lua, _partsCache.Count - 1);
-        return 1;
-    }
-
-    private static EntityData GetEntityDataFromDataType(string dataType)
+    private static BaseData GetEntityDataFromDataType(string dataType)
     {
         switch (dataType)
         {
@@ -182,6 +166,8 @@ internal class EntityContext(PathInfo paths)
                 return new EntityWithSlotsData();
             case "EntityData":
                 return EntityData.Empty;
+            case "EngineData":
+                return EnginePartData.Empty;
             default:
                 throw new InvalidOperationException($"Unknown data type: {dataType}");
         }
@@ -210,47 +196,13 @@ internal class EntityContext(PathInfo paths)
         return 1;
     }
 
-    private void PushPart(Lua lua, int partIndex)
-    {
-        var userDataPtr = lua.NewUserData(sizeof(int));
-
-        System.Runtime.InteropServices.Marshal.WriteInt32(userDataPtr, partIndex);
-
-        if (lua.NewMetaTable("Part"))
-        {
-            lua.PushString("__index");
-            lua.PushCFunction((nint state) =>
-            {
-                var l = Lua.FromIntPtr(state);
-                var partIdx = System.Runtime.InteropServices.Marshal.ReadInt32(l.ToUserData(1));
-                var part = _partsCache[partIdx];
-                var key = l.ToString(2);
-
-                l.Pop(2);
-                switch (key)
-                {
-                    default:
-                        l.PushString($"Unknown field {key}");
-                        l.Error();
-                        return 1;
-                }
-            });
-            lua.SetTable(-3);
-
-            lua.PushString("__call");
-            lua.PushCFunction(PartWith);
-            lua.SetTable(-3);
-        }
-        lua.SetMetaTable(-2);
-    }
-
     private void PushEntity(Lua lua, int entityIndex)
     {
         var userDataPtr = lua.NewUserData(sizeof(int));
 
         System.Runtime.InteropServices.Marshal.WriteInt32(userDataPtr, entityIndex);
 
-        if (lua.NewMetaTable("Entity"))
+        if (lua.NewMetaTable("BaseEntity"))
         {
             lua.PushString("__index");
             lua.PushCFunction((nint state) =>
@@ -280,7 +232,7 @@ internal class EntityContext(PathInfo paths)
 
     public BaseData GetEntityData(Lua lua, int id)
     {
-        var entityRef = lua.CheckUserData(id, "Entity");
+        var entityRef = lua.CheckUserData(id, "BaseEntity");
         if (entityRef == IntPtr.Zero)
             throw new InvalidOperationException($"Expected Entity instance at index {id}");
 
@@ -309,7 +261,7 @@ internal class EntityContext(PathInfo paths)
         }
         else
         {
-            PushPart(lua, partIndex);
+            PushEntity(lua, partIndex);
         }
 
         return 1;

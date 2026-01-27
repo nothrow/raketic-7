@@ -1,3 +1,4 @@
+using raketic.modelgen.Entity;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
 using System;
@@ -93,7 +94,7 @@ void _generated_load_world_data(uint16_t index);
         _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct particles_data* pd) {{");
         _cWriter!.WriteLine($"  uint32_t new_idx;");
 
-        foreach (var entity in world.Entities)
+        foreach (EntityData entity in world.Entities)
         {
             _cWriter!.WriteLine();
             _cWriter!.WriteLine($"  new_idx = od->active++;");

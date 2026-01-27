@@ -4,12 +4,12 @@ using raketic.modelgen.Svg;
 
 namespace raketic.modelgen.World;
 
-internal record WorldsData(string WorldName, EntityData[] Entities);
+internal record WorldsData(string WorldName, BaseEntityWithModelData[] Entities);
 
 internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityContext _entityContext)
 {
     private List<WorldsData> _worlds = new();
-    private List<EntityData> _entities = new();
+    private List<BaseEntityWithModelData> _entities = new();
     
     public IReadOnlyList<WorldsData> Worlds => _worlds;
     public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.Select(y => y.Model!)).Where(x => x != null).Distinct().ToList();
@@ -20,11 +20,11 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         var argc = lua.GetTop();
         for(int i = 1; i <= argc; i++)
         {
-            var entity = (EntityData)_entityContext.GetEntityData(lua, i);
+            var entity = (BaseEntityWithModelData)_entityContext.GetEntityData(lua, i);
             if (entity.ModelRef.HasValue)
             {
                 var model = _modelContext[entity.ModelRef.Value];
-                entity = entity.Extend(new EntityData { Model = model });
+                entity = entity with { Model = model };
             }
 
             _entities.Add(

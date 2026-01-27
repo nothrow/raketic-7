@@ -1,6 +1,11 @@
 local shipDefaults = {
   type   = "ENTITY_TYPEREF_SHIP",
-  dataType = "EntityWithSlotsData"
+  __dataType = "EntityWithSlotsData"
+}
+
+local engineDefaults = {
+  type   = "PART_TYPEREF_ENGINE",
+  __dataType = "EngineData"
 }
 
 local function merge(a, b)
@@ -16,4 +21,8 @@ end
 
 function Ship(data)
   return Entity(merge(shipDefaults, data))
+end
+
+function Engine(data)
+  return Entity(merge(engineDefaults, data))
 end
