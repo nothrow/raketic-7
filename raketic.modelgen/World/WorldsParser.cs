@@ -12,7 +12,7 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
     private List<BaseEntityWithModelData> _entities = new();
     
     public IReadOnlyList<WorldsData> Worlds => _worlds;
-    public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.Select(y => y.Model!)).Where(x => x != null).Distinct().ToList();
+    public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.SelectMany(y => y.AllModels)).Distinct().ToList();
 
     private int Spawn(nint luaState)
     {
@@ -23,7 +23,7 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
             var entity = _entityContext.GetEntityData(lua, i);
 
             _entities.Add(
-                entity.ResolveModels(_modelContext)
+                entity.ResolveModels(_modelContext, _entityContext)
             );
         }
         return argc;

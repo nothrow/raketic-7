@@ -35,7 +35,7 @@ using var writer = new WorldWriter(paths);
 
 writer.WriteHeaders();
 writer.WriteModels(worldsParser.Models);
-writer.WriteWorlds(worldsParser.Worlds, entityContext, modelContext);
+writer.WriteWorlds(worldsParser.Worlds);
 
 return;
 

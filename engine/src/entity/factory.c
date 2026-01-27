@@ -10,6 +10,7 @@ static void _clear_position_orientation(uint32_t idx) {
   od->position_orientation.orientation_y[idx] = 0.0f;
 }
 
+/*
 entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {
   struct objects_data* od = entity_manager_get_objects();
   struct parts_data* pd = entity_manager_get_parts();
@@ -40,3 +41,4 @@ entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model) {
 
   return ret;
 }
+*/

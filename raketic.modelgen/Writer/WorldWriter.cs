@@ -23,7 +23,7 @@ internal class WorldWriter(PathInfo paths) : IDisposable
 void _generated_draw_model(color_t color, uint16_t index);
 uint16_t _generated_get_model_radius(uint16_t index);
 
-void _generated_load_world_data(uint16_t index);
+void _generated_load_map_data(uint16_t index);
 ");
 
         _cWriter.WriteLine(@"
@@ -54,7 +54,7 @@ void _generated_load_world_data(uint16_t index);
         _cWriter?.Dispose();
     }
 
-    internal void WriteWorlds(IEnumerable<WorldsData> worlds, EntityContext entityContext, ModelContext modelContext)
+    internal void WriteWorlds(IEnumerable<WorldsData> worlds)
     {
         if (_cWriter == null || _hWriter == null)
             throw new InvalidOperationException("Writers not initialized. Call WriteHeaders() first.");
@@ -65,7 +65,7 @@ void _generated_load_world_data(uint16_t index);
             Console.Write($"Processing world: {world.WorldName} -");
 
             WriteWorldHeaders(world, i);
-            WriteWorldContent(world, i, entityContext, modelContext);
+            WriteWorldContent(world, i);
             ++i;
 
             Console.WriteLine($" written {world.Entities.Length} entities");
@@ -85,7 +85,7 @@ void _generated_load_world_data(uint16_t index);
         _cWriter.WriteLine();
     }
 
-    private void WriteWorldContent(WorldsData world, int i, EntityContext entityContext, ModelContext modelContext)
+    private void WriteWorldContent(WorldsData world, int i)
     {
         _cWriter!.WriteLine($"static void _world_{world.WorldName}(struct objects_data* od, struct parts_data* pd) {{");
         _cWriter!.WriteLine($"  uint32_t new_idx;");
@@ -123,7 +123,7 @@ void _generated_load_world_data(uint16_t index);
                 {
                     var model = entityWithSlots.Model!;
                     var slotRef = slot.SlotRef!.Value;
-                    var slotEntity = entityContext[slot.EntityRef].ResolveModels(modelContext);
+                    var slotEntity = slot.Entity!;
 
                     w.WriteLine($"  new_pidx = pd->active++;");
                     w.WriteLine($"  pd->parent_id[new_pidx] = OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._);");

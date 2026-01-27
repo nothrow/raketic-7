@@ -9,4 +9,6 @@ typedef struct {
 
 extern object_vtable_t entity_manager_vtables[];
 
+/*
 entity_id_t _generate_entity_by_model(entity_type_t type, uint16_t model);
+*/

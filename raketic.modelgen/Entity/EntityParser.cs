@@ -9,6 +9,14 @@ internal abstract record BaseEntityWithModelData
     public string? Type { get; init; }
     public int? ModelRef { get; init; }
     public Model? Model { get; init; }
+    public virtual IEnumerable<Model> AllModels
+    {
+        get
+        {
+            if (Model != null)
+                yield return Model;
+        }
+    }
 
     public virtual BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
@@ -37,7 +45,7 @@ internal abstract record BaseEntityWithModelData
         }
     }
 
-    public virtual BaseEntityWithModelData ResolveModels(ModelContext modelContext)
+    public virtual BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)
     {
         if (ModelRef.HasValue)
         {
@@ -83,9 +91,9 @@ internal record EnginePartData : PartData
         }
     }
 
-    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext)
+    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)
     {
-        var ret = (EnginePartData)base.ResolveModels(modelContext);
+        var ret = (EnginePartData)base.ResolveModels(modelContext, entityContext);
         if (ParticleModelRef.HasValue)
         {
             var model = modelContext[ParticleModelRef.Value];
@@ -140,6 +148,7 @@ internal record SlotData
     public required string SlotName { get; init; }
     public int? SlotRef { get; init; }
     public int EntityRef { get; init; }
+    public BaseEntityWithModelData? Entity { get; init; }
 }
 
 internal record EntityWithSlotsData : EntityData
@@ -147,6 +156,25 @@ internal record EntityWithSlotsData : EntityData
     public SlotData[] Slots { get; init; } = Array.Empty<SlotData>();
 
     public static new EntityWithSlotsData Empty { get; } = new EntityWithSlotsData();
+
+    public override IEnumerable<Model> AllModels
+    {
+        get
+        {
+            if (Model != null)
+                yield return Model;
+            foreach (var slot in Slots)
+            {
+                if (slot.Entity != null)
+                {
+                    foreach (var model in slot.Entity.AllModels)
+                    {
+                        yield return model;
+                    }
+                }
+            }
+        }
+    }
 
     private static SlotData[] ReadSlotsFromTable(Lua lua)
     {
@@ -173,19 +201,19 @@ internal record EntityWithSlotsData : EntityData
         return [.. slots];
     }
 
-    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext)
+    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)
     {
-        var ret = (EntityWithSlotsData)base.ResolveModels(modelContext);
+        var ret = (EntityWithSlotsData)base.ResolveModels(modelContext, entityContext);
 
         if (ret.Model != null)
         {
-            var slots = ResolveSlots(ret.Slots, ret.Model);
+            var slots = ResolveSlots(ret.Slots, ret.Model, modelContext, entityContext);
             return ret with { Slots = slots };
         }
         return ret;
     }
 
-    private static SlotData[] ResolveSlots(SlotData[] slots, Model model)
+    private static SlotData[] ResolveSlots(SlotData[] slots, Model model, ModelContext modelContext, EntityContext entityContext)
     {
         return slots.Select(slot =>
         {
@@ -193,7 +221,7 @@ internal record EntityWithSlotsData : EntityData
             if (index == default)
                 throw new InvalidOperationException($"Model '{model.FileName}' does not have a slot named '{slot.SlotName}'");
 
-            return slot with { SlotRef = index.Index };
+            return slot with { SlotRef = index.Index, Entity = entityContext[slot.EntityRef].ResolveModels(modelContext, entityContext) };
         }).ToArray();
     }
 
