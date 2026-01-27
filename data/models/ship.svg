@@ -11,10 +11,10 @@
       <!-- Engine pods -->
       <!--<rect x="32" y="75" width="6" height="12" fill="none" stroke="white" stroke-width="2"/>
       <rect x="62" y="75" width="6" height="12" fill="none" stroke="white" stroke-width="2"/>-->
-      
-      <rect x="32" y="75" width="6" height="12" slot="engine" />
-      <rect x="62" y="75" width="6" height="12" slot="engine" />
-      
+
+      <rect x="32" y="75" width="6" height="12" slot="engine1" />
+      <rect x="62" y="75" width="6" height="12" slot="engine2" />
+
       <!-- Wing assemblies -->
       <path d="M40,50 L25,45 L15,50 L25,55 L40,55" fill="none" stroke="white" stroke-width="2"/>
       <path d="M60,50 L75,45 L85,50 L75,55 L60,55" fill="none" stroke="white" stroke-width="2"/>
@@ -25,4 +25,4 @@
       <line x1="45" y1="25" x2="55" y2="25" stroke="white" stroke-width="1"/>
       <line x1="43" y1="55" x2="57" y2="55" stroke="white" stroke-width="1"/>
     </g>
-</svg> 
+</svg>

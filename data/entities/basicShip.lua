@@ -7,4 +7,3 @@ return Ship {
     engine2 = parts.basicEngine
   }
 }
-

@@ -22,10 +22,8 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         {
             var entity = _entityContext.GetEntityData(lua, i);
 
-            entity.ResolveModels(_modelContext);
-
             _entities.Add(
-                entity
+                entity.ResolveModels(_modelContext)
             );
         }
         return argc;

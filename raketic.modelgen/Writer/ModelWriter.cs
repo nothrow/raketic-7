@@ -109,6 +109,7 @@ internal class ModelWriter
 
     public void DumpModelSlots(StreamWriter w, Model model)
     {
+        /*
         if (model.Slots.Length == 0)
             return;
 
@@ -150,13 +151,8 @@ internal class ModelWriter
 
         w.WriteLine($"}}");
         w.WriteLine();
+        */
     }
-
-    private string GetTypeRef(SlotType type) => type switch
-    {
-        SlotType.Engine => "PART_TYPEREF_ENGINE",
-        _ => throw new InvalidOperationException($"Unknown slot type: {type}"),
-    };
 
     public void DumpModelRadius(StreamWriter w, Model model)
     {

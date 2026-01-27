@@ -349,15 +349,10 @@ internal class SvgParser
         return new Model(
             FileName: filename,
             centeredStrips,
-            Slots: parser._slots.Select(x => new Slot(x.Item2 with { X = x.Item2.X - center.X, Y = x.Item2.Y - center.Y }, ParseSlotType(x.Item1))).ToArray()
+            Slots: parser._slots.Select(x => new Slot(x.Item2 with { X = x.Item2.X - center.X, Y = x.Item2.Y - center.Y }, x.Item1)).ToArray()
         );
     }
 
-    private static SlotType ParseSlotType(string item) => item.ToLower() switch
-    {
-        "engine" => SlotType.Engine,
-        _ => throw new InvalidOperationException($"Unknown slot type: {item}"),
-    };
 
     private static Point ComputeBoundingBoxCenter(LineStrip[] lineStrips)
     {

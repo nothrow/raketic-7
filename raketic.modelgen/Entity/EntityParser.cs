@@ -135,9 +135,10 @@ internal record EntityData : BaseEntityWithModelData
     }
 }
 
-internal class SlotData
+internal record SlotData
 {
-    public required string SlotRef { get; init; }
+    public required string SlotName { get; init; }
+    public int? SlotRef { get; init; }
     public int EntityRef { get; init; }
 }
 
@@ -147,7 +148,7 @@ internal record EntityWithSlotsData : EntityData
 
     public static new EntityWithSlotsData Empty { get; } = new EntityWithSlotsData();
 
-    private SlotData[] ReadSlotsFromTable(Lua lua)
+    private static SlotData[] ReadSlotsFromTable(Lua lua)
     {
         var slots = new List<SlotData>();
 
@@ -163,13 +164,37 @@ internal record EntityWithSlotsData : EntityData
             var objectIndex = System.Runtime.InteropServices.Marshal.ReadInt32(valuePtr);
             slots.Add(new SlotData
             {
-                SlotRef = key,
+                SlotName = key,
                 EntityRef = objectIndex
             });
             lua.Pop(1);
         }
 
         return [.. slots];
+    }
+
+    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext)
+    {
+        var ret = (EntityWithSlotsData)base.ResolveModels(modelContext);
+
+        if (ret.Model != null)
+        {
+            var slots = ResolveSlots(ret.Slots, ret.Model);
+            return ret with { Slots = slots };
+        }
+        return ret;
+    }
+
+    private static SlotData[] ResolveSlots(SlotData[] slots, Model model)
+    {
+        return slots.Select(slot =>
+        {
+            var index = model.Slots.Index().FirstOrDefault(x => x.Item.Name == slot.SlotName);
+            if (index == default)
+                throw new InvalidOperationException($"Model '{model.FileName}' does not have a slot named '{slot.SlotName}'");
+
+            return slot with { SlotRef = index.Index };
+        }).ToArray();
     }
 
     public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
