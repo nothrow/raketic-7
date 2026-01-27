@@ -5,4 +5,5 @@ record PathInfo
     public required string OutputHRenderer { get; init; }
     public required string OutputHSlots { get; init; }
     public required string DataDir { get; init; }
+    public required string CommonLibLua { get; init; }
 }

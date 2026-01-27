@@ -6,7 +6,7 @@ namespace raketic.modelgen.World;
 
 internal record WorldsData(string WorldName, EntityData[] Entities);
 
-internal class WorldsParser(ModelContext _modelContext, EntityContext _entityContext)
+internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityContext _entityContext)
 {
     private List<WorldsData> _worlds = new();
     private List<EntityData> _entities = new();
@@ -20,11 +20,11 @@ internal class WorldsParser(ModelContext _modelContext, EntityContext _entityCon
         var argc = lua.GetTop();
         for(int i = 1; i <= argc; i++)
         {
-            var entity = _entityContext.GetEntityData(lua, i);
+            var entity = (EntityData)_entityContext.GetEntityData(lua, i);
             if (entity.ModelRef.HasValue)
             {
                 var model = _modelContext[entity.ModelRef.Value];
-                entity = entity with { Model = model };
+                entity = entity.Extend(new EntityData { Model = model });
             }
 
             _entities.Add(
@@ -44,6 +44,18 @@ internal class WorldsParser(ModelContext _modelContext, EntityContext _entityCon
     {
         _entities = new();
         using var lua = new Lua();
+
+        // Load common library first
+        if (lua.LoadFile(_paths.CommonLibLua) != LuaStatus.OK)
+        {
+            var error = lua.ToString(-1);
+            throw new InvalidOperationException($"Error loading commonlib.lua: {error}");
+        }
+        if (lua.PCall(0, 0, 0) != LuaStatus.OK)
+        {
+            var error = lua.ToString(-1);
+            throw new InvalidOperationException($"Error executing commonlib.lua: {error}");
+        }
 
         _modelContext.RegisterForLua(lua);
         _entityContext.RegisterForLua(lua);

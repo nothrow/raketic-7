@@ -1,4 +1,4 @@
-﻿using KeraLua;
+using KeraLua;
 
 namespace raketic.modelgen.Entity;
 
@@ -12,7 +12,7 @@ internal class PointLuaBinding
         double x, y;
         if (argc == 1 && lua.IsTable(1))
         {
-            // vec { x = 10, y = 20 } nebo vec { 10, 20 }
+            // vec { x = 10, y = 20 } or vec { 10, 20 }
             lua.GetField(1, "x");
             if (lua.IsNumber(-1))
             {

@@ -14,6 +14,7 @@ static class Paths
             OutputC = Path.Combine(slnDir, "engine", "generated", "models.gen.c"),
             OutputHRenderer = Path.Combine(slnDir, "engine", "generated", "renderer.gen.h"),
             OutputHSlots = Path.Combine(slnDir, "engine", "generated", "slots.gen.h"),
+            CommonLibLua = Path.Combine(slnDir, "raketic.modelgen", "commonlib.lua"),
         };
     }
 }
