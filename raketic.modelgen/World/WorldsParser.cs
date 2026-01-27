@@ -20,12 +20,9 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         var argc = lua.GetTop();
         for(int i = 1; i <= argc; i++)
         {
-            var entity = (BaseEntityWithModelData)_entityContext.GetEntityData(lua, i);
-            if (entity.ModelRef.HasValue)
-            {
-                var model = _modelContext[entity.ModelRef.Value];
-                entity = entity with { Model = model };
-            }
+            var entity = _entityContext.GetEntityData(lua, i);
+
+            entity.ResolveModels(_modelContext);
 
             _entities.Add(
                 entity

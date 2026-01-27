@@ -138,7 +138,7 @@ internal record EntityData : BaseEntityWithModelData
 internal class SlotData
 {
     public required string SlotRef { get; init; }
-    public EntityData? Entity { get; init; }
+    public int EntityRef { get; init; }
 }
 
 internal record EntityWithSlotsData : EntityData
@@ -146,6 +146,48 @@ internal record EntityWithSlotsData : EntityData
     public SlotData[] Slots { get; init; } = Array.Empty<SlotData>();
 
     public static new EntityWithSlotsData Empty { get; } = new EntityWithSlotsData();
+
+    private SlotData[] ReadSlotsFromTable(Lua lua)
+    {
+        var slots = new List<SlotData>();
+
+        lua.PushNil();
+        while (lua.Next(-2))
+        {
+            var key = lua.ToString(-2);
+
+            var valuePtr = lua.CheckUserData(-1, "BaseEntity");
+            if (valuePtr == IntPtr.Zero)
+                throw new InvalidOperationException($"Invalid type for 'slot' field in entity definition, expected BaseEntity but got {lua.Type(-1)}");
+
+            var objectIndex = System.Runtime.InteropServices.Marshal.ReadInt32(valuePtr);
+            slots.Add(new SlotData
+            {
+                SlotRef = key,
+                EntityRef = objectIndex
+            });
+            lua.Pop(1);
+        }
+
+        return [.. slots];
+    }
+
+    public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
+    {
+        switch (key)
+        {
+            case "slots":
+                if (type != LuaType.Table)
+                    throw new InvalidOperationException($"Invalid type for 'mass' field in entity definition, expected number but got {type}");
+
+                return this with
+                {
+                    Slots = ReadSlotsFromTable(lua)
+                };
+            default:
+                return base.ReadFromTable(key, type, lua);
+        }
+    }
 }
 
 internal class EntityContext(PathInfo paths)
