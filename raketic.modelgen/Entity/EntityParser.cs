@@ -4,16 +4,26 @@ using raketic.modelgen.Utils;
 
 namespace raketic.modelgen.Entity;
 
-internal abstract record BaseData
+internal abstract record BaseEntityWithModelData
 {
     public string? Type { get; init; }
+    public int? ModelRef { get; init; }
+    public Model? Model { get; init; }
 
-    public virtual BaseData ReadFromTable(string key, LuaType type, Lua lua)
+    public virtual BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
         switch (key)
         {
             case "__dataType": // skip
                 return this;
+
+            case "model":
+                var modelPtr = lua.CheckUserData(-1, "Model");
+                if (modelPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'model' field in entity definition, expected Model but got {type}");
+
+                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
+                return this with { ModelRef = modelIdx };
 
             case "type":
                 if (type != LuaType.String)
@@ -26,27 +36,16 @@ internal abstract record BaseData
 
         }
     }
-}
 
-internal record BaseEntityWithModelData : BaseData
-{
-    public int? ModelRef { get; init; }
-    public Model? Model { get; init; }
-
-    public override BaseData ReadFromTable(string key, LuaType type, Lua lua)
+    public virtual BaseEntityWithModelData ResolveModels(ModelContext modelContext)
     {
-        switch (key)
+        if (ModelRef.HasValue)
         {
-            case "model":
-                var modelPtr = lua.CheckUserData(-1, "Model");
-                if (modelPtr == IntPtr.Zero)
-                    throw new InvalidOperationException($"Invalid type for 'model' field in entity definition, expected Model but got {type}");
-
-                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
-                return this with { ModelRef = modelIdx };
-            default:
-                return base.ReadFromTable(key, type, lua);
+            var model = modelContext[ModelRef.Value];
+            return this with { Model = model };
         }
+
+        return this;
     }
 }
 
@@ -58,6 +57,43 @@ internal record PartData : BaseEntityWithModelData
 internal record EnginePartData : PartData
 {
     public static EnginePartData Empty { get; } = new EnginePartData();
+
+    public int? ParticleModelRef { get; init; }
+    public Model? ParticleModel { get; init; }
+
+    public int? Thrust { get; init; }
+
+    public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
+    {
+        switch (key)
+        {
+            case "particleModel":
+                var modelPtr = lua.CheckUserData(-1, "Model");
+                if (modelPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'particleModel' field in engine part definition, expected Model but got {type}");
+                var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
+                return this with { ParticleModelRef = modelIdx };
+            case "thrust":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'thrust' field in engine part definition, expected number but got {type}");
+
+                return this with { Thrust = (int?)lua.ToIntegerX(-1) };
+            default:
+                return base.ReadFromTable(key, type, lua);
+        }
+    }
+
+    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext)
+    {
+        var ret = (EnginePartData)base.ResolveModels(modelContext);
+        if (ParticleModelRef.HasValue)
+        {
+            var model = modelContext[ParticleModelRef.Value];
+            return ret with { ParticleModel = model };
+        }
+
+        return ret;
+    }
 }
 
 internal record EntityData : BaseEntityWithModelData
@@ -68,7 +104,7 @@ internal record EntityData : BaseEntityWithModelData
 
     public static EntityData Empty { get; } = new EntityData();
 
-    public override BaseData ReadFromTable(string key, LuaType type, Lua lua)
+    public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
         switch (key)
         {
@@ -114,13 +150,13 @@ internal record EntityWithSlotsData : EntityData
 
 internal class EntityContext(PathInfo paths)
 {
-    private readonly List<BaseData> _entityCache = new();
+    private readonly List<BaseEntityWithModelData> _entityCache = new();
     private readonly Dictionary<string, int> _entityCacheKeys = new();
     private readonly Dictionary<string, int> _partsCacheKeys = new();
 
-    private BaseData ReadFromTable(BaseData start, Lua lua)
+    private BaseEntityWithModelData ReadFromTable(BaseEntityWithModelData start, Lua lua)
     {
-        BaseData ret = start;
+        BaseEntityWithModelData ret = start;
         lua.PushNil();
         while (lua.Next(-2))
         {
@@ -158,7 +194,7 @@ internal class EntityContext(PathInfo paths)
         return 1;
     }
 
-    private static BaseData GetEntityDataFromDataType(string dataType)
+    private static BaseEntityWithModelData GetEntityDataFromDataType(string dataType)
     {
         switch (dataType)
         {
@@ -230,7 +266,7 @@ internal class EntityContext(PathInfo paths)
         lua.SetMetaTable(-2);
     }
 
-    public BaseData GetEntityData(Lua lua, int id)
+    public BaseEntityWithModelData GetEntityData(Lua lua, int id)
     {
         var entityRef = lua.CheckUserData(id, "BaseEntity");
         if (entityRef == IntPtr.Zero)
@@ -252,7 +288,7 @@ internal class EntityContext(PathInfo paths)
         {
             LoadObjectFromLuaFile(fullPath, lua);
 
-            var partRef = lua.CheckUserData(1, "Part");
+            var partRef = lua.CheckUserData(1, "BaseEntity");
             if (partRef == IntPtr.Zero)
                 throw new InvalidOperationException($"Part file '{fullPath}' did not return an Part instance");
             var partIdx = System.Runtime.InteropServices.Marshal.ReadInt32(partRef);
@@ -280,7 +316,7 @@ internal class EntityContext(PathInfo paths)
             LoadObjectFromLuaFile(fullPath, lua);
 
 
-            var entityRef = lua.CheckUserData(1, "Entity");
+            var entityRef = lua.CheckUserData(1, "BaseEntity");
             if (entityRef == IntPtr.Zero)
                 throw new InvalidOperationException($"Entity file '{fullPath}' did not return an Entity instance");
             var entityIdx = System.Runtime.InteropServices.Marshal.ReadInt32(entityRef);
