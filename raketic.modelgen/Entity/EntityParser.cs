@@ -373,6 +373,13 @@ internal class EntityContext(PathInfo paths)
         lua.SetMetaTable(-2);
     }
 
+    // returns index of the entity
+    public void PushEntityData(Lua lua, BaseEntityWithModelData entity)
+    {
+        _entityCache.Add(entity);
+        PushEntity(lua, _entityCache.Count - 1);
+    }
+
     public BaseEntityWithModelData GetEntityData(Lua lua, int id)
     {
         var entityRef = lua.CheckUserData(id, "BaseEntity");

@@ -83,27 +83,6 @@ static void _particles_data_initialize(struct particles_data* data) {
   data->capacity = MAXSIZE;
 }
 
-
-static void _generate_dummy_data(void) {
-  _generated_load_map_data(0);
-  /*
-  // will be deleted - just for testing
-  entity_id_t player = _generate_entity_by_model(ENTITY_TYPEREF_SHIP, MODEL_SHIP_IDX);
-
-  debug_watch_set(player);
-  controller_set_entity(player);
-  camera_set_entity(player);
-
-  // Test planet
-  entity_id_t planet = _generate_entity_by_model(ENTITY_TYPEREF_PLANET, MODEL_PLANET_IDX);
-  entity_manager_get_objects()->mass[GET_ORDINAL(planet)] = 10000.0f;
-  entity_manager_get_objects()->position_orientation.position_x[GET_ORDINAL(planet)] = 100.0f;
-  entity_manager_get_objects()->position_orientation.position_y[GET_ORDINAL(planet)] = 100.0f;
-  (void)planet;  // suppress unused warning for now
-  */
-}
-
-
 static void _entity_manager_types_initialize(void) {
   particles_entity_initialize();
   ship_entity_initialize();
@@ -119,8 +98,9 @@ void entity_manager_initialize(void) {
   _parts_data_initialize(&manager_.parts);
 
   _entity_manager_types_initialize();
+
 #ifndef UNIT_TESTS
-  _generate_dummy_data();
+  _generated_load_map_data(0);
 #endif
 }
 

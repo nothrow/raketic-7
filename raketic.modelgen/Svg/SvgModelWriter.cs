@@ -32,11 +32,6 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
             modelWriter.DumpModel(cWriter, model);
         }
 
-        foreach (var model in models)
-        {
-            modelWriter.DumpModelSlots(cWriter, model);
-        }
-        
         cWriter.WriteLine();
         cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
 

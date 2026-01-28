@@ -39,12 +39,12 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
             var entity = _entityContext.GetEntityData(lua, i);
 
             var resolvedEntity = entity.ResolveModels(_modelContext, _entityContext) with { SpawnId = _entities.Count };
-            // todo: replace the variable on stack with the resolved entity?
             _entities.Add(
                 resolvedEntity
             );
 
-            _entityContext.GetEntityData
+            _entityContext.PushEntityData(lua, resolvedEntity);
+            lua.Replace(i);
         }
         return argc;
     }

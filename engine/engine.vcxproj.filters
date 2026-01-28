@@ -25,7 +25,6 @@
     <ClCompile Include="src\messaging\messaging.c" />
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\platform\math.c" />
-    <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="generated\models.gen.c" />
     <ClCompile Include="src\entity\engine.c" />
     <ClCompile Include="src\entity\particles.c" />

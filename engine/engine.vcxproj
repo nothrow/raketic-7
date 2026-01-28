@@ -43,7 +43,6 @@
     <ClCompile Include="src\entity\entity.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="src\entity\factory.c" />
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="src\entity\camera.c" />
     <ClCompile Include="src\entity\ship.c" />
