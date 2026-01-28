@@ -8,6 +8,11 @@ local engineDefaults = {
   __dataType = "EngineData"
 }
 
+local planetDefaults = {
+  type   = "ENTITY_TYPEREF_PLANET",
+  __dataType = "EntityData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -25,4 +30,8 @@ end
 
 function Engine(data)
   return Entity(merge(engineDefaults, data))
+end
+
+function Planet(data)
+  return Entity(merge(planetDefaults, data))
 end

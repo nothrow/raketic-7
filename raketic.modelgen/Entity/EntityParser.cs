@@ -6,6 +6,7 @@ namespace raketic.modelgen.Entity;
 
 internal abstract record BaseEntityWithModelData
 {
+    public int? SpawnId { get; init; }
     public string? Type { get; init; }
     public int? ModelRef { get; init; }
     public Model? Model { get; init; }
@@ -453,4 +454,5 @@ internal class EntityContext(PathInfo paths)
             throw new InvalidOperationException($"Error executing object file '{objectPath}': {error}");
         }
     }
+
 }

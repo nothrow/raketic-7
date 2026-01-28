@@ -4,15 +4,31 @@ using raketic.modelgen.Svg;
 
 namespace raketic.modelgen.World;
 
-internal record WorldsData(string WorldName, BaseEntityWithModelData[] Entities);
+internal record WorldsData(string WorldName, BaseEntityWithModelData[] Entities, int? ControlledEntitySpawnId);
 
 internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityContext _entityContext)
 {
     private List<WorldsData> _worlds = new();
     private List<BaseEntityWithModelData> _entities = new();
-    
+    private int? _controlledEntity = null;
+
     public IReadOnlyList<WorldsData> Worlds => _worlds;
     public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.SelectMany(y => y.AllModels)).Distinct().ToList();
+
+    private int Control(nint luaState)
+    {
+        var lua = Lua.FromIntPtr(luaState);
+
+        _controlledEntity = _entityContext.GetEntityData(lua, 1).SpawnId;
+
+        if (_controlledEntity == null)
+        {
+            lua.PushString("control: entity must have a spawnId");
+            lua.Error();
+        }
+
+        return 0;
+    }
 
     private int Spawn(nint luaState)
     {
@@ -22,9 +38,13 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         {
             var entity = _entityContext.GetEntityData(lua, i);
 
+            var resolvedEntity = entity.ResolveModels(_modelContext, _entityContext) with { SpawnId = _entities.Count };
+            // todo: replace the variable on stack with the resolved entity?
             _entities.Add(
-                entity.ResolveModels(_modelContext, _entityContext)
+                resolvedEntity
             );
+
+            _entityContext.GetEntityData
         }
         return argc;
     }
@@ -33,11 +53,16 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
     {
         lua.PushCFunction(Spawn);
         lua.SetGlobal("spawn");
+
+        lua.PushCFunction(Control);
+        lua.SetGlobal("control");
     }
 
     internal void ParseWorld(string worldPath)
     {
         _entities = new();
+        _controlledEntity = null;
+
         using var lua = new Lua();
 
         // Load common library first
@@ -76,7 +101,8 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         _worlds.Add(
             new WorldsData(
                 worldName,
-                _entities.ToArray()
+                _entities.ToArray(),
+                _controlledEntity
             )
         );
     }
