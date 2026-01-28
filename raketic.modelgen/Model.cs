@@ -32,6 +32,8 @@ internal record Model(
     Slot[] Slots
 )
 {
+    public string ModelConstantName => $"MODEL_{FileName.ToUpper()}_IDX";
+
     /// <summary>
     /// computes radius as the max distance from origin to any point in the model
     /// </summary>

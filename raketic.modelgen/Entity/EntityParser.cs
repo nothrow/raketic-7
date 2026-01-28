@@ -1,6 +1,7 @@
 using KeraLua;
 using raketic.modelgen.Svg;
 using raketic.modelgen.Utils;
+using System.Reflection;
 
 namespace raketic.modelgen.Entity;
 
@@ -60,7 +61,9 @@ internal abstract record BaseEntityWithModelData
 
 internal record PartData : BaseEntityWithModelData
 {
-
+    public virtual void DumpPartData(StreamWriter w, string dataref)
+    {
+    }
 }
 
 internal record EnginePartData : PartData
@@ -69,8 +72,7 @@ internal record EnginePartData : PartData
 
     public int? ParticleModelRef { get; init; }
     public Model? ParticleModel { get; init; }
-
-    public int? Thrust { get; init; }
+    public int? Power { get; init; }
 
     public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
@@ -82,14 +84,32 @@ internal record EnginePartData : PartData
                     throw new InvalidOperationException($"Invalid type for 'particleModel' field in engine part definition, expected Model but got {type}");
                 var modelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(modelPtr);
                 return this with { ParticleModelRef = modelIdx };
-            case "thrust":
+            case "power":
                 if (type != LuaType.Number)
-                    throw new InvalidOperationException($"Invalid type for 'thrust' field in engine part definition, expected number but got {type}");
+                    throw new InvalidOperationException($"Invalid type for 'power' field in engine part definition, expected number but got {type}");
 
-                return this with { Thrust = (int?)lua.ToIntegerX(-1) };
+                return this with { Power = (int?)lua.ToIntegerX(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }
+    }
+
+    public override IEnumerable<Model> AllModels
+    {
+        get
+        {
+            if (Model != null)
+                yield return Model;
+
+            if (ParticleModel != null)
+                yield return ParticleModel;
+        }
+    }
+
+    public override void DumpPartData(StreamWriter w, string dataref)
+    {
+        w.WriteLine($"  ((struct engine_data*)({dataref}))->power = {Power / 100.0:0.0#######}f;");
+        w.WriteLine($"  ((struct engine_data*)({dataref}))->particle_model = {ParticleModel!.ModelConstantName};");
     }
 
     public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)

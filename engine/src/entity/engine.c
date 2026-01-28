@@ -12,7 +12,7 @@ static void _set_part_thrust(uint32_t idx, float percentage) {
   struct parts_data* pd = entity_manager_get_parts();
 
   struct engine_data* ed = (struct engine_data*)(pd->data[idx].data);
-  ed->thrust = percentage * 15;
+  ed->thrust = percentage * THRUST_COEF * ed->power;
 }
 
 static void _engine_set_thrust_percentage(entity_id_t id, float percentage) {

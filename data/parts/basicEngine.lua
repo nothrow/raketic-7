@@ -1,5 +1,5 @@
 return Engine {
-  thrust = 100,
+  power = 100,
   model = models.engine,
   particleModel = models.exhaust,
 }

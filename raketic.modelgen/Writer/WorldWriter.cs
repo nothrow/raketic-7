@@ -34,6 +34,7 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/entity.h""
 #include ""entity/controller.h""
 #include ""entity/camera.h""
+#include ""entity/engine.h""
 #include ""debug/debug.h""
 #include ""debug/profiler.h""
 
@@ -101,7 +102,7 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine();
             _cWriter!.WriteLine($"  new_idx = od->active++;");
             _cWriter!.WriteLine($"  od->type[new_idx] = {entity!.Type};");
-            _cWriter!.WriteLine($"  od->model_idx[new_idx] = MODEL_{entity.Model!.FileName.ToUpper()}_IDX;");
+            _cWriter!.WriteLine($"  od->model_idx[new_idx] = {entity.Model!.ModelConstantName};");
             _cWriter!.WriteLine($"  od->position_orientation.position_x[new_idx] = {entity.Position?.X:0.0#######}f;");
             _cWriter!.WriteLine($"  od->position_orientation.position_y[new_idx] = {entity.Position?.Y:0.0#######}f;");
             /*_cWriter!.WriteLine($"  od->position_orientation.orientation_x[new_idx] = 0.0f;");
@@ -128,18 +129,20 @@ void _generated_load_map_data(uint16_t index);
                 {
                     var model = entityWithSlots.Model!;
                     var slotRef = slot.SlotRef!.Value;
-                    var slotEntity = slot.Entity!;
+                    var slotEntity = (PartData)slot.Entity!;
 
                     w.WriteLine($"  new_pidx = pd->active++;");
                     w.WriteLine($"  pd->parent_id[new_pidx] = OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._);");
                     w.WriteLine($"  pd->local_offset_x[new_pidx] = {model.Slots[slotRef].Position.X:0.0#######}f;");
                     w.WriteLine($"  pd->local_offset_y[new_pidx] = {model.Slots[slotRef].Position.Y:0.0#######}f;");
-                    w.WriteLine($"  pd->model_idx[new_pidx] = MODEL_{slotEntity.Model!.FileName.ToUpper()}_IDX;");
+                    w.WriteLine($"  pd->model_idx[new_pidx] = {slotEntity.Model!.ModelConstantName};");
 
                     w.WriteLine($"  pd->type[new_pidx] = {slotEntity.Type};");
 
                     w.WriteLine($"  pd->local_orientation_x[new_pidx] = 1.0f;"); // todo: ?!
                     w.WriteLine($"  pd->local_orientation_y[new_pidx] = 0.0f;");
+
+                    slotEntity.DumpPartData(w, "pd->data[new_pidx].data");
 
                     w.WriteLine();
                 }

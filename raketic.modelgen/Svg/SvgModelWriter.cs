@@ -22,7 +22,7 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
 
             Console.WriteLine($" - written {written} vertices");
 
-            hWriter.WriteLine($"#define MODEL_{model.FileName.ToUpper()}_IDX ((uint16_t){i++})");
+            hWriter.WriteLine($"#define {model.ModelConstantName}    ((uint16_t){i++})");
         }
 
         modelWriter.DumpModelColors(cWriter, models);

@@ -4,6 +4,7 @@
 
 struct engine_data {
   float thrust;
+  float power;
   uint16_t particle_model;
 };
 
