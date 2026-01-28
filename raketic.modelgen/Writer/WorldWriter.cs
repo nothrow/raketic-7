@@ -105,8 +105,8 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine($"  od->model_idx[new_idx] = {entity.Model!.ModelConstantName};");
             _cWriter!.WriteLine($"  od->position_orientation.position_x[new_idx] = {entity.Position?.X:0.0#######}f;");
             _cWriter!.WriteLine($"  od->position_orientation.position_y[new_idx] = {entity.Position?.Y:0.0#######}f;");
-            /*_cWriter!.WriteLine($"  od->position_orientation.orientation_x[new_idx] = 0.0f;");
-            _cWriter!.WriteLine($"  od->position_orientation.orientation_y[new_idx] = 0.0f;");*/
+            _cWriter!.WriteLine($"  od->position_orientation.orientation_x[new_idx] = {Math.Cos(entity.Rotation ?? 0.0f):0.0#######}f;");
+            _cWriter!.WriteLine($"  od->position_orientation.orientation_y[new_idx] = {Math.Sin(entity.Rotation ?? 0.0f):0.0#######}f;");
             _cWriter!.WriteLine($"  od->position_orientation.radius[new_idx] = {entity.Model!.GetRadius()};");
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
 

@@ -35,3 +35,7 @@ end
 function Planet(data)
   return Entity(merge(planetDefaults, data))
 end
+
+function deg(degrees)
+  return degrees * math.pi / 180
+end

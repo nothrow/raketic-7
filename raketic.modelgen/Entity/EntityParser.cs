@@ -130,6 +130,7 @@ internal record EntityData : BaseEntityWithModelData
     public int? Mass { get; init; }
     public int? Radius { get; init; }
     public Point? Position { get; init; }
+    public float? Rotation { get; init; }
 
     public static EntityData Empty { get; } = new EntityData();
 
@@ -147,6 +148,11 @@ internal record EntityData : BaseEntityWithModelData
 
                 var point = System.Runtime.InteropServices.Marshal.PtrToStructure<Point>(pointer);
                 return this with { Position = point };
+            case "rotation":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'rotation' field in entity definition, expected number but got {type}");
+
+                return this with { Rotation = (float?)lua.ToNumberX(-1) };
             case "mass":
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'mass' field in entity definition, expected number but got {type}");
