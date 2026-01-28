@@ -72,7 +72,7 @@ static void _particles_colors(const struct particles_data* pd, color_t* target) 
   PROFILE_ZONE_END();
 }
 
-static void _graphics_particles_draw() {
+static void _graphics_particles_draw(void) {
   PROFILE_ZONE("_graphics_particles_draw");
   struct particles_data* pd = entity_manager_get_particles();
   // compute colors!
@@ -84,7 +84,7 @@ static void _graphics_particles_draw() {
   PROFILE_ZONE_END();
 }
 
-static void _graphics_objects_draw() {
+static void _graphics_objects_draw(void) {
   PROFILE_ZONE("_graphics_objects_draw");
   struct objects_data* od = entity_manager_get_objects();
 
@@ -92,7 +92,7 @@ static void _graphics_objects_draw() {
   PROFILE_ZONE_END();
 }
 
-static void _graphics_parts_draw() {
+static void _graphics_parts_draw(void) {
   PROFILE_ZONE("_graphics_parts_draw");
   struct parts_data* pd = entity_manager_get_parts();
 
