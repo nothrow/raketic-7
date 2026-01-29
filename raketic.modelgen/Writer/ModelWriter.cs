@@ -3,10 +3,95 @@ namespace raketic.modelgen.Writer;
 internal class ModelWriter
 {
     private Dictionary<System.Drawing.Color, int> _colorIndexes = new();
+
+    /// <summary>
+    /// Generates models_meta.gen.h header with declarations for fracture system
+    /// </summary>
+    public void DumpModelMetadataHeader(StreamWriter h, Model[] models)
+    {
+        h.WriteLine(@"
+// generated, do not edit manually - fracture system metadata
+
+#pragma once
+#include <stdint.h>
+
+// Draw command types for fracture expansion
+typedef enum { CMD_LINE_LOOP = 0, CMD_LINE_STRIP = 1 } DrawCmdType;
+typedef struct { uint8_t type; uint8_t start; uint8_t count; } DrawCommand;
+");
+
+        // Extern declarations for vertex arrays (defined in models.gen.c)
+        foreach (var model in models)
+        {
+            h.WriteLine($"extern const int8_t _model_{model.FileName}_vertices[];");
+        }
+        h.WriteLine();
+
+        // Extern declarations for metadata arrays (defined in models_meta.gen.c)
+        h.WriteLine("extern const int8_t* _model_vertices[];");
+        h.WriteLine("extern const DrawCommand* _model_commands[];");
+        h.WriteLine("extern const uint8_t _model_command_counts[];");
+        h.WriteLine();
+    }
+
+    /// <summary>
+    /// Generates models_meta.gen.c with vertex pointers and draw commands for fracture system
+    /// </summary>
+    public void DumpModelMetadata(StreamWriter w, Model[] models)
+    {
+        w.WriteLine(@"
+// generated, do not edit manually - fracture system metadata
+
+#include ""models_meta.gen.h""
+");
+
+        // Generate draw commands for each model
+        foreach (var model in models)
+        {
+            w.WriteLine($"static const DrawCommand _model_commands_{model.FileName}[] = {{");
+            int start = 0;
+            foreach (var linestrip in model.LineStrips)
+            {
+                var cmdType = linestrip.IsClosed ? "CMD_LINE_LOOP" : "CMD_LINE_STRIP";
+                w.WriteLine($"  {{{cmdType}, {start}, {linestrip.Points.Length}}},");
+                start += linestrip.Points.Length;
+            }
+            w.WriteLine("};");
+            w.WriteLine();
+        }
+
+        // Array of vertex pointers
+        w.WriteLine("const int8_t* _model_vertices[] = {");
+        foreach (var model in models)
+        {
+            w.WriteLine($"  _model_{model.FileName}_vertices,");
+        }
+        w.WriteLine("};");
+        w.WriteLine();
+
+        // Array of command array pointers
+        w.WriteLine("const DrawCommand* _model_commands[] = {");
+        foreach (var model in models)
+        {
+            w.WriteLine($"  _model_commands_{model.FileName},");
+        }
+        w.WriteLine("};");
+        w.WriteLine();
+
+        // Command counts per model
+        w.WriteLine("const uint8_t _model_command_counts[] = {");
+        foreach (var model in models)
+        {
+            w.WriteLine($"  {model.LineStrips.Length},");
+        }
+        w.WriteLine("};");
+        w.WriteLine();
+    }
     public int DumpModelData(StreamWriter w, Model model)
     {
         int points = 0; ;
-        w.WriteLine($"static const int8_t _model_{model.FileName}_vertices[] = {{");
+        // Not static - needed by models_meta.gen.c for fracture system
+        w.WriteLine($"const int8_t _model_{model.FileName}_vertices[] = {{");
         foreach (var linestrip in model.LineStrips)
         {
             w.Write(" ");

@@ -1,11 +1,26 @@
 #include "platform/platform.h"
 #include "entity/entity.h"
+#include "entity/fracture.h"
 #include "collisions/collisions.h"
 #include "physics/physics.h"
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
 #include "debug/debug.h"
 #include "debug/profiler.h"
+
+// TEST: Explode ship periodically (every 3 seconds)
+static uint32_t _test_tick_counter = 0;
+
+static void _test_explosion_tick(void) {
+  _test_tick_counter++;
+
+  // Explode ship every 3 seconds (360 ticks at 120Hz)
+  if (_test_tick_counter >= 360) {
+    _test_tick_counter = 0;
+    // Ship is at object index 0
+    explode_entity(0);
+  }
+}
 
 int run(void) {
   bool running = true;
@@ -33,6 +48,7 @@ int run(void) {
     messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_FRAME_TICK, 0, 0));
 
     while (platform_tick_pending()) {
+      _test_explosion_tick();  // TEST
       physics_engine_tick();
       collisions_engine_tick();
       messaging_pump();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <immintrin.h>
 
 float lut_sin(int32_t deg);
 float lut_cos(int32_t deg);
@@ -17,3 +18,9 @@ static inline float randf(void) {
 static inline float randf_symmetric(void) {
   return randf() * 2.0f - 1.0f;
 }
+
+// SIMD: generate 8 random floats in [0, 1)
+__m256 randf_8(void);
+
+// SIMD: generate 8 random floats in [-1, 1)
+__m256 randf_symmetric_8(void);

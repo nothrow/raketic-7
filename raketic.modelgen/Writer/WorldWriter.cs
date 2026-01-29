@@ -10,11 +10,15 @@ internal class WorldWriter(PathInfo paths) : IDisposable
 {
     private StreamWriter? _hWriter;
     private StreamWriter? _cWriter;
+    private StreamWriter? _metaWriter;
+    private StreamWriter? _metaHWriter;
 
     public void WriteHeaders()
     {
         _hWriter = new StreamWriter(paths.OutputHRenderer, false);
         _cWriter = new StreamWriter(paths.OutputC, false);
+        _metaWriter = new StreamWriter(paths.OutputMetaC, false);
+        _metaHWriter = new StreamWriter(paths.OutputMetaH, false);
 
         _hWriter.WriteLine(@"
 // generated, do not edit manually
@@ -46,18 +50,26 @@ void _generated_load_map_data(uint16_t index);
 
     public void WriteModels(IEnumerable<Model> models)
     {
-        if (_cWriter == null || _hWriter == null)
+        if (_cWriter == null || _hWriter == null || _metaWriter == null || _metaHWriter == null)
             throw new InvalidOperationException("Writers not initialized. Call WriteHeaders() first.");
 
         var svgWriter = new SvgModelWriter(_cWriter!, _hWriter!);
+        var modelArray = models.ToArray();
 
-        svgWriter.Write(models.ToArray());
+        svgWriter.Write(modelArray);
+
+        // Generate fracture metadata (header and source)
+        var modelWriter = new ModelWriter();
+        modelWriter.DumpModelMetadataHeader(_metaHWriter!, modelArray);
+        modelWriter.DumpModelMetadata(_metaWriter!, modelArray);
     }
 
     public void Dispose()
     {
         _hWriter?.Dispose();
         _cWriter?.Dispose();
+        _metaWriter?.Dispose();
+        _metaHWriter?.Dispose();
     }
 
     internal void WriteWorlds(IEnumerable<WorldsData> worlds)

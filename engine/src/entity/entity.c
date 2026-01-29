@@ -7,6 +7,7 @@
 #include "controller.h"
 #include "engine.h"
 #include "particles.h"
+#include "fracture.h"
 #include "camera.h"
 #include "planet.h"
 #include "debug/debug.h"
@@ -97,6 +98,7 @@ void entity_manager_initialize(void) {
   _particles_data_initialize(&manager_.particles);
   _parts_data_initialize(&manager_.parts);
 
+  fragment_pool_initialize();
   _entity_manager_types_initialize();
 
 #ifndef UNIT_TESTS
