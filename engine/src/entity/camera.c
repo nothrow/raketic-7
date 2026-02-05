@@ -115,3 +115,4 @@ void camera_entity_initialize(void) {
   entity_manager_vtables[ENTITY_TYPE_CAMERA].dispatch_message = _camera_dispatch;
 }
 
+

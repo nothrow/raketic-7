@@ -52,7 +52,7 @@ static void _particles_dispatch(entity_id_t id, message_t msg) {
     uint32_t particle_idx = (uint32_t)(msg.data_b);
     struct particles_data* pd = entity_manager_get_particles();
     if (particle_idx < pd->active) {
-      //pd->lifetime_ticks[particle_idx] = 0; // kill particle
+      pd->lifetime_ticks[particle_idx] = 0; // kill particle
     }
   } break;
   }

@@ -6,3 +6,4 @@
 void stars_initialize(void);
 void stars_draw(float camera_x, float camera_y);
 
+
