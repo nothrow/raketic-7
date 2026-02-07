@@ -125,6 +125,103 @@ internal record EnginePartData : PartData
     }
 }
 
+internal record WeaponPartData : PartData
+{
+    public static WeaponPartData Empty { get; } = new WeaponPartData();
+
+    public string? WeaponType { get; init; }
+    public int? CooldownTicks { get; init; }
+    public int? ProjectileModelRef { get; init; }
+    public Model? ProjectileModel { get; init; }
+    public int? SmokeModelRef { get; init; }
+    public Model? SmokeModel { get; init; }
+    public float? ProjectileSpeed { get; init; }
+
+    public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
+    {
+        switch (key)
+        {
+            case "weaponType":
+                if (type != LuaType.String)
+                    throw new InvalidOperationException($"Invalid type for 'weaponType' field in weapon part definition, expected string but got {type}");
+                return this with { WeaponType = lua.ToString(-1) };
+            case "cooldownTicks":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'cooldownTicks' field in weapon part definition, expected number but got {type}");
+                return this with { CooldownTicks = (int?)lua.ToIntegerX(-1) };
+            case "projectileModel":
+                var projModelPtr = lua.CheckUserData(-1, "Model");
+                if (projModelPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'projectileModel' field in weapon part definition, expected Model but got {type}");
+                var projModelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(projModelPtr);
+                return this with { ProjectileModelRef = projModelIdx };
+            case "smokeModel":
+                var smokeModelPtr = lua.CheckUserData(-1, "Model");
+                if (smokeModelPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'smokeModel' field in weapon part definition, expected Model but got {type}");
+                var smokeModelIdx = System.Runtime.InteropServices.Marshal.ReadInt32(smokeModelPtr);
+                return this with { SmokeModelRef = smokeModelIdx };
+            case "projectileSpeed":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'projectileSpeed' field in weapon part definition, expected number but got {type}");
+                return this with { ProjectileSpeed = (float?)lua.ToNumberX(-1) };
+            default:
+                return base.ReadFromTable(key, type, lua);
+        }
+    }
+
+    public override IEnumerable<Model> AllModels
+    {
+        get
+        {
+            if (Model != null)
+                yield return Model;
+            if (ProjectileModel != null)
+                yield return ProjectileModel;
+            if (SmokeModel != null)
+                yield return SmokeModel;
+        }
+    }
+
+    public override void DumpPartData(StreamWriter w, string dataref)
+    {
+        var weaponTypeCode = WeaponType switch
+        {
+            "laser" => "WEAPON_TYPE_LASER",
+            "rocket" => "WEAPON_TYPE_ROCKET",
+            _ => throw new InvalidOperationException($"Unknown weapon type: {WeaponType}")
+        };
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->weapon_type = {weaponTypeCode};");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->cooldown_ticks = {CooldownTicks ?? 60};");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->cooldown_remaining = 0;");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->projectile_speed = {ProjectileSpeed ?? 200.0f:0.0#######}f;");
+        if (ProjectileModel != null)
+            w.WriteLine($"  ((struct weapon_data*)({dataref}))->projectile_model = {ProjectileModel.ModelConstantName};");
+        else
+            w.WriteLine($"  ((struct weapon_data*)({dataref}))->projectile_model = 0;");
+        if (SmokeModel != null)
+            w.WriteLine($"  ((struct weapon_data*)({dataref}))->smoke_model = {SmokeModel.ModelConstantName};");
+        else
+            w.WriteLine($"  ((struct weapon_data*)({dataref}))->smoke_model = 0;");
+    }
+
+    public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)
+    {
+        var ret = (WeaponPartData)base.ResolveModels(modelContext, entityContext);
+        if (ProjectileModelRef.HasValue)
+        {
+            var model = modelContext[ProjectileModelRef.Value];
+            ret = ret with { ProjectileModel = model };
+        }
+        if (SmokeModelRef.HasValue)
+        {
+            var model = modelContext[SmokeModelRef.Value];
+            ret = ret with { SmokeModel = model };
+        }
+        return ret;
+    }
+}
+
 internal record EntityData : BaseEntityWithModelData
 {
     public int? Mass { get; init; }
@@ -337,6 +434,8 @@ internal class EntityContext(PathInfo paths)
                 return EntityData.Empty;
             case "EngineData":
                 return EnginePartData.Empty;
+            case "WeaponData":
+                return WeaponPartData.Empty;
             default:
                 throw new InvalidOperationException($"Unknown data type: {dataType}");
         }

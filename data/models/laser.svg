@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle id="center" cx="6" cy="4" r="1" />
+    <!-- Laser cannon body -->
+    <rect x="0" y="0" width="12" height="8" fill="none" stroke="cyan" stroke-width="1"/>
+    <!-- Barrel -->
+    <line x1="12" y1="4" x2="18" y2="4" stroke="cyan" stroke-width="2"/>
+    <!-- Details -->
+    <line x1="3" y1="2" x2="3" y2="6" stroke="cyan" stroke-width="1"/>
+</svg>

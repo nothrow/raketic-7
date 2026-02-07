@@ -41,6 +41,9 @@
     </ClCompile>
     <ClCompile Include="src\entity\controller.c" />
     <ClCompile Include="src\entity\engine.c" />
+    <ClCompile Include="src\entity\weapon.c" />
+    <ClCompile Include="src\entity\beams.c" />
+    <ClCompile Include="src\entity\rocket.c" />
     <ClCompile Include="src\entity\entity.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
@@ -102,6 +105,9 @@
     <ClInclude Include="src\debug\profiler.h" />
     <ClInclude Include="src\entity\controller.h" />
     <ClInclude Include="src\entity\engine.h" />
+    <ClInclude Include="src\entity\weapon.h" />
+    <ClInclude Include="src\entity\beams.h" />
+    <ClInclude Include="src\entity\rocket.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\fracture.h" />

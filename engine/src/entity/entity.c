@@ -6,6 +6,9 @@
 #include "ship.h"
 #include "controller.h"
 #include "engine.h"
+#include "weapon.h"
+#include "rocket.h"
+#include "beams.h"
 #include "particles.h"
 #include "fracture.h"
 #include "camera.h"
@@ -89,6 +92,9 @@ static void _entity_manager_types_initialize(void) {
   ship_entity_initialize();
   controller_entity_initialize();
   engine_part_entity_initialize();
+  weapon_part_entity_initialize();
+  rocket_entity_initialize();
+  beams_entity_initialize();
   camera_entity_initialize();
   planet_entity_initialize();
 }

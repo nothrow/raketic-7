@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "entity.h"
+#include "beams.h"
 #include "platform/platform.h"
 #include "debug/profiler.h"
 
@@ -95,6 +96,17 @@ static void _camera_relocate_world(void) {
       __m256 pos_y = _mm256_load_ps(py);
       _mm256_store_ps(px, _mm256_sub_ps(pos_x, voffset_x));
       _mm256_store_ps(py, _mm256_sub_ps(pos_y, voffset_y));
+    }
+  }
+
+  // Relocate beams
+  {
+    struct beams_data* beams = beams_get_data();
+    for (uint32_t i = 0; i < beams->active; i++) {
+      beams->start_x[i] -= offset_x;
+      beams->start_y[i] -= offset_y;
+      beams->end_x[i] -= offset_x;
+      beams->end_y[i] -= offset_y;
     }
   }
 

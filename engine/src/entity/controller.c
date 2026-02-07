@@ -20,6 +20,15 @@ static void _process_mouse() {
                    CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
     // thrust off
   }
+  
+  // Fire weapons with left mouse button
+  if (platform_input_is_button_down(BUTTON_LEFT)) {
+    messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_WEAPON),
+                   CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 1, 0));
+  } else {
+    messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_WEAPON),
+                   CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 0, 0));
+  }
 }
 
 static void _process_keyboard() {

@@ -8,6 +8,11 @@ local engineDefaults = {
   __dataType = "EngineData"
 }
 
+local weaponDefaults = {
+  type   = "PART_TYPEREF_WEAPON",
+  __dataType = "WeaponData"
+}
+
 local planetDefaults = {
   type   = "ENTITY_TYPEREF_PLANET",
   __dataType = "EntityData"
@@ -30,6 +35,10 @@ end
 
 function Engine(data)
   return Entity(merge(engineDefaults, data))
+end
+
+function Weapon(data)
+  return Entity(merge(weaponDefaults, data))
 end
 
 function Planet(data)

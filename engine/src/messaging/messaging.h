@@ -31,6 +31,7 @@ enum message_codes_ship {
   MESSAGE_SHIP_ROTATE_TO =
       0x11, // data_a = target vector x * 65535 (fixed int), data_b = target vector y * 65535 (fixed int)
   MESSAGE_SHIP_ENGINES_THRUST = 0x12, // data_a = thrust percentage 0-100
+  MESSAGE_WEAPON_FIRE = 0x13, // data_a = 1 (start firing) or 0 (stop firing)
 };
 
 static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t data_b) {

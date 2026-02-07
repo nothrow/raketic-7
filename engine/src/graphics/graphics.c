@@ -2,6 +2,7 @@
 #include "stars.h"
 #include "entity/entity.h"
 #include "entity/camera.h"
+#include "entity/beams.h"
 #include "platform/platform.h"
 #include "debug/profiler.h"
 
@@ -100,6 +101,18 @@ static void _graphics_parts_draw(void) {
   PROFILE_ZONE_END();
 }
 
+static void _graphics_beams_draw(void) {
+  PROFILE_ZONE("_graphics_beams_draw");
+  struct beams_data* bd = beams_get_data();
+  
+  if (bd->active > 0) {
+    platform_renderer_draw_beams(bd->active, bd->start_x, bd->start_y,
+                                 bd->end_x, bd->end_y,
+                                 bd->lifetime_ticks, bd->lifetime_max);
+  }
+  PROFILE_ZONE_END();
+}
+
 void graphics_initialize(void) {
   stars_initialize();
 }
@@ -116,6 +129,7 @@ void graphics_engine_draw(void) {
   _graphics_particles_draw();
   _graphics_parts_draw();
   _graphics_objects_draw();
+  _graphics_beams_draw();
   
   PROFILE_ZONE_END();
 }

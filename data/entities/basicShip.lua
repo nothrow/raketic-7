@@ -4,6 +4,8 @@ return Ship {
   radius = models.ship.radius,
   slots = {
     engine1 = parts.basicEngine,
-    engine2 = parts.basicEngine
+    engine2 = parts.basicEngine,
+    weapon1 = parts.laser,
+    weapon2 = parts.rocketLauncher
   }
 }

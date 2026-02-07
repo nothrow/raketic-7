@@ -39,6 +39,7 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/controller.h""
 #include ""entity/camera.h""
 #include ""entity/engine.h""
+#include ""entity/weapon.h""
 #include ""debug/debug.h""
 #include ""debug/profiler.h""
 

@@ -79,6 +79,33 @@ void platform_renderer_draw_stars(size_t count, const float* vertices, const col
   glDisable(GL_BLEND);
 }
 
+void platform_renderer_draw_beams(size_t count, const float* start_x, const float* start_y,
+                                  const float* end_x, const float* end_y,
+                                  const uint16_t* lifetime_ticks, const uint16_t* lifetime_max) {
+  if (count == 0) return;
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);  // additive blending for glow effect
+  glLineWidth(2.0f);
+
+  glBegin(GL_LINES);
+  for (size_t i = 0; i < count; i++) {
+    // calculate alpha based on remaining lifetime
+    float t = (float)lifetime_ticks[i] / (float)(lifetime_max[i] > 0 ? lifetime_max[i] : 1);
+    uint8_t alpha = (uint8_t)(t * 255.0f);
+    
+    // cyan/blue laser color
+    glColor4ub(100, 200, 255, alpha);
+    glVertex2f(start_x[i], start_y[i]);
+    glVertex2f(end_x[i], end_y[i]);
+  }
+  glEnd();
+  PROFILE_DRAW_CALL();
+
+  glLineWidth(1.0f);
+  glDisable(GL_BLEND);
+}
+
 void platform_renderer_report_stats(void) {
   PROFILE_DRAW_CALLS_RESET();
 }
