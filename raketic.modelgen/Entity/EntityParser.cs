@@ -136,6 +136,9 @@ internal record WeaponPartData : PartData
     public int? SmokeModelRef { get; init; }
     public Model? SmokeModel { get; init; }
     public float? ProjectileSpeed { get; init; }
+    public float? RocketThrust { get; init; }
+    public int? RocketFuelTicks { get; init; }
+    public int? RocketLifetimeTicks { get; init; }
 
     public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
@@ -165,6 +168,18 @@ internal record WeaponPartData : PartData
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'projectileSpeed' field in weapon part definition, expected number but got {type}");
                 return this with { ProjectileSpeed = (float?)lua.ToNumberX(-1) };
+            case "rocketThrust":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'rocketThrust' field in weapon part definition, expected number but got {type}");
+                return this with { RocketThrust = (float?)lua.ToNumberX(-1) };
+            case "rocketFuelTicks":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'rocketFuelTicks' field in weapon part definition, expected number but got {type}");
+                return this with { RocketFuelTicks = (int?)lua.ToIntegerX(-1) };
+            case "rocketLifetimeTicks":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'rocketLifetimeTicks' field in weapon part definition, expected number but got {type}");
+                return this with { RocketLifetimeTicks = (int?)lua.ToIntegerX(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }
@@ -203,6 +218,9 @@ internal record WeaponPartData : PartData
             w.WriteLine($"  ((struct weapon_data*)({dataref}))->smoke_model = {SmokeModel.ModelConstantName};");
         else
             w.WriteLine($"  ((struct weapon_data*)({dataref}))->smoke_model = 0;");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_thrust = {RocketThrust ?? 0.0f:0.0#######}f;");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_fuel_ticks = {RocketFuelTicks ?? 0};");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_lifetime_ticks = {RocketLifetimeTicks ?? 0};");
     }
 
     public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)

@@ -59,6 +59,21 @@ void controller_set_entity(entity_id_t entity_id) {
   _controlled_entity = entity_id;
 }
 
+void controller_remap_entity(uint32_t* remap, uint32_t old_active) {
+  if (is_valid_id(_controlled_entity)) {
+    uint32_t old_ord = GET_ORDINAL(_controlled_entity);
+    if (old_ord < old_active) {
+      uint32_t new_ord = remap[old_ord];
+      if (new_ord != UINT32_MAX) {
+        uint8_t type = GET_TYPE(_controlled_entity);
+        _controlled_entity = OBJECT_ID_WITH_TYPE(new_ord, type);
+      } else {
+        _controlled_entity = (entity_id_t)INVALID_ENTITY;
+      }
+    }
+  }
+}
+
 void controller_entity_initialize(void) {
   // we accept only broadcast for controller, no instances
   entity_manager_vtables[ENTITY_TYPE_CONTROLLER].dispatch_message = _controller_dispatch;

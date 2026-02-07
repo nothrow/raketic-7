@@ -23,6 +23,7 @@ typedef struct {
   struct objects_data objects;
   struct particles_data particles;
   struct parts_data parts;
+  uint32_t* object_remap; // remap table for object compaction
 } entity_manager_t;
 
 object_vtable_t entity_manager_vtables[ENTITY_TYPE_COUNT] = { 0 };
@@ -65,6 +66,7 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->type = platform_retrieve_memory(sizeof(entity_type_t) * MAXSIZE);
   data->parts_start_idx = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
   data->parts_count = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
+  data->health = platform_retrieve_memory(sizeof(int16_t) * MAXSIZE);
 
   data->active = 0;
   data->capacity = MAXSIZE;
@@ -103,6 +105,7 @@ void entity_manager_initialize(void) {
   _objects_data_initialize(&manager_.objects);
   _particles_data_initialize(&manager_.particles);
   _parts_data_initialize(&manager_.parts);
+  manager_.object_remap = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
 
   fragment_pool_initialize();
   _entity_manager_types_initialize();
@@ -145,6 +148,109 @@ entity_id_t entity_manager_resolve_object(uint32_t ordinal) {
   entity_type_t type = od->type[ordinal];
   entity_id_t ret = OBJECT_ID_WITH_TYPE(ordinal, type._);
   return ret;
+}
+
+static void _move_object(struct objects_data* od, uint32_t target, uint32_t source) {
+  od->position_orientation.position_x[target] = od->position_orientation.position_x[source];
+  od->position_orientation.position_y[target] = od->position_orientation.position_y[source];
+  od->position_orientation.orientation_x[target] = od->position_orientation.orientation_x[source];
+  od->position_orientation.orientation_y[target] = od->position_orientation.orientation_y[source];
+  od->position_orientation.radius[target] = od->position_orientation.radius[source];
+
+  od->velocity_x[target] = od->velocity_x[source];
+  od->velocity_y[target] = od->velocity_y[source];
+  od->acceleration_x[target] = od->acceleration_x[source];
+  od->acceleration_y[target] = od->acceleration_y[source];
+  od->thrust[target] = od->thrust[source];
+  od->mass[target] = od->mass[source];
+  od->type[target] = od->type[source];
+  od->model_idx[target] = od->model_idx[source];
+  od->parts_start_idx[target] = od->parts_start_idx[source];
+  od->parts_count[target] = od->parts_count[source];
+  od->health[target] = od->health[source];
+}
+
+void entity_manager_pack_objects(void) {
+  struct objects_data* od = &manager_.objects;
+
+  // Check if any objects are dead
+  bool has_dead = false;
+  for (uint32_t i = 0; i < od->active; i++) {
+    if (od->health[i] <= 0) {
+      has_dead = true;
+      break;
+    }
+  }
+  if (!has_dead) return;
+
+  PROFILE_ZONE("entity_manager_pack_objects");
+
+  uint32_t* remap = manager_.object_remap;
+  uint32_t old_active = od->active;
+
+  // Initialize remap to identity
+  for (uint32_t i = 0; i < old_active; i++) {
+    remap[i] = i;
+  }
+
+  // Compact: swap dead with alive from end (same pattern as pack_particles)
+  int32_t last_alive = (int32_t)(od->active - 1);
+
+  for (int32_t i = 0; i < last_alive; ++i) {
+    if (od->health[i] <= 0) {
+      // Find last alive from end
+      for (; last_alive > i; --last_alive) {
+        if (od->health[last_alive] > 0) {
+          break;
+        }
+      }
+
+      if (i < last_alive) {
+        // Swap: move last_alive to position i
+        remap[last_alive] = (uint32_t)i;
+        remap[i] = UINT32_MAX; // dead, mark invalid
+
+        _move_object(od, (uint32_t)i, (uint32_t)last_alive);
+        od->health[last_alive] = 0; // mark source as dead
+        --last_alive;
+      } else {
+        remap[i] = UINT32_MAX;
+        break;
+      }
+    }
+  }
+
+  // Handle trailing dead objects
+  for (int32_t i = last_alive; i >= 0 && od->health[i] <= 0; --i) {
+    remap[i] = UINT32_MAX;
+    last_alive = i - 1;
+  }
+
+  od->active = (uint32_t)(last_alive + 1);
+
+  // Remap all references
+  // 1. Parts parent_id
+  {
+    struct parts_data* pd = &manager_.parts;
+    for (uint32_t i = 0; i < pd->active; i++) {
+      if (pd->model_idx[i] == 0xFFFF) continue; // padding slot
+      uint32_t old_ord = GET_ORDINAL(pd->parent_id[i]);
+      uint8_t type = GET_TYPE(pd->parent_id[i]);
+      if (old_ord < old_active) {
+        uint32_t new_ord = remap[old_ord];
+        if (new_ord != UINT32_MAX) {
+          pd->parent_id[i] = OBJECT_ID_WITH_TYPE(new_ord, type);
+        }
+      }
+    }
+  }
+
+  // 2. Controller, Camera, Rocket aux
+  controller_remap_entity(remap, old_active);
+  camera_remap_entity(remap, old_active);
+  rocket_remap_objects(remap, old_active);
+
+  PROFILE_ZONE_END();
 }
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg) {

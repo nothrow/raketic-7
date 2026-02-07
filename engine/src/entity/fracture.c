@@ -36,7 +36,7 @@ static SegmentBuffer _segment_buffer;
 // ============================================================================
 
 void fragment_pool_initialize(void) {
-    memset(&_fragment_pool, 0, sizeof(_fragment_pool));
+  platform_clear_memory(&_fragment_pool, sizeof(_fragment_pool));
 }
 
 int fragment_pool_alloc(void) {

@@ -10,6 +10,9 @@ struct weapon_data {
   uint16_t projectile_model;
   uint16_t smoke_model;
   float projectile_speed;
+  float rocket_thrust;          // thrust power while fuel burns
+  uint16_t rocket_fuel_ticks;   // how long the motor burns
+  uint16_t rocket_lifetime_ticks; // total lifetime before auto-destruct
 };
 
 void weapon_part_entity_initialize(void);

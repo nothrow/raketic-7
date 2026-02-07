@@ -27,6 +27,8 @@ struct objects_data {
   uint16_t* __restrict model_idx;
 
   float* __restrict mass;
+
+  int16_t* __restrict health; // <=0 means dead, will be swept by pack_objects
 };
 
 struct parts_data {
@@ -76,6 +78,7 @@ struct parts_data* entity_manager_get_parts(void);
 void entity_manager_get_vectors(entity_id_t entity_id, float* pos, float* vel);
 
 void entity_manager_pack_particles(void);
+void entity_manager_pack_objects(void);
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg);
 entity_id_t entity_manager_resolve_object(uint32_t ordinal);

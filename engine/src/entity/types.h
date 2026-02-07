@@ -58,8 +58,7 @@ static inline bool is_valid_id(entity_id_t id) {
   return id._ != 0xFFFFFFFF;
 }
 
-#define INVALID_ENTITY                                                                                                 \
-  { 0xFFFFFFFF }
+#define INVALID_ENTITY { 0xFFFFFFFF }
 
 enum entity_type {
   ENTITY_TYPE_ANY = 0,

@@ -281,6 +281,7 @@ void physics_engine_tick(void) {
 
   PROFILE_ZONE("physics_engine_tick");
 
+  entity_manager_pack_objects(); // clean up dead objects before physics
   _objects_tick();
   _particle_manager_tick();
 

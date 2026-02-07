@@ -47,7 +47,8 @@ static void _weapon_fire_rocket(uint32_t part_idx, struct weapon_data* wd, struc
   float vy = parent_vy + oy * wd->projectile_speed;
   
   // spawn the rocket
-  rocket_create(wx, wy, vx, vy, ox, oy, wd->projectile_model, wd->smoke_model);
+  rocket_create(wx, wy, vx, vy, ox, oy, wd->projectile_model, wd->smoke_model,
+                wd->rocket_thrust, wd->rocket_fuel_ticks, wd->rocket_lifetime_ticks);
 }
 
 static void _weapon_set_firing(entity_id_t id, bool firing) {

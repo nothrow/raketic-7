@@ -123,6 +123,21 @@ static void _camera_dispatch(entity_id_t id, message_t msg) {
   }
 }
 
+void camera_remap_entity(uint32_t* remap, uint32_t old_active) {
+  if (is_valid_id(_target_entity)) {
+    uint32_t old_ord = GET_ORDINAL(_target_entity);
+    if (old_ord < old_active) {
+      uint32_t new_ord = remap[old_ord];
+      if (new_ord != UINT32_MAX) {
+        uint8_t type = GET_TYPE(_target_entity);
+        _target_entity = OBJECT_ID_WITH_TYPE(new_ord, type);
+      } else {
+        _target_entity = (entity_id_t)INVALID_ENTITY;
+      }
+    }
+  }
+}
+
 void camera_entity_initialize(void) {
   entity_manager_vtables[ENTITY_TYPE_CAMERA].dispatch_message = _camera_dispatch;
 }
