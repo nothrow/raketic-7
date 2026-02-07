@@ -40,6 +40,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
       if (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN) input_state_.buttons |= BUTTON_MIDDLE;
       if (flags & RI_MOUSE_MIDDLE_BUTTON_UP)   input_state_.buttons &= ~BUTTON_MIDDLE;
     }
+    else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
+      USHORT vkey = raw.data.keyboard.VKey;
+      if (vkey == VK_ESCAPE) { PostQuitMessage(0); return 0; }
+      if (vkey < KEY_COUNT)
+        input_state_.keyPressed[vkey] = !(raw.data.keyboard.Flags & RI_KEY_BREAK);
+    }
     return 0;
   }
   case WM_CLOSE:
@@ -66,12 +72,14 @@ static void _platform_create_window(void) {
 
   _ASSERT(hwnd_ != NULL);
 
-  RAWINPUTDEVICE rid = {0};
-  rid.usUsagePage = 0x01;  // HID_USAGE_PAGE_GENERIC
-  rid.usUsage = 0x02;      // HID_USAGE_GENERIC_MOUSE
-  rid.dwFlags = 0;
-  rid.hwndTarget = hwnd_;
-  RegisterRawInputDevices(&rid, 1, sizeof(rid));
+  RAWINPUTDEVICE rid[2] = {0};
+  rid[0].usUsagePage = 0x01;  // HID_USAGE_PAGE_GENERIC
+  rid[0].usUsage = 0x02;      // HID_USAGE_GENERIC_MOUSE
+  rid[0].hwndTarget = hwnd_;
+  rid[1].usUsagePage = 0x01;
+  rid[1].usUsage = 0x06;      // HID_USAGE_GENERIC_KEYBOARD
+  rid[1].hwndTarget = hwnd_;
+  RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE));
   ShowCursor(FALSE);
 
   hdc_ = GetDC(hwnd_);
