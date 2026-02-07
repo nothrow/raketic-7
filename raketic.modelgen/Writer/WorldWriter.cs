@@ -110,7 +110,7 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine($"  od->position_orientation.orientation_y[new_idx] = {Math.Sin(entity.Rotation ?? 0.0f):0.0#######}f;");
             _cWriter!.WriteLine($"  od->position_orientation.radius[new_idx] = {entity.Model!.GetRadius()};");
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
-            _cWriter!.WriteLine($"  od->health[new_idx] = 1000;");
+            _cWriter!.WriteLine($"  od->health[new_idx] = {entity.Health ?? 1000};");
 
             if (entity is EntityWithSlotsData entityWithSlots)
             {

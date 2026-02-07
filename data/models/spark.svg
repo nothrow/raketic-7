@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="-5 -5 10 10" xmlns="http://www.w3.org/2000/svg">
+    <circle id="center" cx="0" cy="0" r="1" />
+    <!-- Tiny diamond spark - uses particle color ramp -->
+    <path class="heat" d="M 0,-2 L 2,0 L 0,2 L -2,0 Z"
+          fill="none" stroke="white" stroke-width="1"/>
+</svg>

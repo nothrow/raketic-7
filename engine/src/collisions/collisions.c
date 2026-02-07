@@ -102,10 +102,9 @@ _check_collisions_step(struct collision_buffer* collision_buffer, const position
   __m256 pr = _mm256_set1_ps(pa->radius[source_obj_idx]);
 
 
-  size_t remaining = target->active - from;
-  // start aligned to 8
-  // we will remove j<=idx in postprocessing
-  for (size_t j =  (from + 1) & ~(size_t)0x7; j < target->active; j += 8, remaining -= 8) {
+  // start aligned down to 8; skip elements before 'from' in the inner loop
+  for (size_t j = from & ~(size_t)0x7; j < target->active; j += 8) {
+    size_t remaining = target->active - j;
 
     __m256i offsets = _mm256_loadu_si256((__m256i*)&target->idx[j]);
 
@@ -123,7 +122,7 @@ _check_collisions_step(struct collision_buffer* collision_buffer, const position
     int mask = _mm256_movemask_ps(cmp);
     for (size_t i = 0; i < MIN(remaining, 8); i++) {
 
-      if (mask & (1 << i) && (j + i) > from) {
+      if (mask & (1 << i) && (j + i) >= from) {
         size_t target_obj_idx = target->idx[j + i];
 
         collision_buffer->idx[collision_buffer->active].idxa = (uint32_t)source_obj_idx;

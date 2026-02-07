@@ -10,6 +10,7 @@
 #include "rocket.h"
 #include "beams.h"
 #include "particles.h"
+#include "asteroid.h"
 
 #include "camera.h"
 #include "planet.h"
@@ -99,6 +100,8 @@ static void _entity_manager_types_initialize(void) {
   beams_entity_initialize();
   camera_entity_initialize();
   planet_entity_initialize();
+  asteroid_entity_initialize();
+  chunk_part_entity_initialize();
 }
 
 void entity_manager_initialize(void) {
@@ -228,20 +231,63 @@ void entity_manager_pack_objects(void) {
   od->active = (uint32_t)(last_alive + 1);
 
   // Remap all references
-  // 1. Parts parent_id
+  // 1. Parts: remap parent_id, kill orphaned blocks, compact, rebuild parts_start_idx
   {
     struct parts_data* pd = &manager_.parts;
-    for (uint32_t i = 0; i < pd->active; i++) {
-      if (pd->model_idx[i] == 0xFFFF) continue; // padding slot
+
+    // 1a. Per block: remap live parents, mark dead blocks
+    for (uint32_t i = 0; i < pd->active; i += 8) {
+      if (pd->model_idx[i] == 0xFFFF) continue; // padding-only block
+
       uint32_t old_ord = GET_ORDINAL(pd->parent_id[i]);
-      uint8_t type = GET_TYPE(pd->parent_id[i]);
-      if (old_ord < old_active) {
-        uint32_t new_ord = remap[old_ord];
-        if (new_ord != UINT32_MAX) {
-          pd->parent_id[i] = OBJECT_ID_WITH_TYPE(new_ord, type);
+      if (old_ord >= old_active) continue;
+
+      uint32_t new_ord = remap[old_ord];
+      if (new_ord != UINT32_MAX) {
+        // Parent survived -- remap parent_id for all real parts in block
+        uint8_t type = GET_TYPE(pd->parent_id[i]);
+        entity_id_t new_id = OBJECT_ID_WITH_TYPE(new_ord, type);
+        for (uint32_t k = 0; k < 8; k++) {
+          if (pd->model_idx[i + k] != 0xFFFF)
+            pd->parent_id[i + k] = new_id;
         }
+      } else {
+        // Parent is dead -- mark entire block dead
+        for (uint32_t k = 0; k < 8; k++)
+          pd->model_idx[i + k] = 0xFFFF;
       }
     }
+
+    // 1b. Compact live blocks forward (preserves 8-alignment for SIMD physics)
+    //     and rebuild every live object's parts_start_idx
+    uint32_t write = 0;
+    uint32_t last_parent = UINT32_MAX;
+    for (uint32_t i = 0; i < pd->active; i += 8) {
+      if (pd->model_idx[i] == 0xFFFF) continue; // dead block, skip
+
+      uint32_t parent_idx = GET_ORDINAL(pd->parent_id[i]);
+
+      // Set parts_start_idx on first block of each parent
+      if (parent_idx != last_parent) {
+        od->parts_start_idx[parent_idx] = write;
+        last_parent = parent_idx;
+      }
+
+      if (write != i) {
+        for (uint32_t k = 0; k < 8; k++) {
+          pd->parent_id[write + k] = pd->parent_id[i + k];
+          pd->type[write + k] = pd->type[i + k];
+          pd->local_offset_x[write + k] = pd->local_offset_x[i + k];
+          pd->local_offset_y[write + k] = pd->local_offset_y[i + k];
+          pd->local_orientation_x[write + k] = pd->local_orientation_x[i + k];
+          pd->local_orientation_y[write + k] = pd->local_orientation_y[i + k];
+          pd->model_idx[write + k] = pd->model_idx[i + k];
+          pd->data[write + k] = pd->data[i + k];
+        }
+      }
+      write += 8;
+    }
+    pd->active = write;
   }
 
   // 2. Controller, Camera, Rocket aux

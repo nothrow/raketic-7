@@ -10,10 +10,11 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
 {
     private List<WorldsData> _worlds = new();
     private List<BaseEntityWithModelData> _entities = new();
+    private List<Model> _requiredModels = new();
     private int? _controlledEntity = null;
 
     public IReadOnlyList<WorldsData> Worlds => _worlds;
-    public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.SelectMany(y => y.AllModels)).Distinct().ToList();
+    public IReadOnlyList<Model> Models => _worlds.SelectMany(x => x.Entities.SelectMany(y => y.AllModels)).Concat(_requiredModels).Distinct().ToList();
 
     private int Control(nint luaState)
     {
@@ -49,6 +50,15 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
         return argc;
     }
 
+    private int RequireModel(nint luaState)
+    {
+        var lua = Lua.FromIntPtr(luaState);
+        var model = _modelContext.GetModelData(lua, 1);
+        if (!_requiredModels.Contains(model))
+            _requiredModels.Add(model);
+        return 0;
+    }
+
     private void RegisterForLua(Lua lua)
     {
         lua.PushCFunction(Spawn);
@@ -56,6 +66,9 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
 
         lua.PushCFunction(Control);
         lua.SetGlobal("control");
+
+        lua.PushCFunction(RequireModel);
+        lua.SetGlobal("require_model");
     }
 
     internal void ParseWorld(string worldPath)

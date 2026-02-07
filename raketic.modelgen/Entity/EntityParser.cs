@@ -244,6 +244,7 @@ internal record EntityData : BaseEntityWithModelData
 {
     public int? Mass { get; init; }
     public int? Radius { get; init; }
+    public int? Health { get; init; }
     public Point? Position { get; init; }
     public float? Rotation { get; init; }
 
@@ -279,6 +280,11 @@ internal record EntityData : BaseEntityWithModelData
                     throw new InvalidOperationException($"Invalid type for 'radius' field in entity definition, expected number but got {type}");
 
                 return this with { Radius = (int?)lua.ToInteger(-1) };
+            case "health":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'health' field in entity definition, expected number but got {type}");
+
+                return this with { Health = (int?)lua.ToInteger(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }
@@ -454,6 +460,8 @@ internal class EntityContext(PathInfo paths)
                 return EnginePartData.Empty;
             case "WeaponData":
                 return WeaponPartData.Empty;
+            case "PartData":
+                return new PartData();
             default:
                 throw new InvalidOperationException($"Unknown data type: {dataType}");
         }

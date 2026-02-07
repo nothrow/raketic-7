@@ -42,6 +42,11 @@ static void _weapon_fire_rocket(uint32_t part_idx, struct weapon_data* wd, struc
   float parent_vx = od->velocity_x[parent_idx];
   float parent_vy = od->velocity_y[parent_idx];
   
+  // forward offset to clear parent ship's collision radius
+  float spawn_offset = 20.0f;
+  wx += ox * spawn_offset;
+  wy += oy * spawn_offset;
+  
   // calculate rocket velocity (parent velocity + projectile speed in firing direction)
   float vx = parent_vx + ox * wd->projectile_speed;
   float vy = parent_vy + oy * wd->projectile_speed;

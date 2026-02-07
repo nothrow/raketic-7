@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="-30 -30 60 60" xmlns="http://www.w3.org/2000/svg">
+    <circle id="center" cx="0" cy="0" r="1" />
+    <!-- Main asteroid body - irregular rock polygon -->
+    <path class="hull" d="M 20,-8 L 12,-20 L -2,-24 L -18,-15 L -22,5 L -12,20 L 6,22 L 18,14 L 24,2 Z"
+          fill="none" stroke="#808080" stroke-width="2"/>
+    <!-- Surface detail cracks -->
+    <line x1="-5" y1="-18" x2="3" y2="-5" stroke="#808080" stroke-width="1"/>
+    <line x1="-15" y1="0" x2="-4" y2="5" stroke="#808080" stroke-width="1"/>
+    <line x1="8" y1="5" x2="16" y2="12" stroke="#808080" stroke-width="1"/>
+    <!-- Chunk slots -->
+    <circle cx="-10" cy="-10" slot="chunk1" />
+    <circle cx="10" cy="10" slot="chunk2" />
+</svg>

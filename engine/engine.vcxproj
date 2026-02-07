@@ -43,6 +43,8 @@
     <ClCompile Include="src\entity\weapon.c" />
     <ClCompile Include="src\entity\beams.c" />
     <ClCompile Include="src\entity\rocket.c" />
+    <ClCompile Include="src\entity\asteroid.c" />
+    <ClCompile Include="src\entity\explosion.c" />
     <ClCompile Include="src\entity\entity.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
@@ -103,6 +105,8 @@
     <ClInclude Include="src\entity\weapon.h" />
     <ClInclude Include="src\entity\beams.h" />
     <ClInclude Include="src\entity\rocket.h" />
+    <ClInclude Include="src\entity\asteroid.h" />
+    <ClInclude Include="src\entity\explosion.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
     <ClInclude Include="src\entity\particles.h" />

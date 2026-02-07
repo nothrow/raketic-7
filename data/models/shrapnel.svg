@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="-8 -8 16 16" xmlns="http://www.w3.org/2000/svg">
+    <circle id="center" cx="0" cy="0" r="1" />
+    <!-- Triangle fragment - uses particle color ramp -->
+    <path class="heat" d="M -4,-3 L 5,-1 L -1,4 Z"
+          fill="none" stroke="white" stroke-width="1.5"/>
+</svg>

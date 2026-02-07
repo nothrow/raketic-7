@@ -30,6 +30,8 @@
     <ClCompile Include="src\entity\weapon.c" />
     <ClCompile Include="src\entity\beams.c" />
     <ClCompile Include="src\entity\rocket.c" />
+    <ClCompile Include="src\entity\asteroid.c" />
+    <ClCompile Include="src\entity\explosion.c" />
     <ClCompile Include="src\entity\particles.c" />
     <ClCompile Include="test\unity.c" />
     <ClCompile Include="test\platform.test.c" />
@@ -59,6 +61,8 @@
     <ClInclude Include="src\entity\weapon.h" />
     <ClInclude Include="src\entity\beams.h" />
     <ClInclude Include="src\entity\rocket.h" />
+    <ClInclude Include="src\entity\asteroid.h" />
+    <ClInclude Include="src\entity\explosion.h" />
     <ClInclude Include="src\entity\particles.h" />
     <ClInclude Include="test\unity.h" />
     <ClInclude Include="test\unity_internals.h" />

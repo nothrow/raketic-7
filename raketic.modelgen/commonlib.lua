@@ -18,6 +18,16 @@ local planetDefaults = {
   __dataType = "EntityData"
 }
 
+local asteroidDefaults = {
+  type   = "ENTITY_TYPEREF_ASTEROID",
+  __dataType = "EntityWithSlotsData"
+}
+
+local chunkDefaults = {
+  type   = "PART_TYPEREF_CHUNK",
+  __dataType = "PartData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -43,6 +53,14 @@ end
 
 function Planet(data)
   return Entity(merge(planetDefaults, data))
+end
+
+function Asteroid(data)
+  return Entity(merge(asteroidDefaults, data))
+end
+
+function Chunk(data)
+  return Entity(merge(chunkDefaults, data))
 end
 
 function deg(degrees)

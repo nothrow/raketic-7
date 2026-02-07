@@ -2,12 +2,14 @@
 #include "platform/math.h"
 #include "rocket.h"
 #include "particles.h"
+#include "explosion.h"
 #include "../generated/renderer.gen.h"
 
 #define ROCKET_AUX_CAPACITY 256
 #define SMOKE_SPAWN_CHANCE 0.3f
 #define ROCKET_MASS 0.1f
 #define ROCKET_RADIUS 4.0f
+#define ROCKET_GRACE_TICKS 15 // ~0.125s invulnerability after spawn to clear parent ship
 
 // SoA auxiliary data for rockets (physics lives in objects_data)
 static struct {
@@ -17,6 +19,7 @@ static struct {
   uint16_t* smoke_model;
   uint16_t* fuel_ticks;
   uint16_t* lifetime_ticks;
+  uint16_t* grace_ticks; // collision grace period after spawn
   float* thrust_power;
 } rocket_aux_;
 
@@ -53,6 +56,7 @@ void rocket_create(float x, float y, float vx, float vy, float ox, float oy,
   rocket_aux_.smoke_model[ai] = smoke_model_idx;
   rocket_aux_.fuel_ticks[ai] = fuel_ticks;
   rocket_aux_.lifetime_ticks[ai] = lifetime_ticks;
+  rocket_aux_.grace_ticks[ai] = ROCKET_GRACE_TICKS;
   rocket_aux_.thrust_power[ai] = thrust_power;
 }
 
@@ -109,6 +113,11 @@ static void _rockets_tick(void) {
   for (uint32_t i = 0; i < rocket_aux_.count; i++) {
     uint32_t obj_idx = rocket_aux_.object_idx[i];
 
+    // --- Grace period countdown ---
+    if (rocket_aux_.grace_ticks[i] > 0) {
+      rocket_aux_.grace_ticks[i]--;
+    }
+
     // --- Burning phase: fuel > 0 ---
     if (rocket_aux_.fuel_ticks[i] > 0) {
       rocket_aux_.fuel_ticks[i]--;
@@ -128,6 +137,7 @@ static void _rockets_tick(void) {
         rocket_aux_.smoke_model[write] = rocket_aux_.smoke_model[i];
         rocket_aux_.fuel_ticks[write] = rocket_aux_.fuel_ticks[i];
         rocket_aux_.lifetime_ticks[write] = rocket_aux_.lifetime_ticks[i];
+        rocket_aux_.grace_ticks[write] = rocket_aux_.grace_ticks[i];
         rocket_aux_.thrust_power[write] = rocket_aux_.thrust_power[i];
       }
       write++;
@@ -154,11 +164,51 @@ void rocket_remap_objects(uint32_t* remap, uint32_t old_active) {
   }
 }
 
+static void _rocket_handle_collision(entity_id_t id, const message_t* msg) {
+  (msg);
+
+  uint32_t self_idx = GET_ORDINAL(id);
+  struct objects_data* od = entity_manager_get_objects();
+
+  // already dead?
+  if (od->health[self_idx] <= 0) return;
+
+  // find aux entry
+  uint32_t ai = UINT32_MAX;
+  for (uint32_t i = 0; i < rocket_aux_.count; i++) {
+    if (rocket_aux_.object_idx[i] == self_idx) {
+      ai = i;
+      break;
+    }
+  }
+
+  // still in grace period? ignore collision (clearing parent ship)
+  if (ai != UINT32_MAX && rocket_aux_.grace_ticks[ai] > 0) return;
+
+  // self-destruct: kill the rocket
+  od->health[self_idx] = 0;
+
+  // spawn small explosion proportional to rocket mass
+  float px = od->position_orientation.position_x[self_idx];
+  float py = od->position_orientation.position_y[self_idx];
+  float vx = od->velocity_x[self_idx];
+  float vy = od->velocity_y[self_idx];
+
+  explosion_spawn(px, py, vx, vy, ROCKET_MASS);
+
+  // kill aux entry so it doesn't keep ticking
+  if (ai != UINT32_MAX) {
+    rocket_aux_.lifetime_ticks[ai] = 0;
+  }
+}
+
 static void _rockets_dispatch(entity_id_t id, message_t msg) {
-  (void)id;
   switch (msg.message) {
     case MESSAGE_BROADCAST_120HZ_AFTER_PHYSICS:
       _rockets_tick();
+      break;
+    case MESSAGE_COLLIDE_OBJECT_OBJECT:
+      _rocket_handle_collision(id, &msg);
       break;
   }
 }
@@ -170,6 +220,7 @@ void rocket_entity_initialize(void) {
   rocket_aux_.smoke_model = platform_retrieve_memory(sizeof(uint16_t) * ROCKET_AUX_CAPACITY);
   rocket_aux_.fuel_ticks = platform_retrieve_memory(sizeof(uint16_t) * ROCKET_AUX_CAPACITY);
   rocket_aux_.lifetime_ticks = platform_retrieve_memory(sizeof(uint16_t) * ROCKET_AUX_CAPACITY);
+  rocket_aux_.grace_ticks = platform_retrieve_memory(sizeof(uint16_t) * ROCKET_AUX_CAPACITY);
   rocket_aux_.thrust_power = platform_retrieve_memory(sizeof(float) * ROCKET_AUX_CAPACITY);
 
   entity_manager_vtables[ENTITY_TYPE_ROCKET].dispatch_message = _rockets_dispatch;
