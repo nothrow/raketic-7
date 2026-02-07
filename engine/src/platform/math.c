@@ -1,5 +1,4 @@
 #include "math.h"
-#include <immintrin.h>
 
 // quarter table: 0-90° only (91 values = 364 bytes instead of 1440)
 static const float sin_q[91] = {
@@ -38,46 +37,4 @@ float lut_sin(int32_t deg) {
 
 float lut_cos(int32_t deg) {
   return lut_sin(deg + 90);
-}
-
-// SIMD xorshift - 8 parallel states for 8 random numbers
-static __m256i rng_state_8 = { 0 };
-static int rng_state_8_initialized = 0;
-
-static void _init_rng_state_8(void) {
-  if (rng_state_8_initialized) return;
-  // Initialize 8 different states from the scalar RNG
-  __declspec(align(32)) uint32_t states[8];
-  for (int i = 0; i < 8; i++) {
-    states[i] = rand32();
-  }
-  rng_state_8 = _mm256_load_si256((const __m256i*)states);
-  rng_state_8_initialized = 1;
-}
-
-// SIMD xorshift32 - generates 8 random uint32s
-static __m256i _rand32_8(void) {
-  _init_rng_state_8();
-
-  // xorshift: state ^= state << 13; state ^= state >> 17; state ^= state << 5;
-  __m256i state = rng_state_8;
-  state = _mm256_xor_si256(state, _mm256_slli_epi32(state, 13));
-  state = _mm256_xor_si256(state, _mm256_srli_epi32(state, 17));
-  state = _mm256_xor_si256(state, _mm256_slli_epi32(state, 5));
-  rng_state_8 = state;
-  return state;
-}
-
-__m256 randf_8(void) {
-  __m256i rand_ints = _rand32_8();
-  // Mask to get lower 23 bits (mantissa), then convert to float in [1, 2) and subtract 1
-  __m256i mantissa_mask = _mm256_set1_epi32(0x007FFFFF);
-  __m256i one_bits = _mm256_set1_epi32(0x3F800000);  // 1.0f in IEEE 754
-  __m256i float_bits = _mm256_or_si256(_mm256_and_si256(rand_ints, mantissa_mask), one_bits);
-  return _mm256_sub_ps(_mm256_castsi256_ps(float_bits), _mm256_set1_ps(1.0f));
-}
-
-__m256 randf_symmetric_8(void) {
-  __m256 rand01 = randf_8();
-  return _mm256_sub_ps(_mm256_mul_ps(rand01, _mm256_set1_ps(2.0f)), _mm256_set1_ps(1.0f));
 }

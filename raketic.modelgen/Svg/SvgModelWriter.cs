@@ -33,18 +33,7 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         }
 
         cWriter.WriteLine();
-        cWriter.WriteLine($"// Forward declaration for fragment drawing");
-        cWriter.WriteLine($"void fragment_draw(color_t color, int pool_idx);");
-        cWriter.WriteLine();
-        cWriter.WriteLine($"#define FRAGMENT_MODEL_BASE 64");
-        cWriter.WriteLine();
         cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
-        cWriter.WriteLine($"  // Dispatch dynamic fragments (indices >= FRAGMENT_MODEL_BASE)");
-        cWriter.WriteLine($"  if (index >= FRAGMENT_MODEL_BASE) {{");
-        cWriter.WriteLine($"    fragment_draw(color, index - FRAGMENT_MODEL_BASE);");
-        cWriter.WriteLine($"    return;");
-        cWriter.WriteLine($"  }}");
-        cWriter.WriteLine();
 
         cWriter.WriteLine($"  static void (*_data[])(color_t) = {{");
         foreach (var model in models)

@@ -22,7 +22,6 @@
     <ClCompile Include="generated\models.gen.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
-    <ClCompile Include="generated\models_meta.gen.c" />
     <ClCompile Include="src\collisions\collisions.c" />
     <ClCompile Include="src\core\vector.c">
       <AssemblerOutput>All</AssemblerOutput>
@@ -45,9 +44,6 @@
     <ClCompile Include="src\entity\beams.c" />
     <ClCompile Include="src\entity\rocket.c" />
     <ClCompile Include="src\entity\entity.c">
-      <AssemblerOutput>All</AssemblerOutput>
-    </ClCompile>
-    <ClCompile Include="src\entity\fracture.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <ClCompile Include="src\entity\particles.c" />
@@ -95,7 +91,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="generated\models_meta.gen.h" />
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\collisions\collisions.h" />
@@ -110,7 +105,6 @@
     <ClInclude Include="src\entity\rocket.h" />
     <ClInclude Include="src\entity\entity.h" />
     <ClInclude Include="src\entity\entity_internal.h" />
-    <ClInclude Include="src\entity\fracture.h" />
     <ClInclude Include="src\entity\particles.h" />
     <ClInclude Include="src\entity\ship.h" />
     <ClInclude Include="src\entity\planet.h" />

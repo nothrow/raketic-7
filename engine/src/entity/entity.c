@@ -10,7 +10,7 @@
 #include "rocket.h"
 #include "beams.h"
 #include "particles.h"
-#include "fracture.h"
+
 #include "camera.h"
 #include "planet.h"
 #include "debug/debug.h"
@@ -107,7 +107,6 @@ void entity_manager_initialize(void) {
   _parts_data_initialize(&manager_.parts);
   manager_.object_remap = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
 
-  fragment_pool_initialize();
   _entity_manager_types_initialize();
 
 #ifndef UNIT_TESTS
