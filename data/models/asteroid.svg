@@ -8,7 +8,7 @@
     <line x1="-5" y1="-18" x2="3" y2="-5" stroke="#808080" stroke-width="1"/>
     <line x1="-15" y1="0" x2="-4" y2="5" stroke="#808080" stroke-width="1"/>
     <line x1="8" y1="5" x2="16" y2="12" stroke="#808080" stroke-width="1"/>
-    <!-- Chunk slots -->
-    <circle cx="-10" cy="-10" slot="chunk1" />
-    <circle cx="10" cy="10" slot="chunk2" />
+    <!-- Chunk slots - at the edge so chunks protrude outward -->
+    <circle cx="-18" cy="-18" slot="chunk1" />
+    <circle cx="18" cy="14" slot="chunk2" />
 </svg>

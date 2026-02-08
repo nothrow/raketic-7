@@ -127,9 +127,9 @@ void graphics_engine_draw(void) {
   stars_draw((float)cam_x, (float)cam_y);
 
   _graphics_particles_draw();
+  _graphics_beams_draw();
   _graphics_parts_draw();
   _graphics_objects_draw();
-  _graphics_beams_draw();
   
   PROFILE_ZONE_END();
 }
