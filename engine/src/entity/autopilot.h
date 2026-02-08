@@ -19,3 +19,14 @@ void autopilot_tick(void);
 
 // Update stored ordinals after entity_manager_pack_objects.
 void autopilot_remap(uint32_t* remap, uint32_t old_active);
+
+// Autopilot status snapshot for HUD display.
+typedef struct {
+  bool active;
+  int phase;      // 0 = coast, 1 = correcting
+  float delta_v;  // current delta-v magnitude to ideal orbit
+  float v_orbit;  // target circular orbit speed at current distance
+} autopilot_status_t;
+
+// Query the current autopilot state for a ship. Safe to call every frame.
+void autopilot_query_status(entity_id_t ship_id, autopilot_status_t* out);

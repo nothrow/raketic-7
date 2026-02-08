@@ -5,6 +5,7 @@
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
 #include "debug/debug.h"
+#include "hud/hud.h"
 #include "debug/profiler.h"
 
 int run(void) {
@@ -12,6 +13,7 @@ int run(void) {
   bool tilde_was_down = false;
 
   debug_initialize();
+  hud_initialize();
   platform_initialize();
   messaging_initialize();
   entity_manager_initialize();
@@ -56,6 +58,7 @@ int run(void) {
       debug_trails_draw();
       debug_watch_draw();
     }
+    hud_draw();
     PROFILE_FRAME_END("Render");
 
     platform_renderer_report_stats();

@@ -269,3 +269,35 @@ void autopilot_remap(uint32_t* remap, uint32_t old_active) {
     }
   }
 }
+
+void autopilot_query_status(entity_id_t ship_id, autopilot_status_t* out) {
+  out->active = false;
+  out->phase = 0;
+  out->delta_v = 0.0f;
+  out->v_orbit = 0.0f;
+
+  int idx = _find_slot_for_ship(GET_ORDINAL(ship_id));
+  if (idx < 0) return;
+
+  struct autopilot_slot* s = &_slots[idx];
+  if (!s->active) return;
+
+  out->active = true;
+  out->phase = (s->phase == AP_CORRECT) ? 1 : 0;
+
+  struct objects_data* od = entity_manager_get_objects();
+  if (s->ship_ordinal >= od->active || s->planet_ordinal >= od->active) return;
+
+  float dvx, dvy, tx, ty;
+  out->delta_v = _compute_orbit_dv(od, s->ship_ordinal, s->planet_ordinal, &dvx, &dvy, &tx, &ty);
+
+  float sx = od->position_orientation.position_x[s->ship_ordinal];
+  float sy = od->position_orientation.position_y[s->ship_ordinal];
+  float px = od->position_orientation.position_x[s->planet_ordinal];
+  float py = od->position_orientation.position_y[s->planet_ordinal];
+  float rx = sx - px;
+  float ry = sy - py;
+  float dist = sqrtf(rx * rx + ry * ry);
+  if (dist < 1.0f) dist = 1.0f;
+  out->v_orbit = sqrtf(GRAVITATIONAL_CONSTANT * od->mass[s->planet_ordinal] / dist);
+}

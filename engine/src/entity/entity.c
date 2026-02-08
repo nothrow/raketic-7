@@ -5,6 +5,7 @@
 
 #include "ship.h"
 #include "autopilot.h"
+#include "hud/hud.h"
 #include "controller.h"
 #include "engine.h"
 #include "weapon.h"
@@ -309,6 +310,7 @@ void entity_manager_pack_objects(void) {
   camera_remap_entity(remap, old_active);
   rocket_remap_objects(remap, old_active);
   autopilot_remap(remap, old_active);
+  hud_remap_entity(remap, old_active);
 
   PROFILE_ZONE_END();
 }

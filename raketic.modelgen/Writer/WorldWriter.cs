@@ -38,10 +38,12 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/engine.h""
 #include ""entity/weapon.h""
 #include ""debug/debug.h""
+#include ""hud/hud.h""
 #include ""debug/profiler.h""
 
 #include <Windows.h>
 #include <gl/GL.h>
+#include <math.h>
 ");
 
     }
@@ -113,31 +115,22 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
             _cWriter!.WriteLine($"  od->health[new_idx] = {entity.Health ?? 1000};");
 
-            // Generate velocity for orbiting entities
-            if (entity is EntityData entityData && entityData.OrbitTargetSpawnId.HasValue)
+            // Orbit initialization: set tangential velocity for circular orbit
+            if (entity is EntityData ed && ed.OrbitTargetSpawnId.HasValue)
             {
-                var target = world.Entities[entityData.OrbitTargetSpawnId.Value] as EntityData;
-                if (target?.Position != null && entityData.Position != null && target.Mass.HasValue)
-                {
-                    double dx = entityData.Position.Value.X - target.Position.Value.X;
-                    double dy = entityData.Position.Value.Y - target.Position.Value.Y;
-                    double r = Math.Sqrt(dx * dx + dy * dy);
-
-                    // Circular orbit velocity: v = sqrt(G * M / r)
-                    // G = 6.67430 (matching engine's GRAVITATIONAL_CONSTANT)
-                    const double G = 6.67430;
-                    double v = Math.Sqrt(G * target.Mass.Value / r);
-
-                    // Perpendicular direction (counterclockwise): rotate (dx,dy) by 90 degrees CCW
-                    double nx = -dy / r;
-                    double ny = dx / r;
-
-                    double vx = nx * v;
-                    double vy = ny * v;
-
-                    _cWriter!.WriteLine($"  od->velocity_x[new_idx] = {vx:0.0#######}f;");
-                    _cWriter!.WriteLine($"  od->velocity_y[new_idx] = {vy:0.0#######}f;");
-                }
+                var targetIdx = ed.OrbitTargetSpawnId.Value;
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"  // Initial circular orbit velocity around entity {targetIdx}");
+                _cWriter!.WriteLine($"  {{");
+                _cWriter!.WriteLine($"    float _dx = od->position_orientation.position_x[new_idx] - od->position_orientation.position_x[{targetIdx}];");
+                _cWriter!.WriteLine($"    float _dy = od->position_orientation.position_y[new_idx] - od->position_orientation.position_y[{targetIdx}];");
+                _cWriter!.WriteLine($"    float _dist = sqrtf(_dx * _dx + _dy * _dy);");
+                _cWriter!.WriteLine($"    float _v = sqrtf(6.67430f * (float)od->mass[{targetIdx}] / _dist);");
+                _cWriter!.WriteLine($"    float _rnx = _dx / _dist;");
+                _cWriter!.WriteLine($"    float _rny = _dy / _dist;");
+                _cWriter!.WriteLine($"    od->velocity_x[new_idx] = -_rny * _v;");
+                _cWriter!.WriteLine($"    od->velocity_y[new_idx] = _rnx * _v;");
+                _cWriter!.WriteLine($"  }}");
             }
 
             if (entity is EntityWithSlotsData entityWithSlots)
@@ -188,6 +181,7 @@ void _generated_load_map_data(uint16_t index);
                 _cWriter!.WriteLine($"  debug_watch_set(OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._));");
                 _cWriter!.WriteLine($"  controller_set_entity(OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._));");
                 _cWriter!.WriteLine($"  camera_set_entity(OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._));");
+                _cWriter!.WriteLine($"  hud_set_entity(OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._));");
                 _cWriter!.WriteLine();
             }
         }

@@ -55,6 +55,8 @@
     <ClCompile Include="src\entity\autopilot.c" />
     <ClCompile Include="src\entity\planet.c" />
     <ClCompile Include="src\entity\moon.c" />
+    <ClCompile Include="src\hud\hud.c" />
+    <ClCompile Include="src\hud\hud_text.c" />
     <ClCompile Include="src\graphics\graphics.c" />
     <ClCompile Include="src\graphics\stars.c">
       <AssemblerOutput>All</AssemblerOutput>
@@ -120,6 +122,8 @@
     <ClInclude Include="src\entity\moon.h" />
     <ClInclude Include="src\entity\camera.h" />
     <ClInclude Include="src\entity\types.h" />
+    <ClInclude Include="src\hud\hud.h" />
+    <ClInclude Include="src\hud\hud_text.h" />
     <ClInclude Include="src\graphics\graphics.h" />
     <ClInclude Include="src\graphics\stars.h" />
     <ClInclude Include="src\messaging\messaging.h" />
