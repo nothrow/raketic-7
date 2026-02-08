@@ -218,6 +218,7 @@ void entity_manager_pack_objects(void) {
         if (od->health[last_alive] > 0) {
           break;
         }
+        remap[last_alive] = UINT32_MAX; // dead object skipped — mark in remap
       }
 
       if (i < last_alive) {

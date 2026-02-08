@@ -7,6 +7,7 @@
 #include "engine.h"
 #include "ship.h"
 #include "autopilot.h"
+#include "explosion.h"
 
 #include <math.h>
 
@@ -171,11 +172,26 @@ static void _ship_rotate_to(entity_id_t id, float x, float y) {
 }
 
 static void _ship_handle_collision(entity_id_t id, const message_t* msg) {
-  (id);
+  entity_id_t id_a = { (uint32_t)msg->data_a };
+  entity_id_t id_b = { (uint32_t)msg->data_b };
 
-  entity_id_t other = { msg->data_b };
-  if (GET_TYPE(other) == ENTITY_TYPEREF_PLANET._) {
-    // destroy
+  entity_id_t other = (GET_TYPE(id_a) == ENTITY_TYPEREF_SHIP._) ? id_b : id_a;
+  uint8_t other_type = GET_TYPE(other);
+
+  if (other_type == ENTITY_TYPEREF_PLANET._ || other_type == ENTITY_TYPEREF_MOON._ || other_type == ENTITY_TYPEREF_ASTEROID._) {
+    uint32_t ord = GET_ORDINAL(id);
+    struct objects_data* od = entity_manager_get_objects();
+
+    if (od->health[ord] <= 0) return;
+
+    float px = od->position_orientation.position_x[ord];
+    float py = od->position_orientation.position_y[ord];
+    float vx = od->velocity_x[ord];
+    float vy = od->velocity_y[ord];
+    float mass = od->mass[ord];
+
+    od->health[ord] = 0;
+    explosion_spawn(px, py, vx, vy, mass);
   }
 }
 

@@ -39,12 +39,13 @@ static void _asteroid_handle_collision(entity_id_t id, const message_t* msg) {
     other = id_a;
   }
 
-  // only take damage from rockets
-  if (GET_TYPE(other) != ENTITY_TYPEREF_ROCKET._) {
-    return;
-  }
+  uint8_t other_type = GET_TYPE(other);
 
-  _asteroid_apply_damage(id, ROCKET_DAMAGE);
+  if (other_type == ENTITY_TYPEREF_ROCKET._) {
+    _asteroid_apply_damage(id, ROCKET_DAMAGE);
+  } else if (other_type == ENTITY_TYPEREF_SHIP._ || other_type == ENTITY_TYPEREF_PLANET._ || other_type == ENTITY_TYPEREF_MOON._) {
+    _asteroid_apply_damage(id, 10000);
+  }
 }
 
 static void _asteroid_handle_beam_hit(entity_id_t id, const message_t* msg) {
