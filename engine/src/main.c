@@ -41,6 +41,7 @@ int run(void) {
 
     PROFILE_FRAME_START("Render");
     graphics_engine_draw();
+    debug_draw_collision_hulls();
     debug_watch_draw();
     PROFILE_FRAME_END("Render");
 
