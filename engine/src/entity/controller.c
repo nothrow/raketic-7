@@ -3,6 +3,7 @@
 
 static entity_id_t _controlled_entity = INVALID_ENTITY;
 static int _last_rot = 0;
+static bool _autopilot_active = false;
 
 static void _process_mouse() {
   const struct input_state* input = platform_get_input_state();
@@ -42,15 +43,33 @@ static void _process_keyboard() {
   }
 }
 
+static void _process_autopilot_cancel() {
+  // Cancel autopilot on thrust or SPACE
+  if (platform_input_is_button_down(BUTTON_RIGHT) || platform_input_is_key_down(KEY_SPACE)) {
+    _autopilot_active = false;
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
+  }
+}
+
 static void _controller_dispatch(entity_id_t id, message_t msg) {
   (void)id;
 
   switch (msg.message) {
   case MESSAGE_BROADCAST_FRAME_TICK:
     if (is_valid_id(_controlled_entity)) {
-      _process_mouse();
-      _process_keyboard();
+      if (_autopilot_active) {
+        _process_autopilot_cancel();
+      } else {
+        _process_mouse();
+        _process_keyboard();
+      }
     }
+    break;
+  case MESSAGE_SHIP_AUTOPILOT_ENGAGE:
+    _autopilot_active = true;
+    break;
+  case MESSAGE_SHIP_AUTOPILOT_DISENGAGE:
+    _autopilot_active = false;
     break;
   }
 }

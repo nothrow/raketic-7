@@ -19,7 +19,8 @@
 #define ORBIT_MIN_DISTANCE_FACTOR 1.5f  // minimum distance from planet surface
 #define ORBIT_MAX_DISTANCE_FACTOR 3.0f  // max detection range (multiples of planet radius)
 #define ORBIT_TANGENTIAL_THRESHOLD 0.6f // max |v_radial| / |v| to consider tangential
-#define ORBIT_CORRECTION_RATE 0.1f      // velocity blend per physics tick
+#define ORBIT_DV_THRESHOLD 0.5f         // minimum delta-v magnitude to fire engines
+#define ORBIT_DV_THRUST_SCALE 0.4f      // thrust_pct = delta_v * scale
 
 struct orbit_state {
   uint32_t ship_ordinal;
@@ -37,6 +38,11 @@ static struct orbit_state _orbit = {
 
 static void _orbit_disengage(void) {
   if (_orbit.active) {
+    // Send engines off to the ship's engine parts
+    entity_id_t ship_id = OBJECT_ID_WITH_TYPE(_orbit.ship_ordinal, ENTITY_TYPE_SHIP);
+    messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
+                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
+
     _orbit.active = false;
     messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
   }
@@ -110,9 +116,11 @@ static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_
   }
 }
 
-static void _ship_orbit_autopilot_tick(struct objects_data* od) {
+// Autopilot correction via messages (rotate + thrust)
+static void _ship_orbit_autopilot_tick(void) {
   if (!_orbit.active) return;
 
+  struct objects_data* od = entity_manager_get_objects();
   uint32_t si = _orbit.ship_ordinal;
   uint32_t pi = _orbit.planet_ordinal;
 
@@ -160,23 +168,37 @@ static void _ship_orbit_autopilot_tick(struct objects_data* od) {
   float target_vx = tx * v_orbit;
   float target_vy = ty * v_orbit;
 
-  // Blend toward target
-  od->velocity_x[si] += (target_vx - svx) * ORBIT_CORRECTION_RATE;
-  od->velocity_y[si] += (target_vy - svy) * ORBIT_CORRECTION_RATE;
+  // Delta-v needed
+  float dvx = target_vx - svx;
+  float dvy = target_vy - svy;
+  float dv = sqrtf(dvx * dvx + dvy * dvy);
 
-  // Orient ship in direction of movement
-  od->position_orientation.orientation_x[si] = tx;
-  od->position_orientation.orientation_y[si] = ty;
+  entity_id_t ship_id = OBJECT_ID_WITH_TYPE(si, ENTITY_TYPE_SHIP);
+
+  if (dv > ORBIT_DV_THRESHOLD) {
+    // Correction needed: rotate toward delta-v direction, fire proportional thrust
+    float dvnx = dvx / dv;
+    float dvny = dvy / dv;
+
+    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, dvnx, dvny));
+
+    int thrust_pct = (int)(dv * ORBIT_DV_THRUST_SCALE);
+    if (thrust_pct < 1) thrust_pct = 1;
+    if (thrust_pct > 100) thrust_pct = 100;
+
+    messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
+                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, thrust_pct, 0));
+  } else {
+    // Close enough - orient ship along tangent, engines off
+    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, tx, ty));
+    messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
+                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
+  }
 }
 
 // === Ship core logic ===
 
 static void _ship_rotate_by(entity_id_t idx, int32_t rotation) {
-  // Cancel autopilot on manual rotation
-  if (_orbit.active && GET_ORDINAL(idx) == _orbit.ship_ordinal) {
-    _orbit_disengage();
-  }
-
   uint32_t id = GET_ORDINAL(idx);
   struct objects_data* od = entity_manager_get_objects();
 
@@ -212,30 +234,29 @@ static void _ship_apply_thrust_from_engines(void) {
     }  
   }
 
-  // Orbit detection and autopilot
-  for (size_t i = 0; i < od->active; i++) {
-    if (od->type[i]._ != ENTITY_TYPE_SHIP) continue;
+  // Orbit detection (only when autopilot is not active)
+  if (!_orbit.active) {
+    for (size_t i = 0; i < od->active; i++) {
+      if (od->type[i]._ != ENTITY_TYPE_SHIP) continue;
 
-    if (od->thrust[i] > 0.0f) {
-      // Player is thrusting - cancel autopilot if this ship is orbiting
-      if (_orbit.ship_ordinal == (uint32_t)i) {
-        _orbit_disengage();
+      if (od->thrust[i] > 0.0f) {
+        // Player is thrusting - reset any engage counter for this ship
+        if (_orbit.ship_ordinal == (uint32_t)i) {
+          _orbit.engage_counter = 0;
+          _orbit.ship_ordinal = UINT32_MAX;
+          _orbit.planet_ordinal = UINT32_MAX;
+        }
+      } else {
+        _ship_check_orbit_conditions(od, (uint32_t)i);
       }
-    } else if (!_orbit.active) {
-      // No thrust and no active autopilot - check orbit conditions
-      _ship_check_orbit_conditions(od, (uint32_t)i);
     }
   }
 
-  _ship_orbit_autopilot_tick(od);
+  // Run autopilot (sends messages for next tick)
+  _ship_orbit_autopilot_tick();
 }
 
 static void _ship_rotate_to(entity_id_t id, float x, float y) {
-  // Cancel autopilot on manual rotate-to (SPACE key)
-  if (_orbit.active && GET_ORDINAL(id) == _orbit.ship_ordinal) {
-    _orbit_disengage();
-  }
-
   uint32_t obj_idx = GET_ORDINAL(id);
   struct objects_data* od = entity_manager_get_objects();
 
@@ -268,6 +289,9 @@ static void _ship_dispatch(entity_id_t id, message_t msg) {
     break;
   case MESSAGE_SHIP_ROTATE_TO:
     _ship_rotate_to(id, _i2f(msg.data_a), _i2f(msg.data_b));
+    break;
+  case MESSAGE_SHIP_AUTOPILOT_DISENGAGE:
+    _orbit_disengage();
     break;
   }
 }
