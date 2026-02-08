@@ -1,16 +1,17 @@
 #include "radial.h"
 
 #include <float.h>
+#include <immintrin.h>
 #include <math.h>
 
 // tan(22.5 degrees) = sqrt(2) - 1
 #define TAN_22_5 0.41421356f
 
-// Precomputed cos/sin table for 16 sectors (used by reconstruct and ray intersect)
-static const float _sector_cos[16] = {
+// Precomputed cos/sin table for 16 sectors, 32-byte aligned for AVX loads
+__declspec(align(32)) static const float _sector_cos[16] = {
     1.0f, 0.92388f, 0.70711f, 0.38268f, 0.0f, -0.38268f, -0.70711f, -0.92388f,
     -1.0f, -0.92388f, -0.70711f, -0.38268f, 0.0f, 0.38268f, 0.70711f, 0.92388f};
-static const float _sector_sin[16] = {
+__declspec(align(32)) static const float _sector_sin[16] = {
     0.0f, 0.38268f, 0.70711f, 0.92388f, 1.0f, 0.92388f, 0.70711f, 0.38268f,
     0.0f, -0.38268f, -0.70711f, -0.92388f, -1.0f, -0.92388f, -0.70711f, -0.38268f};
 
@@ -74,58 +75,115 @@ bool radial_collision_test(const uint8_t* profile_a, float ax, float ay, float o
 
 void radial_reconstruct(const uint8_t* profile, float cx, float cy, float ox, float oy,
                         float* out_x, float* out_y) {
-  for (int i = 0; i < 16; i++) {
-    float r = (float)profile[i];
-    // Sector direction in local space
-    float local_x = _sector_cos[i] * r;
-    float local_y = _sector_sin[i] * r;
-    // Rotate by object orientation and translate
-    out_x[i] = local_x * ox - local_y * oy + cx;
-    out_y[i] = local_x * oy + local_y * ox + cy;
+  __m256 vcx = _mm256_set1_ps(cx);
+  __m256 vcy = _mm256_set1_ps(cy);
+  __m256 vox = _mm256_set1_ps(ox);
+  __m256 voy = _mm256_set1_ps(oy);
+
+  for (int batch = 0; batch < 2; batch++) {
+    int base = batch * 8;
+
+    // Convert 8 uint8_t radii to float
+    __m128i bytes = _mm_loadl_epi64((const __m128i*)(profile + base));
+    __m256i ints = _mm256_cvtepu8_epi32(bytes);
+    __m256 r = _mm256_cvtepi32_ps(ints);
+
+    // Load precomputed cos/sin for these 8 sectors
+    __m256 cos_v = _mm256_load_ps(_sector_cos + base);
+    __m256 sin_v = _mm256_load_ps(_sector_sin + base);
+
+    // local_x = cos * r, local_y = sin * r
+    __m256 local_x = _mm256_mul_ps(cos_v, r);
+    __m256 local_y = _mm256_mul_ps(sin_v, r);
+
+    // Rotate by orientation and translate:
+    // out_x = local_x * ox - local_y * oy + cx
+    // out_y = local_x * oy + local_y * ox + cy
+    __m256 wx = _mm256_fmadd_ps(local_x, vox, vcx);
+    wx = _mm256_fnmadd_ps(local_y, voy, wx);
+
+    __m256 wy = _mm256_fmadd_ps(local_x, voy, vcy);
+    wy = _mm256_fmadd_ps(local_y, vox, wy);
+
+    _mm256_storeu_ps(out_x + base, wx);
+    _mm256_storeu_ps(out_y + base, wy);
   }
+}
+
+// Horizontal minimum of 8 floats in an __m256
+static inline float _hmin256(__m256 v) {
+  __m128 lo = _mm256_castps256_ps128(v);
+  __m128 hi = _mm256_extractf128_ps(v, 1);
+  __m128 m = _mm_min_ps(lo, hi);
+  m = _mm_min_ps(m, _mm_shuffle_ps(m, m, _MM_SHUFFLE(2, 3, 0, 1)));
+  m = _mm_min_ps(m, _mm_shuffle_ps(m, m, _MM_SHUFFLE(1, 0, 3, 2)));
+  return _mm_cvtss_f32(m);
 }
 
 bool radial_ray_intersect(const uint8_t* profile, float cx, float cy, float ox, float oy,
                           float sx, float sy, float ex, float ey, float* t_out) {
-  // Reconstruct 16-gon from radial profile
-  float px[16], py[16];
+  // Reconstruct 16-gon from radial profile, with wrap point for SIMD edge loads
+  __declspec(align(32)) float px[17], py[17];
   radial_reconstruct(profile, cx, cy, ox, oy, px, py);
+  px[16] = px[0];
+  py[16] = py[0];
 
   float rdx = ex - sx;
   float rdy = ey - sy;
 
-  float best_t = FLT_MAX;
-  bool hit = false;
+  __m256 vrdx = _mm256_set1_ps(rdx);
+  __m256 vrdy = _mm256_set1_ps(rdy);
+  __m256 vsx = _mm256_set1_ps(sx);
+  __m256 vsy = _mm256_set1_ps(sy);
+  __m256 zero = _mm256_setzero_ps();
+  __m256 one = _mm256_set1_ps(1.0f);
+  __m256 big = _mm256_set1_ps(FLT_MAX);
 
-  // Test ray against each of the 16 edges
-  for (int i = 0; i < 16; i++) {
-    int j = (i + 1) & 15;
+  __m256 best = big;
 
-    float e1x = px[j] - px[i];
-    float e1y = py[j] - py[i];
+  for (int batch = 0; batch < 2; batch++) {
+    int base = batch * 8;
 
-    float denom = rdx * e1y - rdy * e1x;
-    if (fabsf(denom) < 1e-10f)
-      continue;
+    // Current and next polygon points
+    __m256 pxi = _mm256_loadu_ps(px + base);
+    __m256 pyi = _mm256_loadu_ps(py + base);
+    __m256 pxj = _mm256_loadu_ps(px + base + 1);
+    __m256 pyj = _mm256_loadu_ps(py + base + 1);
 
-    float inv_denom = 1.0f / denom;
+    // Edge vectors: e1 = p[j] - p[i]
+    __m256 e1x = _mm256_sub_ps(pxj, pxi);
+    __m256 e1y = _mm256_sub_ps(pyj, pyi);
 
-    float ofx = px[i] - sx;
-    float ofy = py[i] - sy;
+    // denom = rdx * e1y - rdy * e1x
+    __m256 denom = _mm256_fmsub_ps(vrdx, e1y, _mm256_mul_ps(vrdy, e1x));
 
-    float t = (ofx * e1y - ofy * e1x) * inv_denom;
-    float u = (ofx * rdy - ofy * rdx) * inv_denom;
+    // inv_denom = 1 / denom (degenerate -> inf, naturally filtered by [0,1] check)
+    __m256 inv_denom = _mm256_div_ps(one, denom);
 
-    if (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f) {
-      if (t < best_t) {
-        best_t = t;
-        hit = true;
-      }
-    }
+    // Offset from ray start to edge start
+    __m256 ofx = _mm256_sub_ps(pxi, vsx);
+    __m256 ofy = _mm256_sub_ps(pyi, vsy);
+
+    // t = (ofx * e1y - ofy * e1x) * inv_denom
+    __m256 t = _mm256_mul_ps(_mm256_fmsub_ps(ofx, e1y, _mm256_mul_ps(ofy, e1x)), inv_denom);
+
+    // u = (ofx * rdy - ofy * rdx) * inv_denom
+    __m256 u = _mm256_mul_ps(_mm256_fmsub_ps(ofx, vrdy, _mm256_mul_ps(ofy, vrdx)), inv_denom);
+
+    // Valid: t in [0,1] AND u in [0,1] (ordered comparisons -> NaN = false)
+    __m256 mask = _mm256_and_ps(
+        _mm256_and_ps(_mm256_cmp_ps(t, zero, _CMP_GE_OQ), _mm256_cmp_ps(t, one, _CMP_LE_OQ)),
+        _mm256_and_ps(_mm256_cmp_ps(u, zero, _CMP_GE_OQ), _mm256_cmp_ps(u, one, _CMP_LE_OQ)));
+
+    // Invalid hits -> FLT_MAX, then take min
+    t = _mm256_blendv_ps(big, t, mask);
+    best = _mm256_min_ps(best, t);
   }
 
-  if (hit)
+  float best_t = _hmin256(best);
+  if (best_t < FLT_MAX) {
     *t_out = best_t;
-
-  return hit;
+    return true;
+  }
+  return false;
 }
