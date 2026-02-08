@@ -164,6 +164,10 @@ void debug_watch_draw(void) {
 // We store camera-relative positions AND the camera's absolute position at each
 // sample, so when drawing we can compensate for camera movement:
 //   draw_pos = recorded_pos + (recorded_cam - current_cam)
+//
+// Compaction-safe: we track the entity type at each trail slot. If the entity
+// type changes (due to pack_objects reshuffling), the trail for that slot resets.
+// Transient entities (rockets) are skipped entirely.
 
 #define TRAIL_MAX_OBJECTS 16
 #define TRAIL_POINTS 1024
@@ -175,8 +179,11 @@ static float trail_y_[TRAIL_MAX_OBJECTS][TRAIL_POINTS];
 static double trail_cam_x_[TRAIL_POINTS];
 static double trail_cam_y_[TRAIL_POINTS];
 static uint32_t trail_head_ = 0;
-static uint32_t trail_count_ = 0;
 static uint32_t trail_tick_ = 0;
+
+// Per-object: valid sample count and entity type for change detection
+static uint32_t trail_obj_count_[TRAIL_MAX_OBJECTS];
+static uint8_t trail_obj_type_[TRAIL_MAX_OBJECTS];
 
 static const color_t trail_palette_[TRAIL_PALETTE_COUNT] = {
     {100, 255, 100, 255}, // green
@@ -188,6 +195,10 @@ static const color_t trail_palette_[TRAIL_PALETTE_COUNT] = {
     {200, 200, 200, 255}, // grey
     {255, 100, 100, 255}, // red
 };
+
+static bool _trail_is_transient(uint8_t type) {
+  return type == ENTITY_TYPE_ROCKET;
+}
 
 void debug_trails_draw(void) {
   struct objects_data* od = entity_manager_get_objects();
@@ -202,25 +213,42 @@ void debug_trails_draw(void) {
     trail_cam_y_[trail_head_] = cam_y;
 
     for (uint32_t i = 0; i < obj_count; i++) {
+      uint8_t type = od->type[i]._;
+
+      // Skip transient entities (rockets etc.)
+      if (_trail_is_transient(type))
+        continue;
+
+      // Detect entity change at this index (compaction reshuffles objects)
+      if (trail_obj_type_[i] != type) {
+        trail_obj_count_[i] = 0;
+        trail_obj_type_[i] = type;
+      }
+
       trail_x_[i][trail_head_] = od->position_orientation.position_x[i];
       trail_y_[i][trail_head_] = od->position_orientation.position_y[i];
+
+      if (trail_obj_count_[i] < TRAIL_POINTS)
+        trail_obj_count_[i]++;
     }
 
     trail_head_ = (trail_head_ + 1) % TRAIL_POINTS;
-    if (trail_count_ < TRAIL_POINTS)
-      trail_count_++;
   }
 
   // Draw trail lines
-  if (trail_count_ < 2)
-    return;
-
   for (uint32_t i = 0; i < obj_count; i++) {
+    uint32_t count = trail_obj_count_[i];
+    if (count < 2)
+      continue;
+
+    if (_trail_is_transient(od->type[i]._))
+      continue;
+
     color_t base = trail_palette_[i % TRAIL_PALETTE_COUNT];
 
-    for (uint32_t j = 1; j < trail_count_; j++) {
-      uint32_t p0 = (trail_head_ + TRAIL_POINTS - trail_count_ + j - 1) % TRAIL_POINTS;
-      uint32_t p1 = (trail_head_ + TRAIL_POINTS - trail_count_ + j) % TRAIL_POINTS;
+    for (uint32_t j = 1; j < count; j++) {
+      uint32_t p0 = (trail_head_ + TRAIL_POINTS - count + j - 1) % TRAIL_POINTS;
+      uint32_t p1 = (trail_head_ + TRAIL_POINTS - count + j) % TRAIL_POINTS;
 
       // Compensate for camera movement since each sample was recorded
       float x0 = trail_x_[i][p0] + (float)(trail_cam_x_[p0] - cam_x);
@@ -229,7 +257,7 @@ void debug_trails_draw(void) {
       float y1 = trail_y_[i][p1] + (float)(trail_cam_y_[p1] - cam_y);
 
       // Fade: older segments more transparent, newer brighter
-      uint8_t alpha = (uint8_t)(20 + (j * 180) / trail_count_);
+      uint8_t alpha = (uint8_t)(20 + (j * 180) / count);
       color_t c = {base.r, base.g, base.b, alpha};
 
       platform_debug_draw_line(x0, y0, x1, y1, c);
