@@ -305,6 +305,16 @@ void entity_manager_pack_objects(void) {
     pd->active = write;
   }
 
+  // Zero stale mass/thrust beyond od->active to prevent phantom SIMD gravity.
+  // The gravity loop reads in 8-element SIMD chunks and may read beyond active.
+  {
+    uint32_t padded = (od->active + 7) & ~7u;
+    for (uint32_t i = od->active; i < padded && i < od->capacity; i++) {
+      od->mass[i] = 0.0f;
+      od->thrust[i] = 0.0f;
+    }
+  }
+
   // 2. Controller, Camera, Rocket aux
   controller_remap_entity(remap, old_active);
   camera_remap_entity(remap, old_active);

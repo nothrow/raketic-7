@@ -313,7 +313,10 @@ void autopilot_remap(uint32_t* remap, uint32_t old_active) {
     }
 
     if (!valid) {
-      _slot_disengage(i);
+      // Don't call _slot_disengage here — ordinals are stale after pack,
+      // sending messages with them would target wrong entities.
+      _slots[i].active = false;
+      messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
     }
   }
 }
