@@ -26,7 +26,7 @@ static void _weapon_fire_laser(uint32_t part_idx, struct weapon_data* wd, struct
   
   // create the beam (lasts for a short time)
   uint16_t beam_lifetime = 12; // ~0.1 seconds at 120Hz
-  beams_create(wx, wy, end_x, end_y, beam_lifetime);
+  beams_create(wx, wy, end_x, end_y, beam_lifetime, parent_idx);
 }
 
 static void _weapon_fire_rocket(uint32_t part_idx, struct weapon_data* wd, struct parts_data* pd, struct objects_data* od) {

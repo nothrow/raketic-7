@@ -23,7 +23,8 @@ enum message_codes_system {
   MESSAGE_BROADCAST_FRAME_TICK = 2,
   MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3,
   MESSAGE_COLLIDE_OBJECT_OBJECT = 4, // data_a = this entity id, data_b = other entity id
-  MESSAGE_COLLIDE_OBJECT_PARTICLE = 5 // data_a = this entity id, data_b = particle id
+  MESSAGE_COLLIDE_OBJECT_PARTICLE = 5, // data_a = this entity id, data_b = particle id
+  MESSAGE_BEAM_HIT = 6 // data_a = target entity_id, data_b = damage
 };
 
 enum message_codes_ship {

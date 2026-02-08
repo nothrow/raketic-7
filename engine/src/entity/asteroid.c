@@ -4,6 +4,28 @@
 
 #define ROCKET_DAMAGE 25
 
+static void _asteroid_apply_damage(entity_id_t id, int16_t damage) {
+  uint32_t self_idx = GET_ORDINAL(id);
+  struct objects_data* od = entity_manager_get_objects();
+
+  // already dead?
+  if (od->health[self_idx] <= 0) return;
+
+  od->health[self_idx] -= damage;
+
+  if (od->health[self_idx] <= 0) {
+    // death explosion proportional to mass
+    float px = od->position_orientation.position_x[self_idx];
+    float py = od->position_orientation.position_y[self_idx];
+    float vx = od->velocity_x[self_idx];
+    float vy = od->velocity_y[self_idx];
+    float mass = od->mass[self_idx];
+
+    explosion_spawn(px, py, vx, vy, mass);
+
+    od->health[self_idx] = 0; // ensure dead for sweep
+  }
+}
 
 static void _asteroid_handle_collision(entity_id_t id, const message_t* msg) {
   entity_id_t id_a = { (uint32_t)msg->data_a };
@@ -22,32 +44,21 @@ static void _asteroid_handle_collision(entity_id_t id, const message_t* msg) {
     return;
   }
 
-  uint32_t self_idx = GET_ORDINAL(id);
-  struct objects_data* od = entity_manager_get_objects();
+  _asteroid_apply_damage(id, ROCKET_DAMAGE);
+}
 
-  // already dead?
-  if (od->health[self_idx] <= 0) return;
-
-  od->health[self_idx] -= ROCKET_DAMAGE;
-
-  if (od->health[self_idx] <= 0) {
-    // death explosion proportional to mass
-    float px = od->position_orientation.position_x[self_idx];
-    float py = od->position_orientation.position_y[self_idx];
-    float vx = od->velocity_x[self_idx];
-    float vy = od->velocity_y[self_idx];
-    float mass = od->mass[self_idx];
-
-    explosion_spawn(px, py, vx, vy, mass);
-
-    od->health[self_idx] = 0; // ensure dead for sweep
-  }
+static void _asteroid_handle_beam_hit(entity_id_t id, const message_t* msg) {
+  int16_t damage = (int16_t)msg->data_b;
+  _asteroid_apply_damage(id, damage);
 }
 
 static void _asteroid_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
   case MESSAGE_COLLIDE_OBJECT_OBJECT:
     _asteroid_handle_collision(id, &msg);
+    break;
+  case MESSAGE_BEAM_HIT:
+    _asteroid_handle_beam_hit(id, &msg);
     break;
   }
 }

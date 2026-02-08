@@ -18,5 +18,6 @@ struct beams_data {
 };
 
 void beams_entity_initialize(void);
-void beams_create(float start_x, float start_y, float end_x, float end_y, uint16_t lifetime);
+void beams_create(float start_x, float start_y, float end_x, float end_y,
+                  uint16_t lifetime, uint32_t ignore_object_idx);
 struct beams_data* beams_get_data(void);
