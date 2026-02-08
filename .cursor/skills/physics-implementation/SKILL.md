@@ -1,3 +1,7 @@
+---
+name: physics-implementation
+description: Newtonian physics, orbital mechanics, and collision response in Raketic
+---
 # Physics Implementation in Raketic
 
 ## Overview

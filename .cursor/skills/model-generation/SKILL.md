@@ -1,3 +1,7 @@
+---
+name: model-generation
+description: SVG model and Lua data pipeline for generating C code via raketic.modelgen
+---
 # Model Generation Pipeline
 
 ## Overview

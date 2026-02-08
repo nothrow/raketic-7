@@ -1,3 +1,7 @@
+---
+name: performance-profiling
+description: Performance profiling with Tracy and optimization techniques for Raketic
+---
 # Performance Profiling in Raketic
 
 ## Overview

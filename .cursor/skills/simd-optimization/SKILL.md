@@ -1,3 +1,7 @@
+---
+name: simd-optimization
+description: Writing AVX2 SIMD code for Raketic engine hot paths
+---
 # SIMD Optimization for Raketic Engine
 
 ## Overview

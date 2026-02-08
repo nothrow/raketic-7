@@ -1,3 +1,7 @@
+---
+name: lua-data-authoring
+description: Authoring Lua data files for defining entities, parts, and worlds in Raketic
+---
 # Lua Data Authoring for Raketic
 
 ## Overview

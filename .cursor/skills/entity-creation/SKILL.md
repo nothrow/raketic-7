@@ -1,3 +1,7 @@
+---
+name: entity-creation
+description: Guide for adding new entity types to the Raketic engine's ECS-like architecture
+---
 # Entity Creation in Raketic Engine
 
 ## Overview
