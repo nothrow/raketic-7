@@ -14,12 +14,17 @@
 #define DV_CORRECT_ENTER 3.0f
 #define DV_CORRECT_EXIT 0.8f
 
-// During coast: only re-evaluate delta-v every N ticks (0.2s)
-#define COAST_EVAL_INTERVAL 24
+// During coast: only re-evaluate delta-v every N ticks (0.1s)
+#define COAST_EVAL_INTERVAL 12
 // During coast: update ship orientation every N ticks
 #define COAST_ORIENT_INTERVAL 6
 // Thrust proportional gain: thrust_pct = delta_v * scale, clamped to [1, 100]
 #define THRUST_GAIN 0.4f
+
+// Collision safety
+#define EMERGENCY_DISTANCE_FACTOR 1.2f  // fire outward if closer than 1.2x planet radius
+#define EMERGENCY_LOOKAHEAD_S 1.0f      // predict collision 1 second ahead
+#define RADIAL_SAFETY_GAIN 1.5f         // boost delta-v outward when approaching planet
 
 enum autopilot_phase {
   AP_COAST,
@@ -140,6 +145,44 @@ static void _slot_tick(struct autopilot_slot* s) {
 
   entity_id_t ship_id = OBJECT_ID_WITH_TYPE(s->ship_ordinal, ENTITY_TYPE_SHIP);
 
+  // --- Collision safety (every tick, regardless of phase) ---
+  float sx = od->position_orientation.position_x[s->ship_ordinal];
+  float sy = od->position_orientation.position_y[s->ship_ordinal];
+  float px = od->position_orientation.position_x[s->planet_ordinal];
+  float py = od->position_orientation.position_y[s->planet_ordinal];
+  float rx = sx - px;
+  float ry = sy - py;
+  float dist = sqrtf(rx * rx + ry * ry);
+  float planet_radius = od->position_orientation.radius[s->planet_ordinal];
+
+  if (dist < 1.0f) { _slot_disengage((int)(s - _slots)); return; }
+
+  float rnx = rx / dist;
+  float rny = ry / dist;
+  float svx = od->velocity_x[s->ship_ordinal];
+  float svy = od->velocity_y[s->ship_ordinal];
+  float v_radial = svx * rnx + svy * rny; // positive = away, negative = approaching
+
+  float emergency_dist = planet_radius * EMERGENCY_DISTANCE_FACTOR;
+  bool too_close = dist < emergency_dist;
+  bool impact_imminent = (v_radial < -1.0f) &&
+                         (dist + v_radial * EMERGENCY_LOOKAHEAD_S) < emergency_dist;
+
+  if (too_close || impact_imminent) {
+    // EMERGENCY: fire radially OUTWARD at full thrust
+    s->phase = AP_CORRECT;
+    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, rnx, rny));
+    messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
+                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 100, 0));
+    return;
+  }
+
+  // If approaching planet during coast, break out into correction early
+  if (v_radial < -2.0f && s->phase == AP_COAST) {
+    s->phase = AP_CORRECT;
+  }
+
+  // --- Normal phase logic ---
   float dvx, dvy, tx, ty;
 
   switch (s->phase) {
@@ -147,12 +190,19 @@ static void _slot_tick(struct autopilot_slot* s) {
   case AP_CORRECT: {
     float dv = _compute_orbit_dv(od, s->ship_ordinal, s->planet_ordinal, &dvx, &dvy, &tx, &ty);
 
-    if (dv < DV_CORRECT_EXIT) {
-      // Orbit is close enough — switch to coasting
+    // Radial safety boost: if approaching planet, bias correction outward
+    if (v_radial < 0) {
+      float boost = (-v_radial) * RADIAL_SAFETY_GAIN;
+      dvx += rnx * boost;
+      dvy += rny * boost;
+      dv = sqrtf(dvx * dvx + dvy * dvy);
+    }
+
+    if (dv < DV_CORRECT_EXIT && v_radial > -1.0f) {
+      // Orbit close enough and not approaching — coast
       s->phase = AP_COAST;
       s->timer = COAST_EVAL_INTERVAL;
 
-      // Engines off, orient along tangent
       messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
                      CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
       messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, tx, ty));
@@ -187,10 +237,8 @@ static void _slot_tick(struct autopilot_slot* s) {
       float dv = _compute_orbit_dv(od, s->ship_ordinal, s->planet_ordinal, &dvx, &dvy, &tx, &ty);
 
       if (dv > DV_CORRECT_ENTER) {
-        // Drifted too far — start correcting
         s->phase = AP_CORRECT;
       } else {
-        // Still OK — keep coasting
         s->timer = COAST_EVAL_INTERVAL;
       }
     }
