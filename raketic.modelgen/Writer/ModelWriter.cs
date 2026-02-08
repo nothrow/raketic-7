@@ -39,72 +39,78 @@ internal class ModelWriter
         w.WriteLine();
     }
 
-    private static string GetLineModel(LineStrip linestrip) => linestrip.IsClosed ? "GL_LINE_LOOP" : "GL_LINE_STRIP";
+    // Command encoding for compact draw command list:
+    // Each command is 5 bytes: { gl_mode, start, count, color_idx, width_x10 }
+    // gl_mode: 2=GL_LINE_LOOP, 3=GL_LINE_STRIP, 6=GL_TRIANGLE_FAN, 0=END
+    // color_idx: 0-253 = palette index, 0xFE = black, 0xFD = param color, 0xFF = no change
+    // width_x10: line width * 10, 0 = no change
 
-    public void DumpModel(StreamWriter w, Model model)
+    private const byte COLOR_NO_CHANGE = 0xFF;
+    private const byte COLOR_PARAM = 0xFD;
+    private const byte COLOR_BLACK = 0xFE;
+
+    private static byte GlMode(LineStrip ls) => ls.IsClosed ? (byte)2 : (byte)3; // GL_LINE_LOOP : GL_LINE_STRIP
+
+    /// <summary>
+    /// Emits compact draw command data array for a model.
+    /// </summary>
+    public void DumpModelCommands(StreamWriter w, Model model)
     {
-        w.WriteLine($"static void _model_{model.FileName}(color_t color) {{");
-        w.WriteLine($"  (color);");
-        w.WriteLine($"  glEnableClientState(GL_VERTEX_ARRAY);");
-        w.WriteLine($"  glVertexPointer(2, GL_BYTE, 0, _model_{model.FileName}_vertices);");
+        var cmds = new List<byte>();
 
-        // First pass: draw filled black polygons for "hull" class (to occlude stars)
+        // First pass: hull fill commands
         int hullStart = 0;
         bool hasHull = model.LineStrips.Any(ls => ls.Class == "hull");
         if (hasHull)
         {
-            w.WriteLine();
-            w.WriteLine($"  //  hull fill (occludes background)");
-            w.WriteLine($"  glColor4ub(0, 0, 0, 255);");
             foreach (var linestrip in model.LineStrips)
             {
                 if (linestrip.Class == "hull" && linestrip.IsClosed)
                 {
-                    w.WriteLine($"  glDrawArrays(GL_TRIANGLE_FAN, {hullStart}, {linestrip.Points.Length});");
+                    cmds.AddRange(new byte[] { 6, (byte)hullStart, (byte)linestrip.Points.Length, COLOR_BLACK, 0 });
                 }
                 hullStart += linestrip.Points.Length;
             }
         }
 
-        w.WriteLine();
-        w.WriteLine($"  //  wireframe lines");
-
-        // Second pass: draw wireframe lines
+        // Second pass: wireframe draw commands
         int start = 0;
+        int previousColorIndex = -2; // -1 = heat (param color)
         float previousWidth = -1f;
-
-        int previousColorIndex = -2; // -1 is heat
 
         foreach (var linestrip in model.LineStrips)
         {
             var len = linestrip.Points.Length;
+            byte colorByte = COLOR_NO_CHANGE;
+            byte widthByte = 0;
 
             if (linestrip.Class == "heat")
             {
-                if (previousColorIndex != -1)
-                    w.WriteLine($"  glColor4ubv((GLubyte*)(&color));");
-
+                if (previousColorIndex != -1) colorByte = COLOR_PARAM;
                 previousColorIndex = -1;
             }
             else
             {
-                if (previousColorIndex != _colorIndexes[linestrip.Color])
-                    w.WriteLine($"  glColor4ubv((GLubyte*)(_model_colors + {_colorIndexes[linestrip.Color] * 4}));");
-
-                previousColorIndex = _colorIndexes[linestrip.Color];
+                int cidx = _colorIndexes[linestrip.Color];
+                if (previousColorIndex != cidx) colorByte = (byte)cidx;
+                previousColorIndex = cidx;
             }
+
             if (linestrip.StrokeWidth != previousWidth)
             {
-                w.WriteLine($"  glLineWidth({linestrip.StrokeWidth:0.0}f);");
+                widthByte = (byte)(linestrip.StrokeWidth * 10.0f + 0.5f);
                 previousWidth = linestrip.StrokeWidth;
             }
 
-            w.WriteLine($"  glDrawArrays({GetLineModel(linestrip)}, {start}, {linestrip.Points.Length});");
+            cmds.AddRange(new byte[] { GlMode(linestrip), (byte)start, (byte)len, colorByte, widthByte });
             start += len;
         }
-        w.WriteLine($"  glDisableClientState(GL_VERTEX_ARRAY);");
-        w.WriteLine($"}}");
-        w.WriteLine();
+
+        cmds.Add(0); // END terminator
+
+        w.Write($"static const uint8_t _model_{model.FileName}_cmds[] = {{");
+        w.Write($" {string.Join(", ", cmds)}");
+        w.WriteLine(" };");
     }
 
     public void DumpModelRadius(StreamWriter w, Model model)

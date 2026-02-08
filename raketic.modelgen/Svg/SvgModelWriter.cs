@@ -27,23 +27,40 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
 
         modelWriter.DumpModelColors(cWriter, models);
 
+        // Emit compact draw command data per model (instead of individual draw functions)
         foreach (var model in models)
         {
-            modelWriter.DumpModel(cWriter, model);
+            modelWriter.DumpModelCommands(cWriter, model);
         }
-
         cWriter.WriteLine();
-        cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
 
-        cWriter.WriteLine($"  static void (*_data[])(color_t) = {{");
+        // Draw model interpreter: reads command data and issues GL calls
+        cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
+        cWriter.WriteLine($"  static const int8_t* _vtx[] = {{");
         foreach (var model in models)
         {
-            cWriter.WriteLine($"    _model_{model.FileName},");
+            cWriter.WriteLine($"    _model_{model.FileName}_vertices,");
         }
         cWriter.WriteLine($"  }};");
-
+        cWriter.WriteLine($"  static const uint8_t* _cmds[] = {{");
+        foreach (var model in models)
+        {
+            cWriter.WriteLine($"    _model_{model.FileName}_cmds,");
+        }
+        cWriter.WriteLine($"  }};");
         cWriter.WriteLine($"  _ASSERT(index >= 0 && index < {models.Length});");
-        cWriter.WriteLine($"  _data[index](color);");
+        cWriter.WriteLine($"  glEnableClientState(GL_VERTEX_ARRAY);");
+        cWriter.WriteLine($"  glVertexPointer(2, GL_BYTE, 0, _vtx[index]);");
+        cWriter.WriteLine($"  const uint8_t* c = _cmds[index];");
+        cWriter.WriteLine($"  while (*c) {{");
+        cWriter.WriteLine($"    if (c[3] == 0xFE) glColor4ub(0, 0, 0, 255);");
+        cWriter.WriteLine($"    else if (c[3] == 0xFD) glColor4ubv((GLubyte*)(&color));");
+        cWriter.WriteLine($"    else if (c[3] != 0xFF) glColor4ubv((GLubyte*)(_model_colors + c[3] * 4));");
+        cWriter.WriteLine($"    if (c[4]) glLineWidth(c[4] * 0.1f);");
+        cWriter.WriteLine($"    glDrawArrays(c[0], c[1], c[2]);");
+        cWriter.WriteLine($"    c += 5;");
+        cWriter.WriteLine($"  }}");
+        cWriter.WriteLine($"  glDisableClientState(GL_VERTEX_ARRAY);");
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
 
@@ -60,32 +77,22 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
 
-        // Radial collision profile data (16 distances from center at 22.5° intervals)
-        foreach (var model in models)
-        {
-            var profile = model.GetRadialProfile();
-            if (profile != null)
-            {
-                cWriter.Write($"static const uint8_t _model_{model.FileName}_radial[16] = {{");
-                cWriter.Write($" {string.Join(", ", profile)}");
-                cWriter.WriteLine(" };");
-            }
-        }
-        cWriter.WriteLine();
-
-        // Radial profile lookup function
-        cWriter.WriteLine($"const uint8_t* _generated_get_radial_profile(uint16_t model_idx) {{");
-        cWriter.WriteLine($"  switch (model_idx) {{");
+        // Radial collision profiles: flat 2D array + simple lookup
+        cWriter.WriteLine($"static const uint8_t _radial_profiles[][16] = {{");
         for (int j = 0; j < models.Length; j++)
         {
             var profile = models[j].GetRadialProfile();
             if (profile != null)
-            {
-                cWriter.WriteLine($"    case {j}: return _model_{models[j].FileName}_radial;");
-            }
+                cWriter.WriteLine($"  {{ {string.Join(", ", profile)} }}, // {j}: {models[j].FileName}");
+            else
+                cWriter.WriteLine($"  {{ 0 }}, // {j}: {models[j].FileName} (no profile)");
         }
-        cWriter.WriteLine($"    default: return 0;");
-        cWriter.WriteLine($"  }}");
+        cWriter.WriteLine($"}};");
+        cWriter.WriteLine();
+
+        cWriter.WriteLine($"const uint8_t* _generated_get_radial_profile(uint16_t model_idx) {{");
+        cWriter.WriteLine($"  if (model_idx >= {models.Length}) return 0;");
+        cWriter.WriteLine($"  return _radial_profiles[model_idx];");
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
     }
