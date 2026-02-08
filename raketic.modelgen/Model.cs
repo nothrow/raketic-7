@@ -56,10 +56,12 @@ internal record Model(
     }
 
     /// <summary>
-    /// Computes the convex hull of the model's hull/outline polygon for collision detection.
+    /// Computes a 16-sample radial distance profile for collision detection.
+    /// For each of 16 angles (0, 22.5, ..., 337.5 degrees), casts a ray from origin outward
+    /// and finds the farthest intersection with the hull polygon edges.
     /// Returns null for models with no closed polygon (e.g. particles).
     /// </summary>
-    public Point[]? GetCollisionHull()
+    public byte[]? GetRadialProfile()
     {
         // Prefer explicit hull class, otherwise first closed polygon
         var sourceStrip = LineStrips.FirstOrDefault(ls => ls.Class == "hull" && ls.IsClosed)
@@ -68,41 +70,46 @@ internal record Model(
         if (sourceStrip == null)
             return null;
 
-        return ComputeConvexHull(sourceStrip.Points);
-    }
+        var points = sourceStrip.Points;
+        var profile = new byte[16];
 
-    /// <summary>
-    /// Andrew's monotone chain convex hull algorithm. Returns points in CCW order.
-    /// </summary>
-    private static Point[] ComputeConvexHull(Point[] points)
-    {
-        if (points.Length <= 2)
-            return points;
-
-        var sorted = points.OrderBy(p => p.X).ThenBy(p => p.Y).ToArray();
-        var hull = new Point[sorted.Length * 2];
-        int k = 0;
-
-        // Lower hull
-        for (int i = 0; i < sorted.Length; i++)
+        for (int sector = 0; sector < 16; sector++)
         {
-            while (k >= 2 && Cross(hull[k - 2], hull[k - 1], sorted[i]) <= 0)
-                k--;
-            hull[k++] = sorted[i];
+            double angle = sector * (2.0 * Math.PI / 16.0);
+            double dirX = Math.Cos(angle);
+            double dirY = Math.Sin(angle);
+
+            double maxT = 0;
+
+            // Test ray from origin in direction (dirX, dirY) against each polygon edge
+            for (int i = 0; i < points.Length; i++)
+            {
+                int j = (i + 1) % points.Length;
+
+                double ex = points[j].X - points[i].X;
+                double ey = points[j].Y - points[i].Y;
+
+                double denom = dirX * ey - dirY * ex;
+                if (Math.Abs(denom) < 1e-10)
+                    continue; // parallel
+
+                double invDenom = 1.0 / denom;
+
+                // t = distance along ray, u = distance along edge [0..1]
+                double t = (points[i].X * ey - points[i].Y * ex) * invDenom;
+                double u = (points[i].X * dirY - points[i].Y * dirX) * invDenom;
+
+                if (t > 0 && u >= 0 && u <= 1)
+                {
+                    if (t > maxT)
+                        maxT = t;
+                }
+            }
+
+            // Ceiling for conservative collision (don't underestimate), minimum 1
+            profile[sector] = (byte)Math.Min(255, Math.Max(1, (int)Math.Ceiling(maxT)));
         }
 
-        // Upper hull
-        int lower = k + 1;
-        for (int i = sorted.Length - 2; i >= 0; i--)
-        {
-            while (k >= lower && Cross(hull[k - 2], hull[k - 1], sorted[i]) <= 0)
-                k--;
-            hull[k++] = sorted[i];
-        }
-
-        return hull.Take(k - 1).ToArray(); // -1 to remove duplicate last point
+        return profile;
     }
-
-    private static float Cross(Point o, Point a, Point b) =>
-        (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
 }

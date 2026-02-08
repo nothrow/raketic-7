@@ -60,37 +60,31 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();
 
-        // Collision hull data arrays
+        // Radial collision profile data (16 distances from center at 22.5° intervals)
         foreach (var model in models)
         {
-            var hull = model.GetCollisionHull();
-            if (hull != null)
+            var profile = model.GetRadialProfile();
+            if (profile != null)
             {
-                cWriter.Write($"static const int8_t _model_{model.FileName}_collision_hull[] = {{");
-                foreach (var p in hull)
-                {
-                    checked
-                    {
-                        cWriter.Write($" {(sbyte)p.X}, {(sbyte)p.Y},");
-                    }
-                }
+                cWriter.Write($"static const uint8_t _model_{model.FileName}_radial[16] = {{");
+                cWriter.Write($" {string.Join(", ", profile)}");
                 cWriter.WriteLine(" };");
             }
         }
         cWriter.WriteLine();
 
-        // Collision hull lookup function
-        cWriter.WriteLine($"const int8_t* _generated_get_collision_hull(uint16_t model_idx, uint32_t* count) {{");
+        // Radial profile lookup function
+        cWriter.WriteLine($"const uint8_t* _generated_get_radial_profile(uint16_t model_idx) {{");
         cWriter.WriteLine($"  switch (model_idx) {{");
         for (int j = 0; j < models.Length; j++)
         {
-            var hull = models[j].GetCollisionHull();
-            if (hull != null)
+            var profile = models[j].GetRadialProfile();
+            if (profile != null)
             {
-                cWriter.WriteLine($"    case {j}: *count = {hull.Length}; return _model_{models[j].FileName}_collision_hull;");
+                cWriter.WriteLine($"    case {j}: return _model_{models[j].FileName}_radial;");
             }
         }
-        cWriter.WriteLine($"    default: *count = 0; return 0;");
+        cWriter.WriteLine($"    default: return 0;");
         cWriter.WriteLine($"  }}");
         cWriter.WriteLine($"}}");
         cWriter.WriteLine();

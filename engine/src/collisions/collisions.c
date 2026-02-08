@@ -1,5 +1,5 @@
 #include "collisions.h"
-#include "polygon.h"
+#include "radial.h"
 #include "debug/profiler.h"
 #include "entity/entity.h"
 #include "platform/platform.h"
@@ -169,8 +169,7 @@ void collisions_engine_tick(void) {
   PROFILE_PLOT("collisions_objects", collision_buffer_objects_.active);
   PROFILE_PLOT("collisions_particles", collision_buffer_particles_.active);
 
-  // Narrow-phase: polygon SAT test to filter broad-phase false positives,
-  // then check part-level hits
+  // Narrow-phase: radial profile test to filter broad-phase false positives
   {
     PROFILE_ZONE("narrow_phase");
 
@@ -179,27 +178,23 @@ void collisions_engine_tick(void) {
       uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
       uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
 
-      uint32_t hull_count_a, hull_count_b;
-      const int8_t* hull_a = _generated_get_collision_hull(od->model_idx[idx_a], &hull_count_a);
-      const int8_t* hull_b = _generated_get_collision_hull(od->model_idx[idx_b], &hull_count_b);
+      const uint8_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
+      const uint8_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
 
-      // If either object has no collision hull, fall back to broad-phase (keep the pair)
-      if (!hull_a || !hull_b) {
+      // If either object has no radial profile, fall back to broad-phase (keep the pair)
+      if (!prof_a || !prof_b) {
         collision_buffer_objects_.idx[write++] = collision_buffer_objects_.idx[i];
         continue;
       }
 
-      polygon_t poly_a, poly_b;
-      polygon_transform_hull(hull_a, hull_count_a, od->position_orientation.position_x[idx_a],
-                             od->position_orientation.position_y[idx_a],
-                             od->position_orientation.orientation_x[idx_a],
-                             od->position_orientation.orientation_y[idx_a], &poly_a);
-      polygon_transform_hull(hull_b, hull_count_b, od->position_orientation.position_x[idx_b],
-                             od->position_orientation.position_y[idx_b],
-                             od->position_orientation.orientation_x[idx_b],
-                             od->position_orientation.orientation_y[idx_b], &poly_b);
-
-      if (polygon_polygon_intersect(&poly_a, &poly_b)) {
+      if (radial_collision_test(prof_a, od->position_orientation.position_x[idx_a],
+                                od->position_orientation.position_y[idx_a],
+                                od->position_orientation.orientation_x[idx_a],
+                                od->position_orientation.orientation_y[idx_a], prof_b,
+                                od->position_orientation.position_x[idx_b],
+                                od->position_orientation.position_y[idx_b],
+                                od->position_orientation.orientation_x[idx_b],
+                                od->position_orientation.orientation_y[idx_b])) {
         collision_buffer_objects_.idx[write++] = collision_buffer_objects_.idx[i];
       }
     }
@@ -210,7 +205,7 @@ void collisions_engine_tick(void) {
 
   PROFILE_PLOT("collisions_confirmed", collision_buffer_objects_.active);
 
-  // Dispatch object-object collision messages
+  // Dispatch object-object collision messages + part-level hit detection
   for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
     uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
     uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
@@ -222,27 +217,14 @@ void collisions_engine_tick(void) {
     messaging_send(idxa, collision);
     messaging_send(idxb, collision);
 
-    // Part-level hit detection: check parts of B against hull of A, and vice versa
+    // Part-level hit detection
     struct parts_data* ptd = entity_manager_get_parts();
 
-    uint32_t hull_count_a, hull_count_b;
-    const int8_t* hull_data_a = _generated_get_collision_hull(od->model_idx[idx_a], &hull_count_a);
-    const int8_t* hull_data_b = _generated_get_collision_hull(od->model_idx[idx_b], &hull_count_b);
+    const uint8_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
+    const uint8_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
 
-    polygon_t poly_a, poly_b;
-    if (hull_data_a)
-      polygon_transform_hull(hull_data_a, hull_count_a, od->position_orientation.position_x[idx_a],
-                             od->position_orientation.position_y[idx_a],
-                             od->position_orientation.orientation_x[idx_a],
-                             od->position_orientation.orientation_y[idx_a], &poly_a);
-    if (hull_data_b)
-      polygon_transform_hull(hull_data_b, hull_count_b, od->position_orientation.position_x[idx_b],
-                             od->position_orientation.position_y[idx_b],
-                             od->position_orientation.orientation_x[idx_b],
-                             od->position_orientation.orientation_y[idx_b], &poly_b);
-
-    // Check parts of B hit by A's hull
-    if (hull_data_a) {
+    // Check parts of B hit by A's radial profile
+    if (prof_a) {
       uint32_t parts_start_b = od->parts_start_idx[idx_b];
       uint32_t parts_count_b = od->parts_count[idx_b];
       for (uint32_t p = 0; p < parts_count_b; p++) {
@@ -250,18 +232,18 @@ void collisions_engine_tick(void) {
         if (ptd->model_idx[pi] == 0xFFFF)
           continue;
 
-        uint32_t part_hull_count;
-        const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
-        if (!part_hull)
+        const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+        if (!part_prof)
           continue;
 
-        polygon_t part_poly;
-        polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
-                               ptd->world_position_orientation.position_y[pi],
-                               ptd->world_position_orientation.orientation_x[pi],
-                               ptd->world_position_orientation.orientation_y[pi], &part_poly);
-
-        if (polygon_polygon_intersect(&poly_a, &part_poly)) {
+        if (radial_collision_test(prof_a, od->position_orientation.position_x[idx_a],
+                                  od->position_orientation.position_y[idx_a],
+                                  od->position_orientation.orientation_x[idx_a],
+                                  od->position_orientation.orientation_y[idx_a], part_prof,
+                                  ptd->world_position_orientation.position_x[pi],
+                                  ptd->world_position_orientation.position_y[pi],
+                                  ptd->world_position_orientation.orientation_x[pi],
+                                  ptd->world_position_orientation.orientation_y[pi])) {
           entity_id_t part_id = entity_manager_resolve_part(pi);
           message_t part_msg = CREATE_MESSAGE(MESSAGE_COLLIDE_PART, idxa._, part_id._);
           messaging_send(part_id, part_msg);
@@ -269,8 +251,8 @@ void collisions_engine_tick(void) {
       }
     }
 
-    // Check parts of A hit by B's hull
-    if (hull_data_b) {
+    // Check parts of A hit by B's radial profile
+    if (prof_b) {
       uint32_t parts_start_a = od->parts_start_idx[idx_a];
       uint32_t parts_count_a = od->parts_count[idx_a];
       for (uint32_t p = 0; p < parts_count_a; p++) {
@@ -278,18 +260,18 @@ void collisions_engine_tick(void) {
         if (ptd->model_idx[pi] == 0xFFFF)
           continue;
 
-        uint32_t part_hull_count;
-        const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
-        if (!part_hull)
+        const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+        if (!part_prof)
           continue;
 
-        polygon_t part_poly;
-        polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
-                               ptd->world_position_orientation.position_y[pi],
-                               ptd->world_position_orientation.orientation_x[pi],
-                               ptd->world_position_orientation.orientation_y[pi], &part_poly);
-
-        if (polygon_polygon_intersect(&poly_b, &part_poly)) {
+        if (radial_collision_test(prof_b, od->position_orientation.position_x[idx_b],
+                                  od->position_orientation.position_y[idx_b],
+                                  od->position_orientation.orientation_x[idx_b],
+                                  od->position_orientation.orientation_y[idx_b], part_prof,
+                                  ptd->world_position_orientation.position_x[pi],
+                                  ptd->world_position_orientation.position_y[pi],
+                                  ptd->world_position_orientation.orientation_x[pi],
+                                  ptd->world_position_orientation.orientation_y[pi])) {
           entity_id_t part_id = entity_manager_resolve_part(pi);
           message_t part_msg = CREATE_MESSAGE(MESSAGE_COLLIDE_PART, idxb._, part_id._);
           messaging_send(part_id, part_msg);

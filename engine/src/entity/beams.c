@@ -1,7 +1,7 @@
 #include "platform/platform.h"
 #include "beams.h"
 #include "messaging/messaging.h"
-#include "collisions/polygon.h"
+#include "collisions/radial.h"
 #include "../generated/renderer.gen.h"
 
 #define LASER_DAMAGE 5
@@ -20,7 +20,7 @@ static void _beams_data_initialize(void) {
 }
 
 // Raycast: find nearest object/part hit by beam, shorten beam, send damage messages.
-// Uses radius for quick culling, then polygon-precise ray intersection.
+// Uses radius for quick culling, then radial profile ray intersection.
 static void _beams_raycast(float* ex, float* ey, float sx, float sy,
                            uint32_t ignore_object_idx) {
   struct objects_data* od = entity_manager_get_objects();
@@ -53,27 +53,26 @@ static void _beams_raycast(float* ex, float* ey, float sx, float sy,
 
     if (dist_sq > r * r) continue; // radius miss
 
-    // Radius hit -- try precise polygon test on object hull
-    uint32_t hull_count;
-    const int8_t* hull_data = _generated_get_collision_hull(od->model_idx[i], &hull_count);
-    if (hull_data) {
-      polygon_t poly;
-      polygon_transform_hull(hull_data, hull_count, od->position_orientation.position_x[i],
-                             od->position_orientation.position_y[i],
-                             od->position_orientation.orientation_x[i],
-                             od->position_orientation.orientation_y[i], &poly);
-
+    // Radius hit -- try precise radial profile test on object
+    const uint8_t* prof = _generated_get_radial_profile(od->model_idx[i]);
+    if (prof) {
       float t_hit;
-      if (polygon_ray_intersect(&poly, sx, sy, sx + dx * t_min, sy + dy * t_min, &t_hit)) {
-        float t_world = t_hit * t_min; // remap to original [0,1] range
+      // Test ray [start, current_end] against this object's radial shape
+      float cur_ex = sx + dx * t_min;
+      float cur_ey = sy + dy * t_min;
+      if (radial_ray_intersect(prof, od->position_orientation.position_x[i],
+                               od->position_orientation.position_y[i],
+                               od->position_orientation.orientation_x[i],
+                               od->position_orientation.orientation_y[i], sx, sy, cur_ex, cur_ey, &t_hit)) {
+        float t_world = t_hit * t_min;
         if (t_world < t_min) {
           t_min = t_world;
           hit_obj_idx = i;
-          hit_part_idx = UINT32_MAX; // hit the object hull, not a part
+          hit_part_idx = UINT32_MAX;
         }
       }
     } else {
-      // No polygon data -- fall back to radius hit
+      // No radial data -- fall back to radius hit
       t_min = t;
       hit_obj_idx = i;
       hit_part_idx = UINT32_MAX;
@@ -86,18 +85,17 @@ static void _beams_raycast(float* ex, float* ey, float sx, float sy,
       uint32_t pi = parts_start + p;
       if (ptd->model_idx[pi] == 0xFFFF) continue;
 
-      uint32_t part_hull_count;
-      const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
-      if (!part_hull) continue;
-
-      polygon_t part_poly;
-      polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
-                             ptd->world_position_orientation.position_y[pi],
-                             ptd->world_position_orientation.orientation_x[pi],
-                             ptd->world_position_orientation.orientation_y[pi], &part_poly);
+      const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+      if (!part_prof) continue;
 
       float t_hit;
-      if (polygon_ray_intersect(&part_poly, sx, sy, sx + dx * t_min, sy + dy * t_min, &t_hit)) {
+      float cur_ex = sx + dx * t_min;
+      float cur_ey = sy + dy * t_min;
+      if (radial_ray_intersect(part_prof, ptd->world_position_orientation.position_x[pi],
+                               ptd->world_position_orientation.position_y[pi],
+                               ptd->world_position_orientation.orientation_x[pi],
+                               ptd->world_position_orientation.orientation_y[pi], sx, sy, cur_ex, cur_ey,
+                               &t_hit)) {
         float t_world = t_hit * t_min;
         if (t_world < t_min) {
           t_min = t_world;

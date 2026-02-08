@@ -23,7 +23,7 @@
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <ClCompile Include="src\collisions\collisions.c" />
-    <ClCompile Include="src\collisions\polygon.c" />
+    <ClCompile Include="src\collisions\radial.c" />
     <ClCompile Include="src\core\vector.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
@@ -97,7 +97,7 @@
     <ClInclude Include="generated\renderer.gen.h" />
     <ClInclude Include="generated\slots.gen.h" />
     <ClInclude Include="src\collisions\collisions.h" />
-    <ClInclude Include="src\collisions\polygon.h" />
+    <ClInclude Include="src\collisions\radial.h" />
     <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\debug\debug_font.h" />
@@ -201,6 +201,7 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <StringPooling>true</StringPooling>
       <PreprocessorDefinitions>NDEBUG</PreprocessorDefinitions>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>

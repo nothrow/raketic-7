@@ -1,7 +1,7 @@
 #include "debug.h"
 #include "debug_font.h"
 #include "entity/entity.h"
-#include "collisions/polygon.h"
+#include "collisions/radial.h"
 #include "../generated/renderer.gen.h"
 #include "platform/platform.h"
 
@@ -151,10 +151,12 @@ void debug_watch_draw(void) {
 static const color_t COLOR_HULL_OBJECT = { 0, 255, 0, 120 };
 static const color_t COLOR_HULL_PART = { 0, 200, 255, 120 };
 
-static void _draw_polygon_outline(const polygon_t* poly, color_t color) {
-  for (uint32_t i = 0; i < poly->count; i++) {
-    uint32_t j = (i + 1) % poly->count;
-    platform_debug_draw_line(poly->x[i], poly->y[i], poly->x[j], poly->y[j], color);
+static void _draw_radial_outline(const uint8_t* profile, float cx, float cy, float ox, float oy, color_t color) {
+  float px[16], py[16];
+  radial_reconstruct(profile, cx, cy, ox, oy, px, py);
+  for (int i = 0; i < 16; i++) {
+    int j = (i + 1) & 15;
+    platform_debug_draw_line(px[i], py[i], px[j], py[j], color);
   }
 }
 
@@ -163,19 +165,16 @@ void debug_draw_collision_hulls(void) {
   struct parts_data* pd = entity_manager_get_parts();
 
   for (uint32_t i = 0; i < od->active; i++) {
-    uint32_t hull_count;
-    const int8_t* hull_data = _generated_get_collision_hull(od->model_idx[i], &hull_count);
-    if (!hull_data)
+    const uint8_t* prof = _generated_get_radial_profile(od->model_idx[i]);
+    if (!prof)
       continue;
 
-    polygon_t poly;
-    polygon_transform_hull(hull_data, hull_count, od->position_orientation.position_x[i],
-                           od->position_orientation.position_y[i], od->position_orientation.orientation_x[i],
-                           od->position_orientation.orientation_y[i], &poly);
+    _draw_radial_outline(prof, od->position_orientation.position_x[i],
+                         od->position_orientation.position_y[i],
+                         od->position_orientation.orientation_x[i],
+                         od->position_orientation.orientation_y[i], COLOR_HULL_OBJECT);
 
-    _draw_polygon_outline(&poly, COLOR_HULL_OBJECT);
-
-    // Also draw parts' hulls
+    // Also draw parts' radial profiles
     uint32_t parts_start = od->parts_start_idx[i];
     uint32_t parts_count = od->parts_count[i];
     for (uint32_t p = 0; p < parts_count; p++) {
@@ -183,18 +182,14 @@ void debug_draw_collision_hulls(void) {
       if (pd->model_idx[pi] == 0xFFFF)
         continue;
 
-      uint32_t part_hull_count;
-      const int8_t* part_hull = _generated_get_collision_hull(pd->model_idx[pi], &part_hull_count);
-      if (!part_hull)
+      const uint8_t* part_prof = _generated_get_radial_profile(pd->model_idx[pi]);
+      if (!part_prof)
         continue;
 
-      polygon_t part_poly;
-      polygon_transform_hull(part_hull, part_hull_count, pd->world_position_orientation.position_x[pi],
-                             pd->world_position_orientation.position_y[pi],
-                             pd->world_position_orientation.orientation_x[pi],
-                             pd->world_position_orientation.orientation_y[pi], &part_poly);
-
-      _draw_polygon_outline(&part_poly, COLOR_HULL_PART);
+      _draw_radial_outline(part_prof, pd->world_position_orientation.position_x[pi],
+                           pd->world_position_orientation.position_y[pi],
+                           pd->world_position_orientation.orientation_x[pi],
+                           pd->world_position_orientation.orientation_y[pi], COLOR_HULL_PART);
     }
   }
 }
