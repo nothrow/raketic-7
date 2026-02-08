@@ -113,6 +113,33 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
             _cWriter!.WriteLine($"  od->health[new_idx] = {entity.Health ?? 1000};");
 
+            // Generate velocity for orbiting entities
+            if (entity is EntityData entityData && entityData.OrbitTargetSpawnId.HasValue)
+            {
+                var target = world.Entities[entityData.OrbitTargetSpawnId.Value] as EntityData;
+                if (target?.Position != null && entityData.Position != null && target.Mass.HasValue)
+                {
+                    double dx = entityData.Position.Value.X - target.Position.Value.X;
+                    double dy = entityData.Position.Value.Y - target.Position.Value.Y;
+                    double r = Math.Sqrt(dx * dx + dy * dy);
+
+                    // Circular orbit velocity: v = sqrt(G * M / r)
+                    // G = 6.67430 (matching engine's GRAVITATIONAL_CONSTANT)
+                    const double G = 6.67430;
+                    double v = Math.Sqrt(G * target.Mass.Value / r);
+
+                    // Perpendicular direction (counterclockwise): rotate (dx,dy) by 90 degrees CCW
+                    double nx = -dy / r;
+                    double ny = dx / r;
+
+                    double vx = nx * v;
+                    double vy = ny * v;
+
+                    _cWriter!.WriteLine($"  od->velocity_x[new_idx] = {vx:0.0#######}f;");
+                    _cWriter!.WriteLine($"  od->velocity_y[new_idx] = {vy:0.0#######}f;");
+                }
+            }
+
             if (entity is EntityWithSlotsData entityWithSlots)
             {
                 var slotCount = entityWithSlots.Slots.Length;

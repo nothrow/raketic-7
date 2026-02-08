@@ -28,6 +28,11 @@ local chunkDefaults = {
   __dataType = "PartData"
 }
 
+local moonDefaults = {
+  type   = "ENTITY_TYPEREF_MOON",
+  __dataType = "EntityData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -61,6 +66,10 @@ end
 
 function Chunk(data)
   return Entity(merge(chunkDefaults, data))
+end
+
+function Moon(data)
+  return Entity(merge(moonDefaults, data))
 end
 
 function deg(degrees)

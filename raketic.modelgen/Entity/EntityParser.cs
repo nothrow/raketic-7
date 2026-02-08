@@ -247,6 +247,8 @@ internal record EntityData : BaseEntityWithModelData
     public int? Health { get; init; }
     public Point? Position { get; init; }
     public float? Rotation { get; init; }
+    public int? OrbitTargetCacheIdx { get; init; }
+    public int? OrbitTargetSpawnId { get; init; }
 
     public static EntityData Empty { get; } = new EntityData();
 
@@ -285,6 +287,12 @@ internal record EntityData : BaseEntityWithModelData
                     throw new InvalidOperationException($"Invalid type for 'health' field in entity definition, expected number but got {type}");
 
                 return this with { Health = (int?)lua.ToInteger(-1) };
+            case "orbit":
+                var orbitPtr = lua.CheckUserData(-1, "BaseEntity");
+                if (orbitPtr == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'orbit' field in entity definition, expected Entity but got {type}");
+                var orbitIdx = System.Runtime.InteropServices.Marshal.ReadInt32(orbitPtr);
+                return this with { OrbitTargetCacheIdx = orbitIdx };
             default:
                 return base.ReadFromTable(key, type, lua);
         }

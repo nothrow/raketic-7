@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="30" height="30" viewBox="-15 -15 30 30" xmlns="http://www.w3.org/2000/svg">
+  <!-- Center marker -->
+  <circle id="center" cx="0" cy="0" r="1" />
+
+  <!-- Main moon outline -->
+  <circle class="hull" cx="0" cy="0" r="10" fill="none" stroke="white" stroke-width="1.5"/>
+
+  <!-- Crater 1 - large -->
+  <circle cx="-3" cy="-4" r="3" fill="none" stroke="white" stroke-width="0.8"/>
+
+  <!-- Crater 2 - medium -->
+  <circle cx="4" cy="2" r="2" fill="none" stroke="white" stroke-width="0.8"/>
+
+  <!-- Crater 3 - small -->
+  <circle cx="-1" cy="5" r="1.5" fill="none" stroke="white" stroke-width="0.8"/>
+</svg>

@@ -40,6 +40,16 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
             var entity = _entityContext.GetEntityData(lua, i);
 
             var resolvedEntity = entity.ResolveModels(_modelContext, _entityContext) with { SpawnId = _entities.Count };
+
+            // Resolve orbit target SpawnId for celestial body orbits
+            if (resolvedEntity is EntityData ed && ed.OrbitTargetCacheIdx.HasValue)
+            {
+                var target = _entityContext[ed.OrbitTargetCacheIdx.Value];
+                if (target.SpawnId == null)
+                    throw new InvalidOperationException("Orbit target must be spawned before the orbiting entity");
+                resolvedEntity = ((EntityData)resolvedEntity) with { OrbitTargetSpawnId = target.SpawnId };
+            }
+
             _entities.Add(
                 resolvedEntity
             );

@@ -3,7 +3,12 @@ local player = spawn(entities.basicShip {
 })
 
 local planet = spawn(entities.planet {
-  position = vec(100, 100),
+  position = vec(500, 300),
+})
+
+local moon1 = spawn(entities.moon {
+  position = vec(500, 500),
+  orbit = planet,
 })
 
 local asteroid1 = spawn(entities.asteroid {
