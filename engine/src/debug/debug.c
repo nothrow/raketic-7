@@ -1,6 +1,7 @@
 #include "debug.h"
 #include "debug_font.h"
 #include "entity/entity.h"
+#include "entity/camera.h"
 #include "collisions/radial.h"
 #include "../generated/renderer.gen.h"
 #include "platform/platform.h"
@@ -8,6 +9,7 @@
 #include <math.h>
 
 static entity_id_t watch_target_ = INVALID_ENTITY;
+static bool debug_overlay_enabled_ = true;
 
 static const color_t COLOR_WHITE = { 255, 255, 255, 255 };
 static const color_t COLOR_GREEN = { 100, 255, 100, 255 };
@@ -53,6 +55,15 @@ static void draw_vector(float ox, float oy, float vx, float vy, float scale, col
 
 void debug_initialize(void) {
   watch_target_ = (entity_id_t)INVALID_ENTITY;
+  debug_overlay_enabled_ = true;
+}
+
+void debug_toggle_overlay(void) {
+  debug_overlay_enabled_ = !debug_overlay_enabled_;
+}
+
+bool debug_is_overlay_enabled(void) {
+  return debug_overlay_enabled_;
 }
 
 void debug_watch_set(entity_id_t id) {
@@ -147,6 +158,86 @@ void debug_watch_draw(void) {
     ty += LINE_HEIGHT;
   }
 }
+
+// --- Trail System ---
+// Positions in objects_data are camera-relative (camera always near origin).
+// We store camera-relative positions AND the camera's absolute position at each
+// sample, so when drawing we can compensate for camera movement:
+//   draw_pos = recorded_pos + (recorded_cam - current_cam)
+
+#define TRAIL_MAX_OBJECTS 16
+#define TRAIL_POINTS 1024
+#define TRAIL_SAMPLE_EVERY 12
+#define TRAIL_PALETTE_COUNT 8
+
+static float trail_x_[TRAIL_MAX_OBJECTS][TRAIL_POINTS];
+static float trail_y_[TRAIL_MAX_OBJECTS][TRAIL_POINTS];
+static double trail_cam_x_[TRAIL_POINTS];
+static double trail_cam_y_[TRAIL_POINTS];
+static uint32_t trail_head_ = 0;
+static uint32_t trail_count_ = 0;
+static uint32_t trail_tick_ = 0;
+
+static const color_t trail_palette_[TRAIL_PALETTE_COUNT] = {
+    {100, 255, 100, 255}, // green
+    {255, 255, 100, 255}, // yellow
+    {100, 200, 255, 255}, // light blue
+    {255, 100, 255, 255}, // magenta
+    {255, 180, 50, 255},  // orange
+    {100, 255, 255, 255}, // cyan
+    {200, 200, 200, 255}, // grey
+    {255, 100, 100, 255}, // red
+};
+
+void debug_trails_draw(void) {
+  struct objects_data* od = entity_manager_get_objects();
+  uint32_t obj_count = od->active < TRAIL_MAX_OBJECTS ? od->active : TRAIL_MAX_OBJECTS;
+
+  double cam_x, cam_y;
+  camera_get_absolute_position(&cam_x, &cam_y);
+
+  // Record current positions at interval
+  if (++trail_tick_ % TRAIL_SAMPLE_EVERY == 0) {
+    trail_cam_x_[trail_head_] = cam_x;
+    trail_cam_y_[trail_head_] = cam_y;
+
+    for (uint32_t i = 0; i < obj_count; i++) {
+      trail_x_[i][trail_head_] = od->position_orientation.position_x[i];
+      trail_y_[i][trail_head_] = od->position_orientation.position_y[i];
+    }
+
+    trail_head_ = (trail_head_ + 1) % TRAIL_POINTS;
+    if (trail_count_ < TRAIL_POINTS)
+      trail_count_++;
+  }
+
+  // Draw trail lines
+  if (trail_count_ < 2)
+    return;
+
+  for (uint32_t i = 0; i < obj_count; i++) {
+    color_t base = trail_palette_[i % TRAIL_PALETTE_COUNT];
+
+    for (uint32_t j = 1; j < trail_count_; j++) {
+      uint32_t p0 = (trail_head_ + TRAIL_POINTS - trail_count_ + j - 1) % TRAIL_POINTS;
+      uint32_t p1 = (trail_head_ + TRAIL_POINTS - trail_count_ + j) % TRAIL_POINTS;
+
+      // Compensate for camera movement since each sample was recorded
+      float x0 = trail_x_[i][p0] + (float)(trail_cam_x_[p0] - cam_x);
+      float y0 = trail_y_[i][p0] + (float)(trail_cam_y_[p0] - cam_y);
+      float x1 = trail_x_[i][p1] + (float)(trail_cam_x_[p1] - cam_x);
+      float y1 = trail_y_[i][p1] + (float)(trail_cam_y_[p1] - cam_y);
+
+      // Fade: older segments more transparent, newer brighter
+      uint8_t alpha = (uint8_t)(20 + (j * 180) / trail_count_);
+      color_t c = {base.r, base.g, base.b, alpha};
+
+      platform_debug_draw_line(x0, y0, x1, y1, c);
+    }
+  }
+}
+
+// --- Collision Hulls ---
 
 static const color_t COLOR_HULL_OBJECT = { 0, 255, 0, 120 };
 static const color_t COLOR_HULL_PART = { 0, 200, 255, 120 };

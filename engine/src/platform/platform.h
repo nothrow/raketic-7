@@ -13,7 +13,8 @@ enum buttons {
 
 enum keys {
   KEY_SPACE = 0x20,
-  KEY_COUNT
+  KEY_TILDE = 0xC0, // VK_OEM_3 (~/` key)
+  KEY_COUNT = 0xC1,
 };
 
 

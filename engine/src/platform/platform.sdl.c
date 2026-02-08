@@ -98,6 +98,7 @@ static void _map_keystates(const Uint8* k)
 {
   platform_clear_memory(input_state_.keyPressed, sizeof(input_state_.keyPressed));
   input_state_.keyPressed[KEY_SPACE] = k[SDL_SCANCODE_SPACE];
+  input_state_.keyPressed[KEY_TILDE] = k[SDL_SCANCODE_GRAVE];
 }
 
 bool platform_loop(void) {

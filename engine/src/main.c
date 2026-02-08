@@ -9,6 +9,7 @@
 
 int run(void) {
   bool running = true;
+  bool tilde_was_down = false;
 
   debug_initialize();
   platform_initialize();
@@ -29,6 +30,14 @@ int run(void) {
     if (!running)
       break;
 
+    // Toggle debug overlay on tilde key press (edge-triggered)
+    {
+      bool tilde_down = platform_input_is_key_down(KEY_TILDE);
+      if (tilde_down && !tilde_was_down)
+        debug_toggle_overlay();
+      tilde_was_down = tilde_down;
+    }
+
     PROFILE_FRAME_START("Physics");
     messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_BROADCAST_FRAME_TICK, 0, 0));
 
@@ -41,8 +50,11 @@ int run(void) {
 
     PROFILE_FRAME_START("Render");
     graphics_engine_draw();
-    debug_draw_collision_hulls();
-    debug_watch_draw();
+    if (debug_is_overlay_enabled()) {
+      debug_draw_collision_hulls();
+      debug_trails_draw();
+      debug_watch_draw();
+    }
     PROFILE_FRAME_END("Render");
 
     platform_renderer_report_stats();
