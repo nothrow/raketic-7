@@ -58,3 +58,6 @@ void platform_renderer_draw_beams(size_t count, const float* start_x, const floa
 
 // Call at end of frame to report draw call stats to profiler
 void platform_renderer_report_stats(void);
+
+// HUD line rendering (non-debug, always available)
+void platform_renderer_draw_line(float x1, float y1, float x2, float y2, color_t color);

@@ -68,7 +68,7 @@ static entity_id_t hud_target_ = INVALID_ENTITY;
 // ============================================================================
 
 static void _line(float x1, float y1, float x2, float y2, color_t c) {
-  platform_debug_draw_line(x1, y1, x2, y2, c);
+  platform_renderer_draw_line(x1, y1, x2, y2, c);
 }
 
 static void _rect(float x, float y, float w, float h, color_t c) {

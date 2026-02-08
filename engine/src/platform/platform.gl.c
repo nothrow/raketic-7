@@ -106,6 +106,14 @@ void platform_renderer_draw_beams(size_t count, const float* start_x, const floa
   glDisable(GL_BLEND);
 }
 
+void platform_renderer_draw_line(float x1, float y1, float x2, float y2, color_t color) {
+  glColor4ub(color.r, color.g, color.b, color.a);
+  glBegin(GL_LINES);
+  glVertex2f(x1, y1);
+  glVertex2f(x2, y2);
+  glEnd();
+}
+
 void platform_renderer_report_stats(void) {
   PROFILE_DRAW_CALLS_RESET();
 }

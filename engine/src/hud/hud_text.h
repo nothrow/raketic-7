@@ -2,9 +2,8 @@
 
 #include "core/core.h"
 
-// Text rendering stub for HUD.
-// Currently delegates to debug_font. Replace the implementation in hud_text.c
-// with your own font renderer.
+// HUD bitmask font: each glyph is a square with edges + diagonals.
+// Case-insensitive letters, digits, and basic punctuation.
 
 void hud_text_draw_string(float x, float y, const char* str, float scale, color_t color);
 void hud_text_draw_int(float x, float y, int value, float scale, color_t color);
