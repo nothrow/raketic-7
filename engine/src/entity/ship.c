@@ -15,11 +15,11 @@
 
 #define GRAVITATIONAL_CONSTANT 6.67430f
 
-#define ORBIT_ENGAGE_DELAY_TICKS 36     // 0.3s of stable conditions before engaging
+#define ORBIT_ENGAGE_DELAY_TICKS 18     // 0.15s of stable conditions before engaging
 #define ORBIT_MIN_DISTANCE_FACTOR 1.5f  // minimum distance from planet surface
-#define ORBIT_MAX_DISTANCE_FACTOR 8.0f  // max detection range (multiples of planet radius)
-#define ORBIT_TANGENTIAL_THRESHOLD 0.4f // max |v_radial| / |v| to consider tangential
-#define ORBIT_CORRECTION_RATE 0.08f     // velocity blend per physics tick
+#define ORBIT_MAX_DISTANCE_FACTOR 3.0f  // max detection range (multiples of planet radius)
+#define ORBIT_TANGENTIAL_THRESHOLD 0.6f // max |v_radial| / |v| to consider tangential
+#define ORBIT_CORRECTION_RATE 0.1f      // velocity blend per physics tick
 
 struct orbit_state {
   uint32_t ship_ordinal;

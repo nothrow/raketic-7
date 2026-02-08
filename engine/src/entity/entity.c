@@ -305,6 +305,7 @@ void entity_manager_pack_objects(void) {
   controller_remap_entity(remap, old_active);
   camera_remap_entity(remap, old_active);
   rocket_remap_objects(remap, old_active);
+  ship_remap_orbit(remap, old_active);
 
   PROFILE_ZONE_END();
 }

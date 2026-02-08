@@ -52,6 +52,7 @@ int run(void) {
     graphics_engine_draw();
     if (debug_is_overlay_enabled()) {
       debug_draw_collision_hulls();
+      debug_draw_orbit_zones();
       debug_trails_draw();
       debug_watch_draw();
     }

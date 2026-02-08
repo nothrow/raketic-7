@@ -265,6 +265,121 @@ void debug_trails_draw(void) {
   }
 }
 
+// --- Orbit Zones ---
+
+#define ORBIT_CIRCLE_SEGMENTS 48
+#define ORBIT_MIN_DISTANCE_FACTOR 1.5f
+#define ORBIT_MAX_DISTANCE_FACTOR 3.0f
+#define ORBIT_GRAVITATIONAL_CONSTANT 6.67430f
+#define ORBIT_TANGENTIAL_THRESHOLD 0.6f
+
+static const color_t COLOR_ORBIT_INNER = { 255, 80, 80, 100 };
+static const color_t COLOR_ORBIT_OUTER = { 80, 160, 255, 80 };
+static const color_t COLOR_ORBIT_DIAG = { 200, 200, 200, 180 };
+static const color_t COLOR_ORBIT_OK = { 100, 255, 100, 200 };
+static const color_t COLOR_ORBIT_FAIL = { 255, 100, 100, 200 };
+
+static void _draw_circle(float cx, float cy, float radius, color_t color, bool dashed) {
+  float step = 2.0f * 3.14159265f / ORBIT_CIRCLE_SEGMENTS;
+  float prev_x = cx + radius;
+  float prev_y = cy;
+
+  for (int i = 1; i <= ORBIT_CIRCLE_SEGMENTS; i++) {
+    float angle = step * i;
+    float next_x = cx + radius * cosf(angle);
+    float next_y = cy + radius * sinf(angle);
+
+    if (!dashed || (i % 2 == 0)) {
+      platform_debug_draw_line(prev_x, prev_y, next_x, next_y, color);
+    }
+
+    prev_x = next_x;
+    prev_y = next_y;
+  }
+}
+
+void debug_draw_orbit_zones(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  for (uint32_t i = 0; i < od->active; i++) {
+    if (od->type[i]._ != ENTITY_TYPE_PLANET) continue;
+
+    float px = od->position_orientation.position_x[i];
+    float py = od->position_orientation.position_y[i];
+    float planet_radius = od->position_orientation.radius[i];
+    float planet_mass = od->mass[i];
+
+    _draw_circle(px, py, planet_radius * ORBIT_MIN_DISTANCE_FACTOR, COLOR_ORBIT_INNER, true);
+    _draw_circle(px, py, planet_radius * ORBIT_MAX_DISTANCE_FACTOR, COLOR_ORBIT_OUTER, true);
+
+    // Find nearest ship and show diagnostic
+    for (uint32_t s = 0; s < od->active; s++) {
+      if (od->type[s]._ != ENTITY_TYPE_SHIP) continue;
+
+      float sx = od->position_orientation.position_x[s];
+      float sy = od->position_orientation.position_y[s];
+      float dx = sx - px;
+      float dy = sy - py;
+      float dist = sqrtf(dx * dx + dy * dy);
+
+      // Only show diagnostics within a reasonable range
+      if (dist > planet_radius * ORBIT_MAX_DISTANCE_FACTOR * 2.0f) continue;
+
+      float svx = od->velocity_x[s];
+      float svy = od->velocity_y[s];
+      float speed = sqrtf(svx * svx + svy * svy);
+
+      float v_orbit = sqrtf(ORBIT_GRAVITATIONAL_CONSTANT * planet_mass / dist);
+      float v_escape = sqrtf(2.0f * ORBIT_GRAVITATIONAL_CONSTANT * planet_mass / dist);
+
+      // Radial/tangential decomposition
+      float rnx = dx / (dist > 0.01f ? dist : 1.0f);
+      float rny = dy / (dist > 0.01f ? dist : 1.0f);
+      float v_radial = svx * rnx + svy * rny;
+      float tang_ratio = speed > 0.01f ? fabsf(v_radial) / speed : 0.0f;
+
+      bool in_zone = dist >= planet_radius * ORBIT_MIN_DISTANCE_FACTOR &&
+                     dist <= planet_radius * ORBIT_MAX_DISTANCE_FACTOR;
+      bool speed_ok = speed <= v_escape;
+      bool tang_ok = tang_ratio <= ORBIT_TANGENTIAL_THRESHOLD;
+      bool thrust_off = od->thrust[s] <= 0.0f;
+
+      // Draw diagnostic to the left of the ship (right side is used by watch_draw)
+      float tx = sx - 200.0f;
+      float ty = sy - 40.0f;
+
+      debug_font_draw_string(tx, ty, "ORBIT", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      ty += LINE_HEIGHT;
+
+      debug_font_draw_string(tx, ty, "dist:", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 40, ty, dist, 0, TEXT_SCALE, in_zone ? COLOR_ORBIT_OK : COLOR_ORBIT_FAIL);
+      debug_font_draw_string(tx + 80, ty, "/", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 90, ty, planet_radius * ORBIT_MIN_DISTANCE_FACTOR, 0, TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_string(tx + 120, ty, "-", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 130, ty, planet_radius * ORBIT_MAX_DISTANCE_FACTOR, 0, TEXT_SCALE, COLOR_ORBIT_DIAG);
+      ty += LINE_HEIGHT;
+
+      debug_font_draw_string(tx, ty, "spd:", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 40, ty, speed, 1, TEXT_SCALE, speed_ok ? COLOR_ORBIT_OK : COLOR_ORBIT_FAIL);
+      debug_font_draw_string(tx + 80, ty, "< esc", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 120, ty, v_escape, 1, TEXT_SCALE, COLOR_ORBIT_DIAG);
+      ty += LINE_HEIGHT;
+
+      debug_font_draw_string(tx, ty, "vorb:", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 40, ty, v_orbit, 1, TEXT_SCALE, COLOR_CYAN);
+      ty += LINE_HEIGHT;
+
+      debug_font_draw_string(tx, ty, "tang:", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_float(tx + 40, ty, tang_ratio, 2, TEXT_SCALE, tang_ok ? COLOR_ORBIT_OK : COLOR_ORBIT_FAIL);
+      debug_font_draw_string(tx + 80, ty, "< 0.6", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      ty += LINE_HEIGHT;
+
+      debug_font_draw_string(tx, ty, "thr:", TEXT_SCALE, COLOR_ORBIT_DIAG);
+      debug_font_draw_string(tx + 40, ty, thrust_off ? "OFF" : "ON", TEXT_SCALE, thrust_off ? COLOR_ORBIT_OK : COLOR_ORBIT_FAIL);
+    }
+  }
+}
+
 // --- Collision Hulls ---
 
 static const color_t COLOR_HULL_OBJECT = { 0, 255, 0, 120 };
