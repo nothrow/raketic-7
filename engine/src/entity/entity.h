@@ -82,3 +82,4 @@ void entity_manager_pack_objects(void);
 
 void entity_manager_dispatch_message(entity_id_t recipient_id, message_t msg);
 entity_id_t entity_manager_resolve_object(uint32_t ordinal);
+entity_id_t entity_manager_resolve_part(uint32_t ordinal);

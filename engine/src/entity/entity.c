@@ -152,6 +152,15 @@ entity_id_t entity_manager_resolve_object(uint32_t ordinal) {
   return ret;
 }
 
+entity_id_t entity_manager_resolve_part(uint32_t ordinal) {
+  struct parts_data* pd = &manager_.parts;
+  _ASSERT(ordinal < pd->active);
+
+  entity_type_t type = pd->type[ordinal];
+  entity_id_t ret = PART_ID_WITH_TYPE(ordinal, type._);
+  return ret;
+}
+
 static void _move_object(struct objects_data* od, uint32_t target, uint32_t source) {
   od->position_orientation.position_x[target] = od->position_orientation.position_x[source];
   od->position_orientation.position_y[target] = od->position_orientation.position_y[source];

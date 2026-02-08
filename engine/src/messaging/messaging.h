@@ -24,7 +24,8 @@ enum message_codes_system {
   MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS = 3,
   MESSAGE_COLLIDE_OBJECT_OBJECT = 4, // data_a = this entity id, data_b = other entity id
   MESSAGE_COLLIDE_OBJECT_PARTICLE = 5, // data_a = this entity id, data_b = particle id
-  MESSAGE_BEAM_HIT = 6 // data_a = target entity_id, data_b = damage
+  MESSAGE_BEAM_HIT = 6, // data_a = target entity_id, data_b = damage
+  MESSAGE_COLLIDE_PART = 7 // data_a = hitting object entity_id, data_b = part entity_id
 };
 
 enum message_codes_ship {

@@ -1,8 +1,10 @@
 #include "collisions.h"
+#include "polygon.h"
 #include "debug/profiler.h"
 #include "entity/entity.h"
 #include "platform/platform.h"
 #include "messaging/messaging.h"
+#include "../generated/renderer.gen.h"
 
 #include <immintrin.h>
 
@@ -167,13 +169,133 @@ void collisions_engine_tick(void) {
   PROFILE_PLOT("collisions_objects", collision_buffer_objects_.active);
   PROFILE_PLOT("collisions_particles", collision_buffer_particles_.active);
 
+  // Narrow-phase: polygon SAT test to filter broad-phase false positives,
+  // then check part-level hits
+  {
+    PROFILE_ZONE("narrow_phase");
+
+    uint32_t write = 0;
+    for (uint32_t i = 0; i < collision_buffer_objects_.active; i++) {
+      uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
+      uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
+
+      uint32_t hull_count_a, hull_count_b;
+      const int8_t* hull_a = _generated_get_collision_hull(od->model_idx[idx_a], &hull_count_a);
+      const int8_t* hull_b = _generated_get_collision_hull(od->model_idx[idx_b], &hull_count_b);
+
+      // If either object has no collision hull, fall back to broad-phase (keep the pair)
+      if (!hull_a || !hull_b) {
+        collision_buffer_objects_.idx[write++] = collision_buffer_objects_.idx[i];
+        continue;
+      }
+
+      polygon_t poly_a, poly_b;
+      polygon_transform_hull(hull_a, hull_count_a, od->position_orientation.position_x[idx_a],
+                             od->position_orientation.position_y[idx_a],
+                             od->position_orientation.orientation_x[idx_a],
+                             od->position_orientation.orientation_y[idx_a], &poly_a);
+      polygon_transform_hull(hull_b, hull_count_b, od->position_orientation.position_x[idx_b],
+                             od->position_orientation.position_y[idx_b],
+                             od->position_orientation.orientation_x[idx_b],
+                             od->position_orientation.orientation_y[idx_b], &poly_b);
+
+      if (polygon_polygon_intersect(&poly_a, &poly_b)) {
+        collision_buffer_objects_.idx[write++] = collision_buffer_objects_.idx[i];
+      }
+    }
+    collision_buffer_objects_.active = write;
+
+    PROFILE_ZONE_END();
+  }
+
+  PROFILE_PLOT("collisions_confirmed", collision_buffer_objects_.active);
+
+  // Dispatch object-object collision messages
   for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
-    entity_id_t idxa = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxa);
-    entity_id_t idxb = entity_manager_resolve_object(collision_buffer_objects_.idx[i].idxb);
+    uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
+    uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
+
+    entity_id_t idxa = entity_manager_resolve_object(idx_a);
+    entity_id_t idxb = entity_manager_resolve_object(idx_b);
 
     message_t collision = CREATE_MESSAGE(MESSAGE_COLLIDE_OBJECT_OBJECT, idxa._, idxb._);
     messaging_send(idxa, collision);
     messaging_send(idxb, collision);
+
+    // Part-level hit detection: check parts of B against hull of A, and vice versa
+    struct parts_data* ptd = entity_manager_get_parts();
+
+    uint32_t hull_count_a, hull_count_b;
+    const int8_t* hull_data_a = _generated_get_collision_hull(od->model_idx[idx_a], &hull_count_a);
+    const int8_t* hull_data_b = _generated_get_collision_hull(od->model_idx[idx_b], &hull_count_b);
+
+    polygon_t poly_a, poly_b;
+    if (hull_data_a)
+      polygon_transform_hull(hull_data_a, hull_count_a, od->position_orientation.position_x[idx_a],
+                             od->position_orientation.position_y[idx_a],
+                             od->position_orientation.orientation_x[idx_a],
+                             od->position_orientation.orientation_y[idx_a], &poly_a);
+    if (hull_data_b)
+      polygon_transform_hull(hull_data_b, hull_count_b, od->position_orientation.position_x[idx_b],
+                             od->position_orientation.position_y[idx_b],
+                             od->position_orientation.orientation_x[idx_b],
+                             od->position_orientation.orientation_y[idx_b], &poly_b);
+
+    // Check parts of B hit by A's hull
+    if (hull_data_a) {
+      uint32_t parts_start_b = od->parts_start_idx[idx_b];
+      uint32_t parts_count_b = od->parts_count[idx_b];
+      for (uint32_t p = 0; p < parts_count_b; p++) {
+        uint32_t pi = parts_start_b + p;
+        if (ptd->model_idx[pi] == 0xFFFF)
+          continue;
+
+        uint32_t part_hull_count;
+        const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
+        if (!part_hull)
+          continue;
+
+        polygon_t part_poly;
+        polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
+                               ptd->world_position_orientation.position_y[pi],
+                               ptd->world_position_orientation.orientation_x[pi],
+                               ptd->world_position_orientation.orientation_y[pi], &part_poly);
+
+        if (polygon_polygon_intersect(&poly_a, &part_poly)) {
+          entity_id_t part_id = entity_manager_resolve_part(pi);
+          message_t part_msg = CREATE_MESSAGE(MESSAGE_COLLIDE_PART, idxa._, part_id._);
+          messaging_send(part_id, part_msg);
+        }
+      }
+    }
+
+    // Check parts of A hit by B's hull
+    if (hull_data_b) {
+      uint32_t parts_start_a = od->parts_start_idx[idx_a];
+      uint32_t parts_count_a = od->parts_count[idx_a];
+      for (uint32_t p = 0; p < parts_count_a; p++) {
+        uint32_t pi = parts_start_a + p;
+        if (ptd->model_idx[pi] == 0xFFFF)
+          continue;
+
+        uint32_t part_hull_count;
+        const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
+        if (!part_hull)
+          continue;
+
+        polygon_t part_poly;
+        polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
+                               ptd->world_position_orientation.position_y[pi],
+                               ptd->world_position_orientation.orientation_x[pi],
+                               ptd->world_position_orientation.orientation_y[pi], &part_poly);
+
+        if (polygon_polygon_intersect(&poly_b, &part_poly)) {
+          entity_id_t part_id = entity_manager_resolve_part(pi);
+          message_t part_msg = CREATE_MESSAGE(MESSAGE_COLLIDE_PART, idxb._, part_id._);
+          messaging_send(part_id, part_msg);
+        }
+      }
+    }
   }
 
   for (size_t i = 0; i < collision_buffer_particles_.active; i++) {

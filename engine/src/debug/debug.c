@@ -1,6 +1,8 @@
 #include "debug.h"
 #include "debug_font.h"
 #include "entity/entity.h"
+#include "collisions/polygon.h"
+#include "renderer.gen.h"
 #include "platform/platform.h"
 
 #include <math.h>

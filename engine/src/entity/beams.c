@@ -1,6 +1,8 @@
 #include "platform/platform.h"
 #include "beams.h"
 #include "messaging/messaging.h"
+#include "collisions/polygon.h"
+#include "../generated/renderer.gen.h"
 
 #define LASER_DAMAGE 5
 
@@ -17,10 +19,12 @@ static void _beams_data_initialize(void) {
   beams_.capacity = MAX_BEAMS;
 }
 
-// Raycast: find nearest object hit by beam, shorten beam, send damage message
+// Raycast: find nearest object/part hit by beam, shorten beam, send damage messages.
+// Uses radius for quick culling, then polygon-precise ray intersection.
 static void _beams_raycast(float* ex, float* ey, float sx, float sy,
                            uint32_t ignore_object_idx) {
   struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* ptd = entity_manager_get_parts();
 
   float dx = *ex - sx;
   float dy = *ey - sy;
@@ -28,40 +32,98 @@ static void _beams_raycast(float* ex, float* ey, float sx, float sy,
   if (dir_dot < 0.001f) return; // degenerate beam
 
   float t_min = 1.0f;
-  uint32_t hit_idx = UINT32_MAX;
+  uint32_t hit_obj_idx = UINT32_MAX;
+  uint32_t hit_part_idx = UINT32_MAX;
 
   for (uint32_t i = 0; i < od->active; i++) {
     if (i == ignore_object_idx) continue;
 
+    // Quick radius culling
     float cx = od->position_orientation.position_x[i] - sx;
     float cy = od->position_orientation.position_y[i] - sy;
     float r = od->position_orientation.radius[i];
 
-    // closest t on segment to circle center
     float t = (cx * dx + cy * dy) / dir_dot;
     if (t < 0.0f) t = 0.0f;
-    if (t > t_min) continue; // already have a closer hit
+    if (t > t_min) continue;
 
-    // distance squared from P(t) to center
     float px = t * dx - cx;
     float py = t * dy - cy;
     float dist_sq = px * px + py * py;
 
-    if (dist_sq <= r * r) {
+    if (dist_sq > r * r) continue; // radius miss
+
+    // Radius hit -- try precise polygon test on object hull
+    uint32_t hull_count;
+    const int8_t* hull_data = _generated_get_collision_hull(od->model_idx[i], &hull_count);
+    if (hull_data) {
+      polygon_t poly;
+      polygon_transform_hull(hull_data, hull_count, od->position_orientation.position_x[i],
+                             od->position_orientation.position_y[i],
+                             od->position_orientation.orientation_x[i],
+                             od->position_orientation.orientation_y[i], &poly);
+
+      float t_hit;
+      if (polygon_ray_intersect(&poly, sx, sy, sx + dx * t_min, sy + dy * t_min, &t_hit)) {
+        float t_world = t_hit * t_min; // remap to original [0,1] range
+        if (t_world < t_min) {
+          t_min = t_world;
+          hit_obj_idx = i;
+          hit_part_idx = UINT32_MAX; // hit the object hull, not a part
+        }
+      }
+    } else {
+      // No polygon data -- fall back to radius hit
       t_min = t;
-      hit_idx = i;
+      hit_obj_idx = i;
+      hit_part_idx = UINT32_MAX;
+    }
+
+    // Also check this object's parts
+    uint32_t parts_start = od->parts_start_idx[i];
+    uint32_t parts_count = od->parts_count[i];
+    for (uint32_t p = 0; p < parts_count; p++) {
+      uint32_t pi = parts_start + p;
+      if (ptd->model_idx[pi] == 0xFFFF) continue;
+
+      uint32_t part_hull_count;
+      const int8_t* part_hull = _generated_get_collision_hull(ptd->model_idx[pi], &part_hull_count);
+      if (!part_hull) continue;
+
+      polygon_t part_poly;
+      polygon_transform_hull(part_hull, part_hull_count, ptd->world_position_orientation.position_x[pi],
+                             ptd->world_position_orientation.position_y[pi],
+                             ptd->world_position_orientation.orientation_x[pi],
+                             ptd->world_position_orientation.orientation_y[pi], &part_poly);
+
+      float t_hit;
+      if (polygon_ray_intersect(&part_poly, sx, sy, sx + dx * t_min, sy + dy * t_min, &t_hit)) {
+        float t_world = t_hit * t_min;
+        if (t_world < t_min) {
+          t_min = t_world;
+          hit_obj_idx = i;
+          hit_part_idx = pi;
+        }
+      }
     }
   }
 
-  if (hit_idx != UINT32_MAX) {
-    // shorten beam to hit point
+  if (hit_obj_idx != UINT32_MAX) {
+    // Shorten beam to nearest hit
     *ex = sx + dx * t_min;
     *ey = sy + dy * t_min;
 
-    // send damage message to hit entity
-    entity_id_t target = entity_manager_resolve_object(hit_idx);
+    // Send damage to the object
+    entity_id_t target = entity_manager_resolve_object(hit_obj_idx);
     message_t msg = CREATE_MESSAGE(MESSAGE_BEAM_HIT, target._, LASER_DAMAGE);
     messaging_send(target, msg);
+
+    // If a specific part was hit, also notify the part
+    if (hit_part_idx != UINT32_MAX) {
+      entity_id_t part_id = entity_manager_resolve_part(hit_part_idx);
+      message_t part_msg = CREATE_MESSAGE(MESSAGE_COLLIDE_PART, target._, part_id._);
+      messaging_send(part_id, part_msg);
+    }
   }
 }
 
