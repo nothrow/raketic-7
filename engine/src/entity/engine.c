@@ -101,7 +101,7 @@ static void _engine_tick() {
 static void _engine_part_dispatch(entity_id_t id, message_t msg) {
   (void)id;
   switch (msg.message) {
-  case MESSAGE_SHIP_ENGINES_THRUST:
+  case MESSAGE_ENGINES_THRUST:
     if (msg.data_a > 0) {
       // thrust on
       _engine_set_thrust_percentage(id, (float)(msg.data_a) / 100.0f);

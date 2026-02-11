@@ -2,7 +2,6 @@ using raketic.modelgen.Entity;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
 using System.Numerics;
-using System.Reflection;
 
 namespace raketic.modelgen.Writer;
 
@@ -37,6 +36,7 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/camera.h""
 #include ""entity/engine.h""
 #include ""entity/weapon.h""
+#include ""entity/ai.h""
 #include ""debug/debug.h""
 #include ""hud/hud.h""
 #include ""debug/profiler.h""
@@ -131,6 +131,15 @@ void _generated_load_map_data(uint16_t index);
                 _cWriter!.WriteLine($"    od->velocity_x[new_idx] = -_rny * _v;");
                 _cWriter!.WriteLine($"    od->velocity_y[new_idx] = _rnx * _v;");
                 _cWriter!.WriteLine($"  }}");
+            }
+
+            // Engage AI orbit keeper for satellites with orbit targets
+            if (entity is EntityData ed2 && ed2.OrbitTargetSpawnId.HasValue && entity.Type == "ENTITY_TYPEREF_SATELLITE")
+            {
+                var targetIdx2 = ed2.OrbitTargetSpawnId.Value;
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"  // Engage AI orbit keeper for satellite");
+                _cWriter!.WriteLine($"  ai_orbit_engage(OBJECT_ID_WITH_TYPE(new_idx, {entity!.Type}._), {targetIdx2});");
             }
 
             if (entity is EntityWithSlotsData entityWithSlots)

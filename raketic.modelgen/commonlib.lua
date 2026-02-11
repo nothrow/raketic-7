@@ -33,6 +33,11 @@ local moonDefaults = {
   __dataType = "EntityData"
 }
 
+local satelliteDefaults = {
+  type   = "ENTITY_TYPEREF_SATELLITE",
+  __dataType = "EntityWithSlotsData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -70,6 +75,10 @@ end
 
 function Moon(data)
   return Entity(merge(moonDefaults, data))
+end
+
+function Satellite(data)
+  return Entity(merge(satelliteDefaults, data))
 end
 
 function deg(degrees)

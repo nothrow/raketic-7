@@ -6,6 +6,8 @@
 #include "particles.h"
 #include "../generated/renderer.gen.h"
 
+#include <math.h>
+
 static void _weapon_fire_laser(uint32_t part_idx, struct weapon_data* wd, struct parts_data* pd, struct objects_data* od) {
   (wd);
 
@@ -23,6 +25,30 @@ static void _weapon_fire_laser(uint32_t part_idx, struct weapon_data* wd, struct
   float beam_length = 500.0f;
   float end_x = wx + ox * beam_length;
   float end_y = wy + oy * beam_length;
+  
+  // create the beam (lasts for a short time)
+  uint16_t beam_lifetime = 12; // ~0.1 seconds at 120Hz
+  beams_create(wx, wy, end_x, end_y, beam_lifetime, parent_idx);
+}
+
+static void _weapon_fire_turret_laser(uint32_t part_idx, struct weapon_data* wd, struct parts_data* pd, struct objects_data* od) {
+  (void)od;
+  uint32_t parent_idx = GET_ORDINAL(pd->parent_id[part_idx]);
+  
+  // get weapon world position
+  float wx = pd->world_position_orientation.position_x[part_idx];
+  float wy = pd->world_position_orientation.position_y[part_idx];
+  
+  // direction from weapon to target
+  float dx = wd->target_x - wx;
+  float dy = wd->target_y - wy;
+  float dist = sqrtf(dx * dx + dy * dy);
+  
+  if (dist < 1.0f || dist > wd->max_range) return; // out of range or degenerate
+  
+  // beam end point: at target position (clamped to max range)
+  float end_x = wd->target_x;
+  float end_y = wd->target_y;
   
   // create the beam (lasts for a short time)
   uint16_t beam_lifetime = 12; // ~0.1 seconds at 120Hz
@@ -103,7 +129,34 @@ static void _weapon_tick(void) {
           case WEAPON_TYPE_ROCKET:
             _weapon_fire_rocket((uint32_t)i, wd, pd, od);
             break;
+          case WEAPON_TYPE_TURRET_LASER:
+            _weapon_fire_turret_laser((uint32_t)i, wd, pd, od);
+            break;
         }
+      }
+    }
+  }
+}
+
+static void _weapon_set_target(entity_id_t id, float tx, float ty) {
+  struct parts_data* pd = entity_manager_get_parts();
+  
+  if (IS_PART(id)) {
+    uint32_t idx = GET_ORDINAL(id);
+    struct weapon_data* wd = (struct weapon_data*)(pd->data[idx].data);
+    wd->target_x = tx;
+    wd->target_y = ty;
+  } else {
+    // all weapon parts of an entity
+    uint32_t object_idx = GET_ORDINAL(id);
+    struct objects_data* od = entity_manager_get_objects();
+    
+    for (uint32_t i = od->parts_start_idx[object_idx];
+         i < od->parts_start_idx[object_idx] + od->parts_count[object_idx]; ++i) {
+      if (pd->type[i]._ == ENTITY_TYPE_PART_WEAPON) {
+        struct weapon_data* wd = (struct weapon_data*)(pd->data[i].data);
+        wd->target_x = tx;
+        wd->target_y = ty;
       }
     }
   }
@@ -113,6 +166,10 @@ static void _weapon_part_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
     case MESSAGE_WEAPON_FIRE:
       _weapon_set_firing(id, msg.data_a > 0);
+      break;
+    
+    case MESSAGE_WEAPON_SET_TARGET:
+      _weapon_set_target(id, _i2f(msg.data_a), _i2f(msg.data_b));
       break;
       
     case MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS:

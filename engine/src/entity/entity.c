@@ -4,7 +4,7 @@
 #include "../generated/renderer.gen.h"
 
 #include "ship.h"
-#include "autopilot.h"
+#include "ai.h"
 #include "hud/hud.h"
 #include "controller.h"
 #include "engine.h"
@@ -17,6 +17,7 @@
 #include "camera.h"
 #include "planet.h"
 #include "moon.h"
+#include "satellite.h"
 #include "debug/debug.h"
 #include "debug/profiler.h"
 
@@ -96,7 +97,7 @@ static void _particles_data_initialize(struct particles_data* data) {
 static void _entity_manager_types_initialize(void) {
   particles_entity_initialize();
   ship_entity_initialize();
-  autopilot_initialize();
+  ai_initialize();
   controller_entity_initialize();
   engine_part_entity_initialize();
   weapon_part_entity_initialize();
@@ -107,6 +108,7 @@ static void _entity_manager_types_initialize(void) {
   asteroid_entity_initialize();
   chunk_part_entity_initialize();
   moon_entity_initialize();
+  satellite_entity_initialize();
 }
 
 void entity_manager_initialize(void) {
@@ -319,7 +321,7 @@ void entity_manager_pack_objects(void) {
   controller_remap_entity(remap, old_active);
   camera_remap_entity(remap, old_active);
   rocket_remap_objects(remap, old_active);
-  autopilot_remap(remap, old_active);
+  ai_remap(remap, old_active);
   hud_remap_entity(remap, old_active);
 
   PROFILE_ZONE_END();

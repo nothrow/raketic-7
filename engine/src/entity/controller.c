@@ -3,22 +3,22 @@
 
 static entity_id_t _controlled_entity = INVALID_ENTITY;
 static int _last_rot = 0;
-static bool _autopilot_active = false;
+static bool _ai_active = false;
 
 static void _process_mouse() {
   const struct input_state* input = platform_get_input_state();
 
   if (input->mdx != 0) {
-    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_BY, -input->mdx, 0));
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_ROTATE_BY, -input->mdx, 0));
   }
 
   if (platform_input_is_button_down(BUTTON_RIGHT)) {
     messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_ENGINE),
-                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 100, 0));
+                   CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 100, 0));
     // thrust on
   } else {
     messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_ENGINE),
-                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
+                   CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 0, 0));
     // thrust off
   }
   
@@ -39,15 +39,15 @@ static void _process_keyboard() {
     float velocity[2];
     entity_manager_get_vectors(_controlled_entity, NULL, velocity);
 
-    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_ROTATE_TO, _f2i(-velocity[0]), _f2i(-velocity[1])));
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_ROTATE_TO, _f2i(-velocity[0]), _f2i(-velocity[1])));
   }
 }
 
-static void _process_autopilot_cancel() {
-  // Cancel autopilot on thrust or SPACE
+static void _process_ai_cancel() {
+  // Cancel AI orbit on thrust or SPACE
   if (platform_input_is_button_down(BUTTON_RIGHT) || platform_input_is_key_down(KEY_SPACE)) {
-    _autopilot_active = false;
-    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
+    _ai_active = false;
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_AI_ORBIT_DISENGAGE, 0, 0));
   }
 }
 
@@ -57,19 +57,19 @@ static void _controller_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
   case MESSAGE_BROADCAST_FRAME_TICK:
     if (is_valid_id(_controlled_entity)) {
-      if (_autopilot_active) {
-        _process_autopilot_cancel();
+      if (_ai_active) {
+        _process_ai_cancel();
       } else {
         _process_mouse();
         _process_keyboard();
       }
     }
     break;
-  case MESSAGE_SHIP_AUTOPILOT_ENGAGE:
-    _autopilot_active = true;
+  case MESSAGE_AI_ORBIT_ENGAGE:
+    _ai_active = true;
     break;
-  case MESSAGE_SHIP_AUTOPILOT_DISENGAGE:
-    _autopilot_active = false;
+  case MESSAGE_AI_ORBIT_DISENGAGE:
+    _ai_active = false;
     break;
   }
 }

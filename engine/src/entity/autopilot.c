@@ -70,10 +70,10 @@ static void _slot_disengage(int idx) {
   // Engines off
   entity_id_t ship_id = OBJECT_ID_WITH_TYPE(s->ship_ordinal, ENTITY_TYPE_SHIP);
   messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
-                 CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
+                 CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 0, 0));
 
   s->active = false;
-  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
+  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_AI_ORBIT_DISENGAGE, 0, 0));
 }
 
 // Compute orbital target velocity for a ship around a planet.
@@ -171,9 +171,9 @@ static void _slot_tick(struct autopilot_slot* s) {
   if (too_close || impact_imminent) {
     // EMERGENCY: fire radially OUTWARD at full thrust
     s->phase = AP_CORRECT;
-    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, rnx, rny));
+    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, rnx, rny));
     messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
-                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 100, 0));
+                   CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 100, 0));
     return;
   }
 
@@ -204,22 +204,22 @@ static void _slot_tick(struct autopilot_slot* s) {
       s->timer = COAST_EVAL_INTERVAL;
 
       messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
-                     CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, 0, 0));
-      messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, tx, ty));
+                     CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 0, 0));
+      messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, tx, ty));
       break;
     }
 
     // Proportional correction: rotate toward delta-v, fire engines
     float dvnx = dvx / dv;
     float dvny = dvy / dv;
-    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, dvnx, dvny));
+    messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, dvnx, dvny));
 
     int thrust_pct = (int)(dv * THRUST_GAIN);
     if (thrust_pct < 1) thrust_pct = 1;
     if (thrust_pct > 100) thrust_pct = 100;
 
     messaging_send(PARTS_OF_TYPE(ship_id, PART_TYPEREF_ENGINE),
-                   CREATE_MESSAGE(MESSAGE_SHIP_ENGINES_THRUST, thrust_pct, 0));
+                   CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, thrust_pct, 0));
     break;
   }
 
@@ -229,7 +229,7 @@ static void _slot_tick(struct autopilot_slot* s) {
     // Periodically orient along tangent
     if (s->timer % COAST_ORIENT_INTERVAL == 0) {
       _compute_orbit_dv(od, s->ship_ordinal, s->planet_ordinal, &dvx, &dvy, &tx, &ty);
-      messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_SHIP_ROTATE_TO, tx, ty));
+      messaging_send(ship_id, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, tx, ty));
     }
 
     // Periodic evaluation
@@ -268,7 +268,7 @@ void autopilot_orbit_engage(entity_id_t ship_id, uint32_t planet_ordinal) {
   _slots[idx].phase = AP_CORRECT;
   _slots[idx].timer = 0;
 
-  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_ENGAGE, 0, 0));
+  messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_AI_ORBIT_ENGAGE, 0, 0));
 }
 
 void autopilot_orbit_disengage(entity_id_t ship_id) {
@@ -316,7 +316,7 @@ void autopilot_remap(uint32_t* remap, uint32_t old_active) {
       // Don't call _slot_disengage here — ordinals are stale after pack,
       // sending messages with them would target wrong entities.
       _slots[i].active = false;
-      messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_SHIP_AUTOPILOT_DISENGAGE, 0, 0));
+      messaging_send(RECIPIENT_ID_BROADCAST, CREATE_MESSAGE(MESSAGE_AI_ORBIT_DISENGAGE, 0, 0));
     }
   }
 }

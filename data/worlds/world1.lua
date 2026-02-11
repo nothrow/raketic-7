@@ -11,6 +11,11 @@ local moon1 = spawn(entities.moon {
   orbit = planet,
 })
 
+local sat1 = spawn(entities.satellite {
+  position = vec(500, 420),
+  orbit = planet,
+})
+
 local asteroid1 = spawn(entities.asteroid {
   position = vec(200, 0),
 })

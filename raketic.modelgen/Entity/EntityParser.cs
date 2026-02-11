@@ -139,6 +139,7 @@ internal record WeaponPartData : PartData
     public float? RocketThrust { get; init; }
     public int? RocketFuelTicks { get; init; }
     public int? RocketLifetimeTicks { get; init; }
+    public float? MaxRange { get; init; }
 
     public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
     {
@@ -180,6 +181,10 @@ internal record WeaponPartData : PartData
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'rocketLifetimeTicks' field in weapon part definition, expected number but got {type}");
                 return this with { RocketLifetimeTicks = (int?)lua.ToIntegerX(-1) };
+            case "maxRange":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'maxRange' field in weapon part definition, expected number but got {type}");
+                return this with { MaxRange = (float?)lua.ToNumberX(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }
@@ -204,6 +209,7 @@ internal record WeaponPartData : PartData
         {
             "laser" => "WEAPON_TYPE_LASER",
             "rocket" => "WEAPON_TYPE_ROCKET",
+            "turretLaser" => "WEAPON_TYPE_TURRET_LASER",
             _ => throw new InvalidOperationException($"Unknown weapon type: {WeaponType}")
         };
         w.WriteLine($"  ((struct weapon_data*)({dataref}))->weapon_type = {weaponTypeCode};");
@@ -221,6 +227,7 @@ internal record WeaponPartData : PartData
         w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_thrust = {RocketThrust ?? 0.0f:0.0#######}f;");
         w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_fuel_ticks = {RocketFuelTicks ?? 0};");
         w.WriteLine($"  ((struct weapon_data*)({dataref}))->rocket_lifetime_ticks = {RocketLifetimeTicks ?? 0};");
+        w.WriteLine($"  ((struct weapon_data*)({dataref}))->max_range = {MaxRange ?? 300.0f:0.0#######}f;");
     }
 
     public override BaseEntityWithModelData ResolveModels(ModelContext modelContext, EntityContext entityContext)

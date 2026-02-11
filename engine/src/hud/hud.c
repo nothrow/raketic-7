@@ -1,10 +1,11 @@
 #include "hud.h"
 #include "hud_text.h"
 #include "entity/entity.h"
-#include "entity/autopilot.h"
+#include "entity/ai.h"
 #include "platform/platform.h"
+#include "platform/math.h"
 
-#include <math.h>
+#include <math.h>  // sqrtf
 
 // ============================================================================
 // Layout
@@ -20,11 +21,9 @@
 #define HUD_GAUGE_RADIUS     34.0f
 #define HUD_GAUGE_CY_OFFSET  42.0f
 
-#define PI 3.14159265f
-
 // Arc spans 270 degrees: lower-left (135 deg) clockwise to lower-right (45 deg)
-#define ARC_START (3.0f * PI / 4.0f)
-#define ARC_SWEEP (3.0f * PI / 2.0f)
+#define ARC_START_DEG  135
+#define ARC_SWEEP_DEG  270
 
 #define ARC_SEGMENTS   40
 #define TICK_COUNT     10
@@ -85,14 +84,13 @@ static void _corner_accents(float x, float y, float w, float h, float a, color_t
   _line(x + w - a, y + h, x + w, y + h - a, c);
 }
 
-static void _arc(float cx, float cy, float r, float start, float sweep, int segs, color_t c) {
-  float step = sweep / (float)segs;
-  float px = cx + r * cosf(start);
-  float py = cy + r * sinf(start);
+static void _arc(float cx, float cy, float r, int start_deg, int sweep_deg, int segs, color_t c) {
+  float px = cx + r * lut_cos(start_deg);
+  float py = cy + r * lut_sin(start_deg);
   for (int i = 1; i <= segs; i++) {
-    float a = start + step * (float)i;
-    float nx = cx + r * cosf(a);
-    float ny = cy + r * sinf(a);
+    int a = start_deg + sweep_deg * i / segs;
+    float nx = cx + r * lut_cos(a);
+    float ny = cy + r * lut_sin(a);
     _line(px, py, nx, ny, c);
     px = nx;
     py = ny;
@@ -100,18 +98,17 @@ static void _arc(float cx, float cy, float r, float start, float sweep, int segs
 }
 
 static void _ticks(float cx, float cy, float r, float len, int count,
-                   float start, float sweep, color_t c) {
+                   int start_deg, int sweep_deg, color_t c) {
   for (int i = 0; i <= count; i++) {
-    float t = (float)i / (float)count;
-    float a = start + sweep * t;
-    float ca = cosf(a), sa = sinf(a);
+    int a = start_deg + sweep_deg * i / count;
+    float ca = lut_cos(a), sa = lut_sin(a);
     _line(cx + (r - len) * ca, cy + (r - len) * sa,
           cx + r * ca, cy + r * sa, c);
   }
 }
 
-static void _needle(float cx, float cy, float len, float angle, color_t c) {
-  _line(cx, cy, cx + len * cosf(angle), cy + len * sinf(angle), c);
+static void _needle(float cx, float cy, float len, int angle_deg, color_t c) {
+  _line(cx, cy, cx + len * lut_cos(angle_deg), cy + len * lut_sin(angle_deg), c);
   // Pivot dot
   _line(cx - 1, cy, cx + 1, cy, c);
   _line(cx, cy - 1, cx, cy + 1, c);
@@ -165,10 +162,10 @@ static void _draw_gauge(float px, float py, float pw,
   _corner_accents(px, py, pw, HUD_GAUGE_PANEL_H, 5.0f, COL_ACCENT);
 
   // Arc background
-  _arc(cx, cy, HUD_GAUGE_RADIUS, ARC_START, ARC_SWEEP, ARC_SEGMENTS, COL_ARC);
+  _arc(cx, cy, HUD_GAUGE_RADIUS, ARC_START_DEG, ARC_SWEEP_DEG, ARC_SEGMENTS, COL_ARC);
 
   // Tick marks
-  _ticks(cx, cy, HUD_GAUGE_RADIUS, TICK_LEN, TICK_COUNT, ARC_START, ARC_SWEEP, COL_TICK);
+  _ticks(cx, cy, HUD_GAUGE_RADIUS, TICK_LEN, TICK_COUNT, ARC_START_DEG, ARC_SWEEP_DEG, COL_TICK);
 
   // Clamp fraction
   float frac = value / max_val;
@@ -180,11 +177,12 @@ static void _draw_gauge(float px, float py, float pw,
   // Filled arc showing current value
   if (frac > 0.01f) {
     int segs = (int)(ARC_SEGMENTS * frac) + 1;
-    _arc(cx, cy, HUD_GAUGE_RADIUS - 2.0f, ARC_START, ARC_SWEEP * frac, segs, val_col);
+    int fill_sweep = (int)(ARC_SWEEP_DEG * frac);
+    _arc(cx, cy, HUD_GAUGE_RADIUS - 2.0f, ARC_START_DEG, fill_sweep, segs, val_col);
   }
 
   // Needle
-  float needle_a = ARC_START + ARC_SWEEP * frac;
+  int needle_a = ARC_START_DEG + (int)(ARC_SWEEP_DEG * frac);
   _needle(cx, cy, NEEDLE_LEN, needle_a, COL_NEEDLE);
 
   // Numeric readout
@@ -315,12 +313,12 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
 #define DASHED_SEGMENTS 24
 
 static void _draw_dashed_circle(float cx, float cy, float r, color_t c) {
-  float step = 2.0f * PI / DASHED_SEGMENTS;
+  int step = 360 / DASHED_SEGMENTS;  // 15 degrees per segment
   for (int i = 0; i < DASHED_SEGMENTS; i += 2) {
-    float a0 = step * (float)i;
-    float a1 = step * (float)(i + 1);
-    _line(cx + r * cosf(a0), cy + r * sinf(a0),
-          cx + r * cosf(a1), cy + r * sinf(a1), c);
+    int a0 = step * i;
+    int a1 = step * (i + 1);
+    _line(cx + r * lut_cos(a0), cy + r * lut_sin(a0),
+          cx + r * lut_cos(a1), cy + r * lut_sin(a1), c);
   }
 }
 
@@ -335,10 +333,10 @@ static void _draw_condition(float x, float y, const char* label, bool ok) {
 }
 
 // ============================================================================
-// Autopilot panel
+// Navigation / AI panel
 // ============================================================================
 
-static void _draw_autopilot(float px, float py, float ph, float pw,
+static void _draw_nav_panel(float px, float py, float ph, float pw,
                             entity_id_t ship_id) {
   float cx = px + pw * 0.5f;
   float lx = px + 8.0f;
@@ -390,12 +388,12 @@ static void _draw_autopilot(float px, float py, float ph, float pw,
   float map_scale = map_r / world_extent;
 
   // Map boundary circle (dim)
-  _arc(map_cx, map_cy, map_r, 0, 2.0f * PI, 32, COL_ARC);
+  _arc(map_cx, map_cy, map_r, 0, 360, 32, COL_ARC);
 
   // Planet circle (solid, proportional)
   float planet_r_px = prox.body_radius * map_scale;
   if (planet_r_px < 2.0f) planet_r_px = 2.0f;
-  _arc(map_cx, map_cy, planet_r_px, 0, 2.0f * PI, 16, COL_CYAN);
+  _arc(map_cx, map_cy, planet_r_px, 0, 360, 16, COL_CYAN);
 
   // Inner orbit ring (dashed)
   float inner_r_px = prox.zone_inner * map_scale;
@@ -446,9 +444,9 @@ static void _draw_autopilot(float px, float py, float ph, float pw,
   _line(px + 6.0f, ty, px + pw - 6.0f, ty, COL_ARC);
   ty += 4.0f;
 
-  // Check autopilot state
-  autopilot_status_t ap;
-  autopilot_query_status(ship_id, &ap);
+  // Check AI orbit state
+  ai_status_t ap;
+  ai_query_status(ship_id, &ap);
 
   if (ap.active) {
     // AP active: show phase + dV
@@ -529,7 +527,7 @@ void hud_draw(void) {
   float health_x = ap_x + HUD_AP_PANEL_W + HUD_PANEL_GAP;
 
   _draw_gauge(speed_x, gauge_y, HUD_GAUGE_PANEL_W, speed, SPEED_MAX, "SPEED", _color_speed);
-  _draw_autopilot(ap_x, ap_y, HUD_AP_PANEL_H, HUD_AP_PANEL_W, hud_target_);
+  _draw_nav_panel(ap_x, ap_y, HUD_AP_PANEL_H, HUD_AP_PANEL_W, hud_target_);
   _draw_gauge(health_x, gauge_y, HUD_GAUGE_PANEL_W, health, HEALTH_MAX, "HEALTH", _color_health);
 }
 

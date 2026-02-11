@@ -6,7 +6,7 @@
 #include "entity.h"
 #include "engine.h"
 #include "ship.h"
-#include "autopilot.h"
+#include "ai.h"
 #include "explosion.h"
 
 #include <math.h>
@@ -99,7 +99,7 @@ static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_
 
   if (_detect.counter >= ORBIT_ENGAGE_DELAY_TICKS) {
     entity_id_t ship_id = OBJECT_ID_WITH_TYPE(ship_idx, ENTITY_TYPE_SHIP);
-    autopilot_orbit_engage(ship_id, best_planet);
+    ai_orbit_engage(ship_id, best_planet);
     _detect_reset();
   }
 }
@@ -145,7 +145,7 @@ static void _ship_apply_thrust_from_engines(void) {
 
     entity_id_t ship_id = OBJECT_ID_WITH_TYPE((uint32_t)i, ENTITY_TYPE_SHIP);
 
-    if (autopilot_orbit_is_active(ship_id)) continue;
+    if (ai_orbit_is_active(ship_id)) continue;
 
     if (od->thrust[i] > 0.0f) {
       // Player is thrusting — reset detection if tracking this ship
@@ -158,7 +158,7 @@ static void _ship_apply_thrust_from_engines(void) {
   }
 
   // Tick autopilot for all active slots
-  autopilot_tick();
+  ai_tick();
 }
 
 static void _ship_rotate_to(entity_id_t id, float x, float y) {
@@ -197,7 +197,7 @@ static void _ship_handle_collision(entity_id_t id, const message_t* msg) {
 
 static void _ship_dispatch(entity_id_t id, message_t msg) {
   switch (msg.message) {
-  case MESSAGE_SHIP_ROTATE_BY:
+  case MESSAGE_ROTATE_BY:
     _ship_rotate_by(id, msg.data_a);
     break;
   case MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS:
@@ -206,11 +206,11 @@ static void _ship_dispatch(entity_id_t id, message_t msg) {
   case MESSAGE_COLLIDE_OBJECT_OBJECT:
     _ship_handle_collision(id, &msg);
     break;
-  case MESSAGE_SHIP_ROTATE_TO:
+  case MESSAGE_ROTATE_TO:
     _ship_rotate_to(id, _i2f(msg.data_a), _i2f(msg.data_b));
     break;
-  case MESSAGE_SHIP_AUTOPILOT_DISENGAGE:
-    autopilot_orbit_disengage(id);
+  case MESSAGE_AI_ORBIT_DISENGAGE:
+    ai_orbit_disengage(id);
     break;
   }
 }
