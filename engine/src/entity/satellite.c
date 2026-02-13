@@ -5,14 +5,16 @@
 #include "entity.h"
 #include "satellite.h"
 #include "ai.h"
+#include "radar.h"
+#include "weapon.h"
 #include "explosion.h"
 
 #include <math.h>
 
-// Turret defense: scan for approaching asteroids and fire turret lasers.
-// Evaluation rate and engagement parameters.
-#define SAT_SCAN_INTERVAL     6    // re-scan every 6 ticks (~0.05s)
-#define SAT_DEFAULT_RANGE   300.0f // default turret engagement range
+// Satellite: orbit-keeping via AI, turret defense driven by radar contacts.
+// The satellite does NOT scan for targets itself. It reacts to
+// MESSAGE_RADAR_SCAN_COMPLETE from its radar part, reads the contact list,
+// filters for hostiles (asteroids), and distributes targets among turrets.
 
 static void _satellite_rotate_to(entity_id_t id, float x, float y) {
   uint32_t obj_idx = GET_ORDINAL(id);
@@ -23,37 +25,6 @@ static void _satellite_rotate_to(entity_id_t id, float x, float y) {
 
   vec2_normalize_i(&od->position_orientation.orientation_x[obj_idx],
                    &od->position_orientation.orientation_y[obj_idx], 1);
-}
-
-// Find the closest approaching asteroid within range of the satellite.
-// Returns true if a target was found, writing its world position into out_x/out_y.
-static bool _satellite_find_target(uint32_t sat_idx, float range,
-                                   float* out_x, float* out_y) {
-  struct objects_data* od = entity_manager_get_objects();
-
-  float sx = od->position_orientation.position_x[sat_idx];
-  float sy = od->position_orientation.position_y[sat_idx];
-
-  float best_dist_sq = range * range;
-  bool found = false;
-
-  for (uint32_t i = 0; i < od->active; i++) {
-    if (od->type[i]._ != ENTITY_TYPE_ASTEROID) continue;
-    if (od->health[i] <= 0) continue;
-
-    float dx = od->position_orientation.position_x[i] - sx;
-    float dy = od->position_orientation.position_y[i] - sy;
-    float dist_sq = dx * dx + dy * dy;
-
-    if (dist_sq < best_dist_sq) {
-      best_dist_sq = dist_sq;
-      *out_x = od->position_orientation.position_x[i];
-      *out_y = od->position_orientation.position_y[i];
-      found = true;
-    }
-  }
-
-  return found;
 }
 
 // Accumulate engine thrust for satellites (same pattern as ship)
@@ -81,25 +52,78 @@ static void _satellite_apply_thrust_from_engines(void) {
   }
 }
 
-// Per-tick: scan for targets, command turret weapons
-static void _satellite_defense_tick(void) {
+// Returns true if this entity type is a hostile target the satellite should engage.
+static bool _is_hostile(uint8_t entity_type) {
+  return entity_type == ENTITY_TYPE_ASTEROID;
+}
+
+// Radar reported scan results — read contacts, distribute hostile targets among turrets.
+static void _satellite_handle_scan_complete(entity_id_t id, int32_t contact_count) {
+  if (contact_count < 0) contact_count = 0;
+
   struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* pd = entity_manager_get_parts();
+  uint32_t sat_idx = GET_ORDINAL(id);
 
-  for (uint32_t i = 0; i < od->active; i++) {
-    if (od->type[i]._ != ENTITY_TYPE_SATELLITE) continue;
+  if (sat_idx >= od->active) return;
 
-    entity_id_t sat_id = OBJECT_ID_WITH_TYPE(i, ENTITY_TYPE_SATELLITE);
+  uint32_t parts_start = od->parts_start_idx[sat_idx];
+  uint32_t parts_count = od->parts_count[sat_idx];
 
-    float target_x, target_y;
-    if (_satellite_find_target(i, SAT_DEFAULT_RANGE, &target_x, &target_y)) {
-      // Set target and fire
-      messaging_send(PARTS_OF_TYPE(sat_id, PART_TYPEREF_WEAPON),
-                     CREATE_MESSAGE_F(MESSAGE_WEAPON_SET_TARGET, target_x, target_y));
-      messaging_send(PARTS_OF_TYPE(sat_id, PART_TYPEREF_WEAPON),
+  // Find radar part and read contacts
+  const struct radar_contact* contacts = NULL;
+  uint8_t num_contacts = 0;
+
+  for (uint32_t p = 0; p < parts_count; p++) {
+    uint32_t pi = parts_start + p;
+    if (pd->type[pi]._ == ENTITY_TYPE_PART_RADAR) {
+      struct radar_data* rd = (struct radar_data*)(pd->data[pi].data);
+      contacts = rd->contacts;
+      num_contacts = rd->contact_count;
+      break;
+    }
+  }
+
+  if (contacts == NULL) return;
+
+  // Filter hostiles from contacts (already sorted by distance, closest first)
+  float hostile_x[MAX_RADAR_CONTACTS];
+  float hostile_y[MAX_RADAR_CONTACTS];
+  uint8_t hostile_count = 0;
+
+  for (uint8_t c = 0; c < num_contacts && hostile_count < MAX_RADAR_CONTACTS; c++) {
+    if (_is_hostile(contacts[c].entity_type)) {
+      hostile_x[hostile_count] = contacts[c].x;
+      hostile_y[hostile_count] = contacts[c].y;
+      hostile_count++;
+    }
+  }
+
+  // Distribute targets among turret laser parts.
+  // Each turret gets its own target (round-robin from the hostile list).
+  // If more turrets than targets, remaining turrets share the closest target.
+  // If no hostiles, all turrets cease fire.
+  uint8_t target_idx = 0;
+
+  for (uint32_t p = 0; p < parts_count; p++) {
+    uint32_t pi = parts_start + p;
+    if (pd->type[pi]._ != ENTITY_TYPE_PART_WEAPON) continue;
+
+    struct weapon_data* wd = (struct weapon_data*)(pd->data[pi].data);
+    if (wd->weapon_type != WEAPON_TYPE_TURRET_LASER) continue;
+
+    entity_id_t turret_id = PART_ID_WITH_TYPE(pi, ENTITY_TYPE_PART_WEAPON);
+
+    if (hostile_count > 0) {
+      // Assign target: distribute round-robin, wrapping to closest if fewer targets than turrets
+      uint8_t tidx = (target_idx < hostile_count) ? target_idx : 0;
+      messaging_send(turret_id,
+                     CREATE_MESSAGE_F(MESSAGE_WEAPON_SET_TARGET, hostile_x[tidx], hostile_y[tidx]));
+      messaging_send(turret_id,
                      CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 1, 0));
+      target_idx++;
     } else {
-      // No target — cease fire
-      messaging_send(PARTS_OF_TYPE(sat_id, PART_TYPEREF_WEAPON),
+      messaging_send(turret_id,
                      CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 0, 0));
     }
   }
@@ -157,7 +181,10 @@ static void _satellite_dispatch(entity_id_t id, message_t msg) {
 
   case MESSAGE_BROADCAST_120HZ_BEFORE_PHYSICS:
     _satellite_apply_thrust_from_engines();
-    _satellite_defense_tick();
+    break;
+
+  case MESSAGE_RADAR_SCAN_COMPLETE:
+    _satellite_handle_scan_complete(id, msg.data_a);
     break;
 
   case MESSAGE_COLLIDE_OBJECT_OBJECT:

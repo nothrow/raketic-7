@@ -37,6 +37,7 @@ enum message_codes_entity {
   MESSAGE_WEAPON_SET_TARGET = 0x14, // data_a = target x (float-as-int), data_b = target y (float-as-int)
   MESSAGE_AI_ORBIT_ENGAGE = 0x18, // broadcast: orbit AI engaged
   MESSAGE_AI_ORBIT_DISENGAGE = 0x19, // broadcast: orbit AI disengaged
+  MESSAGE_RADAR_SCAN_COMPLETE = 0x20, // data_a = contact_count; read radar_data.contacts[] for details
 };
 
 static inline message_t CREATE_MESSAGE(uint16_t msg, int32_t data_a, int32_t data_b) {

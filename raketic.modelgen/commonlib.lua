@@ -38,6 +38,11 @@ local satelliteDefaults = {
   __dataType = "EntityWithSlotsData"
 }
 
+local radarDefaults = {
+  type   = "PART_TYPEREF_RADAR",
+  __dataType = "RadarData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -79,6 +84,10 @@ end
 
 function Satellite(data)
   return Entity(merge(satelliteDefaults, data))
+end
+
+function Radar(data)
+  return Entity(merge(radarDefaults, data))
 end
 
 function deg(degrees)

@@ -37,6 +37,7 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/engine.h""
 #include ""entity/weapon.h""
 #include ""entity/ai.h""
+#include ""entity/radar.h""
 #include ""debug/debug.h""
 #include ""hud/hud.h""
 #include ""debug/profiler.h""
@@ -114,6 +115,13 @@ void _generated_load_map_data(uint16_t index);
             _cWriter!.WriteLine($"  od->position_orientation.radius[new_idx] = {entity.Model!.GetRadius()};");
             _cWriter!.WriteLine($"  od->mass[new_idx] = {entity.Mass!};");
             _cWriter!.WriteLine($"  od->health[new_idx] = {entity.Health ?? 1000};");
+
+            // Explicit initial velocity (if specified)
+            if (entity.Velocity.HasValue)
+            {
+                _cWriter!.WriteLine($"  od->velocity_x[new_idx] = {entity.Velocity.Value.X:0.0#######}f;");
+                _cWriter!.WriteLine($"  od->velocity_y[new_idx] = {entity.Velocity.Value.Y:0.0#######}f;");
+            }
 
             // Orbit initialization: set tangential velocity for circular orbit
             if (entity is EntityData ed && ed.OrbitTargetSpawnId.HasValue)

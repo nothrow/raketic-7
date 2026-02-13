@@ -247,12 +247,38 @@ internal record WeaponPartData : PartData
     }
 }
 
+internal record RadarPartData : PartData
+{
+    public static RadarPartData Empty { get; } = new RadarPartData();
+
+    public float? Range { get; init; }
+
+    public override BaseEntityWithModelData ReadFromTable(string key, LuaType type, Lua lua)
+    {
+        switch (key)
+        {
+            case "range":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'range' field in radar part definition, expected number but got {type}");
+                return this with { Range = (float?)lua.ToNumberX(-1) };
+            default:
+                return base.ReadFromTable(key, type, lua);
+        }
+    }
+
+    public override void DumpPartData(StreamWriter w, string dataref)
+    {
+        w.WriteLine($"  ((struct radar_data*)({dataref}))->range = {Range ?? 300.0f:0.0#######}f;");
+    }
+}
+
 internal record EntityData : BaseEntityWithModelData
 {
     public int? Mass { get; init; }
     public int? Radius { get; init; }
     public int? Health { get; init; }
     public Point? Position { get; init; }
+    public Point? Velocity { get; init; }
     public float? Rotation { get; init; }
     public int? OrbitTargetCacheIdx { get; init; }
     public int? OrbitTargetSpawnId { get; init; }
@@ -273,6 +299,13 @@ internal record EntityData : BaseEntityWithModelData
 
                 var point = System.Runtime.InteropServices.Marshal.PtrToStructure<Point>(pointer);
                 return this with { Position = point };
+            case "velocity":
+                var velPointer = lua.CheckUserData(-1, "Point");
+                if (velPointer == IntPtr.Zero)
+                    throw new InvalidOperationException($"Invalid type for 'velocity' field in entity definition, expected Point (vec) but got {type}");
+
+                var vel = System.Runtime.InteropServices.Marshal.PtrToStructure<Point>(velPointer);
+                return this with { Velocity = vel };
             case "rotation":
                 if (type != LuaType.Number)
                     throw new InvalidOperationException($"Invalid type for 'rotation' field in entity definition, expected number but got {type}");
@@ -477,6 +510,8 @@ internal class EntityContext(PathInfo paths)
                 return WeaponPartData.Empty;
             case "PartData":
                 return new PartData();
+            case "RadarData":
+                return RadarPartData.Empty;
             default:
                 throw new InvalidOperationException($"Unknown data type: {dataType}");
         }

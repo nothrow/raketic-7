@@ -60,8 +60,8 @@ internal class PointLuaBinding
             return 1;
         }
 
-        var px = (int)x;
-        var py = (int)y;
+        var px = (float)x;
+        var py = (float)y;
 
         var userDataPtr = lua.NewUserData(System.Runtime.InteropServices.Marshal.SizeOf<Point>());
         System.Runtime.InteropServices.Marshal.StructureToPtr(new Point(px, py), userDataPtr, false);

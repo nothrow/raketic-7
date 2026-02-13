@@ -7,6 +7,7 @@ return Satellite {
     engine1 = parts.weakEngine,
     engine2 = parts.weakEngine,
     turret1 = parts.turretLaser,
-    turret2 = parts.turretLaser
+    turret2 = parts.turretLaser,
+    radar1  = parts.radar
   }
 }

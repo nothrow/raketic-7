@@ -54,6 +54,7 @@
     <ClCompile Include="src\entity\ship.c" />
     <ClCompile Include="src\entity\ai.c" />
     <ClCompile Include="src\entity\satellite.c" />
+    <ClCompile Include="src\entity\radar.c" />
     <ClCompile Include="src\entity\planet.c" />
     <ClCompile Include="src\entity\moon.c" />
     <ClCompile Include="src\hud\hud.c" />
@@ -120,6 +121,7 @@
     <ClInclude Include="src\entity\ship.h" />
     <ClInclude Include="src\entity\ai.h" />
     <ClInclude Include="src\entity\satellite.h" />
+    <ClInclude Include="src\entity\radar.h" />
     <ClInclude Include="src\entity\planet.h" />
     <ClInclude Include="src\entity\moon.h" />
     <ClInclude Include="src\entity\camera.h" />
