@@ -46,4 +46,5 @@ typedef struct {
 } color_t;
 
 void vec2_normalize_i(float* xs, float* ys, int count);
+float Q_rsqrt(float number);
 

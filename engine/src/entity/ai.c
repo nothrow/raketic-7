@@ -2,8 +2,7 @@
 #include "entity.h"
 #include "messaging/messaging.h"
 #include "platform/platform.h"
-
-#include <math.h>
+#include "core/core.h"
 
 #define MAX_AI_SLOTS 16
 
@@ -13,6 +12,8 @@
 // The gap prevents jitter near the boundary.
 #define DV_CORRECT_ENTER 3.0f
 #define DV_CORRECT_EXIT 0.8f
+#define DV_CORRECT_ENTER_SQ (DV_CORRECT_ENTER * DV_CORRECT_ENTER)  // 9.0f
+#define DV_CORRECT_EXIT_SQ  (DV_CORRECT_EXIT  * DV_CORRECT_EXIT)   // 0.64f
 
 // During coast: only re-evaluate delta-v every N ticks (0.1s)
 #define COAST_EVAL_INTERVAL 12
@@ -82,9 +83,9 @@ static void _slot_disengage(int idx) {
 }
 
 // Compute orbital target velocity for an entity around a body.
-// Returns delta-v magnitude. Writes target tangent into tx/ty.
-static float _compute_orbit_dv(struct objects_data* od, uint32_t ei, uint32_t bi,
-                               float* out_dvx, float* out_dvy, float* out_tx, float* out_ty) {
+// Returns squared delta-v magnitude. Writes target tangent into tx/ty.
+static float _compute_orbit_dv_sq(struct objects_data* od, uint32_t ei, uint32_t bi,
+                                  float* out_dvx, float* out_dvy, float* out_tx, float* out_ty) {
   float sx = od->position_orientation.position_x[ei];
   float sy = od->position_orientation.position_y[ei];
   float px = od->position_orientation.position_x[bi];
@@ -92,16 +93,17 @@ static float _compute_orbit_dv(struct objects_data* od, uint32_t ei, uint32_t bi
 
   float rx = sx - px;
   float ry = sy - py;
-  float dist = sqrtf(rx * rx + ry * ry);
+  float dist_sq = rx * rx + ry * ry;
 
-  if (dist < 1.0f) {
+  if (dist_sq < 1.0f) {
     *out_dvx = 0; *out_dvy = 0;
     *out_tx = 1; *out_ty = 0;
     return 0;
   }
 
-  float rnx = rx / dist;
-  float rny = ry / dist;
+  float inv_dist = Q_rsqrt(dist_sq);
+  float rnx = rx * inv_dist;
+  float rny = ry * inv_dist;
 
   float svx = od->velocity_x[ei];
   float svy = od->velocity_y[ei];
@@ -120,7 +122,10 @@ static float _compute_orbit_dv(struct objects_data* od, uint32_t ei, uint32_t bi
   *out_tx = tx;
   *out_ty = ty;
 
-  float v_orbit = sqrtf(GRAVITATIONAL_CONSTANT * od->mass[bi] / dist);
+  // v_orbit^2 = G*M/dist = G*M * inv_dist
+  float v_orbit_sq = GRAVITATIONAL_CONSTANT * od->mass[bi] * inv_dist;
+  // v_orbit = sqrt(v_orbit_sq) = v_orbit_sq * rsqrt(v_orbit_sq)
+  float v_orbit = v_orbit_sq * Q_rsqrt(v_orbit_sq);
 
   float target_vx = tx * v_orbit;
   float target_vy = ty * v_orbit;
@@ -131,7 +136,7 @@ static float _compute_orbit_dv(struct objects_data* od, uint32_t ei, uint32_t bi
   *out_dvx = dvx;
   *out_dvy = dvy;
 
-  return sqrtf(dvx * dvx + dvy * dvy);
+  return dvx * dvx + dvy * dvy;
 }
 
 static void _slot_tick(struct ai_slot* s) {
@@ -152,13 +157,15 @@ static void _slot_tick(struct ai_slot* s) {
   float py = od->position_orientation.position_y[s->body_ordinal];
   float rx = sx - px;
   float ry = sy - py;
-  float dist = sqrtf(rx * rx + ry * ry);
+  float dist_sq = rx * rx + ry * ry;
   float body_radius = od->position_orientation.radius[s->body_ordinal];
 
-  if (dist < 1.0f) { _slot_disengage((int)(s - _slots)); return; }
+  if (dist_sq < 1.0f) { _slot_disengage((int)(s - _slots)); return; }
 
-  float rnx = rx / dist;
-  float rny = ry / dist;
+  float inv_dist = Q_rsqrt(dist_sq);
+  float dist = dist_sq * inv_dist;  // ≈ sqrt(dist_sq)
+  float rnx = rx * inv_dist;
+  float rny = ry * inv_dist;
   float svx = od->velocity_x[s->entity_ordinal];
   float svy = od->velocity_y[s->entity_ordinal];
   float v_radial = svx * rnx + svy * rny; // positive = away, negative = approaching
@@ -188,17 +195,17 @@ static void _slot_tick(struct ai_slot* s) {
   switch (s->phase) {
 
   case AI_CORRECT: {
-    float dv = _compute_orbit_dv(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
+    float dv_sq = _compute_orbit_dv_sq(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
 
     // Radial safety boost: if approaching body, bias correction outward
     if (v_radial < 0) {
       float boost = (-v_radial) * RADIAL_SAFETY_GAIN;
       dvx += rnx * boost;
       dvy += rny * boost;
-      dv = sqrtf(dvx * dvx + dvy * dvy);
+      dv_sq = dvx * dvx + dvy * dvy;
     }
 
-    if (dv < DV_CORRECT_EXIT && v_radial > -1.0f) {
+    if (dv_sq < DV_CORRECT_EXIT_SQ && v_radial > -1.0f) {
       // Orbit close enough and not approaching — coast
       s->phase = AI_COAST;
       s->timer = COAST_EVAL_INTERVAL;
@@ -210,11 +217,13 @@ static void _slot_tick(struct ai_slot* s) {
     }
 
     // Proportional correction: rotate toward delta-v, fire engines
-    float dvnx = dvx / dv;
-    float dvny = dvy / dv;
+    float inv_dv = Q_rsqrt(dv_sq);
+    float dvnx = dvx * inv_dv;
+    float dvny = dvy * inv_dv;
     messaging_send(eid, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, dvnx, dvny));
 
-    int thrust_pct = (int)(dv * THRUST_GAIN);
+    // dv = dv_sq * inv_dv  (= sqrt(dv_sq))
+    int thrust_pct = (int)(dv_sq * inv_dv * THRUST_GAIN);
     if (thrust_pct < 1) thrust_pct = 1;
     if (thrust_pct > 100) thrust_pct = 100;
 
@@ -228,15 +237,15 @@ static void _slot_tick(struct ai_slot* s) {
 
     // Periodically orient along tangent
     if (s->timer % COAST_ORIENT_INTERVAL == 0) {
-      _compute_orbit_dv(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
+      _compute_orbit_dv_sq(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
       messaging_send(eid, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, tx, ty));
     }
 
     // Periodic evaluation
     if (s->timer <= 0) {
-      float dv = _compute_orbit_dv(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
+      float dv_sq = _compute_orbit_dv_sq(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
 
-      if (dv > DV_CORRECT_ENTER) {
+      if (dv_sq > DV_CORRECT_ENTER_SQ) {
         s->phase = AI_CORRECT;
       } else {
         s->timer = COAST_EVAL_INTERVAL;
@@ -341,7 +350,8 @@ void ai_query_status(entity_id_t entity_id, ai_status_t* out) {
   if (s->entity_ordinal >= od->active || s->body_ordinal >= od->active) return;
 
   float dvx, dvy, tx, ty;
-  out->delta_v = _compute_orbit_dv(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
+  float dv_sq = _compute_orbit_dv_sq(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
+  out->delta_v = dv_sq * Q_rsqrt(dv_sq);  // ≈ sqrt(dv_sq)
 
   float sx = od->position_orientation.position_x[s->entity_ordinal];
   float sy = od->position_orientation.position_y[s->entity_ordinal];
@@ -349,7 +359,10 @@ void ai_query_status(entity_id_t entity_id, ai_status_t* out) {
   float py = od->position_orientation.position_y[s->body_ordinal];
   float rx = sx - px;
   float ry = sy - py;
-  float dist = sqrtf(rx * rx + ry * ry);
-  if (dist < 1.0f) dist = 1.0f;
-  out->v_orbit = sqrtf(GRAVITATIONAL_CONSTANT * od->mass[s->body_ordinal] / dist);
+  float dist_sq = rx * rx + ry * ry;
+  if (dist_sq < 1.0f) dist_sq = 1.0f;
+  float inv_dist = Q_rsqrt(dist_sq);
+  // v_orbit = sqrt(G*M/dist) = sqrt(G*M * inv_dist)
+  float v_orbit_sq = GRAVITATIONAL_CONSTANT * od->mass[s->body_ordinal] * inv_dist;
+  out->v_orbit = v_orbit_sq * Q_rsqrt(v_orbit_sq);
 }
