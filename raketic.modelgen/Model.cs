@@ -61,7 +61,7 @@ internal record Model(
     /// and finds the farthest intersection with the hull polygon edges.
     /// Returns null for models with no closed polygon (e.g. particles).
     /// </summary>
-    public byte[]? GetRadialProfile()
+    public ushort[]? GetRadialProfile()
     {
         // Prefer explicit hull class, otherwise first closed polygon
         var sourceStrip = LineStrips.FirstOrDefault(ls => ls.Class == "hull" && ls.IsClosed)
@@ -71,7 +71,7 @@ internal record Model(
             return null;
 
         var points = sourceStrip.Points;
-        var profile = new byte[16];
+        var profile = new ushort[16];
 
         for (int sector = 0; sector < 16; sector++)
         {
@@ -107,7 +107,7 @@ internal record Model(
             }
 
             // Ceiling for conservative collision (don't underestimate), minimum 1
-            profile[sector] = (byte)Math.Min(255, Math.Max(1, (int)Math.Ceiling(maxT)));
+            profile[sector] = (ushort)Math.Min(65535, Math.Max(1, (int)Math.Ceiling(maxT)));
         }
 
         return profile;

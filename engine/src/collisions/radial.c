@@ -51,8 +51,8 @@ int radial_sector(float lx, float ly) {
   }
 }
 
-bool radial_collision_test(const uint8_t* profile_a, float ax, float ay, float ox_a, float oy_a,
-                           const uint8_t* profile_b, float bx, float by, float ox_b, float oy_b) {
+bool radial_collision_test(const uint16_t* profile_a, float ax, float ay, float ox_a, float oy_a,
+                           const uint16_t* profile_b, float bx, float by, float ox_b, float oy_b) {
   float dx = bx - ax;
   float dy = by - ay;
   float dist_sq = dx * dx + dy * dy;
@@ -73,7 +73,7 @@ bool radial_collision_test(const uint8_t* profile_a, float ax, float ay, float o
   return (float)(sum * sum) >= dist_sq;
 }
 
-void radial_reconstruct(const uint8_t* profile, float cx, float cy, float ox, float oy,
+void radial_reconstruct(const uint16_t* profile, float cx, float cy, float ox, float oy,
                         float* out_x, float* out_y) {
   __m256 vcx = _mm256_set1_ps(cx);
   __m256 vcy = _mm256_set1_ps(cy);
@@ -83,9 +83,9 @@ void radial_reconstruct(const uint8_t* profile, float cx, float cy, float ox, fl
   for (int batch = 0; batch < 2; batch++) {
     int base = batch * 8;
 
-    // Convert 8 uint8_t radii to float
-    __m128i bytes = _mm_loadl_epi64((const __m128i*)(profile + base));
-    __m256i ints = _mm256_cvtepu8_epi32(bytes);
+    // Convert 8 uint16_t radii to float
+    __m128i shorts = _mm_loadu_si128((const __m128i*)(profile + base));
+    __m256i ints = _mm256_cvtepu16_epi32(shorts);
     __m256 r = _mm256_cvtepi32_ps(ints);
 
     // Load precomputed cos/sin for these 8 sectors
@@ -120,7 +120,7 @@ static inline float _hmin256(__m256 v) {
   return _mm_cvtss_f32(m);
 }
 
-bool radial_ray_intersect(const uint8_t* profile, float cx, float cy, float ox, float oy,
+bool radial_ray_intersect(const uint16_t* profile, float cx, float cy, float ox, float oy,
                           float sx, float sy, float ex, float ey, float* t_out) {
   // Reconstruct 16-gon from radial profile, with wrap point for SIMD edge loads
   __declspec(align(32)) float px[17], py[17];

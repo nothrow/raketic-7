@@ -22,7 +22,7 @@ internal class WorldWriter(PathInfo paths) : IDisposable
 #include ""platform/platform.h""
 void _generated_draw_model(color_t color, uint16_t index);
 uint16_t _generated_get_model_radius(uint16_t index);
-const uint8_t* _generated_get_radial_profile(uint16_t model_idx);
+const uint16_t* _generated_get_radial_profile(uint16_t model_idx);
 
 void _generated_load_map_data(uint16_t index);
 ");

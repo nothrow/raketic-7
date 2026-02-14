@@ -386,7 +386,7 @@ void debug_draw_orbit_zones(void) {
 static const color_t COLOR_HULL_OBJECT = { 0, 255, 0, 120 };
 static const color_t COLOR_HULL_PART = { 0, 200, 255, 120 };
 
-static void _draw_radial_outline(const uint8_t* profile, float cx, float cy, float ox, float oy, color_t color) {
+static void _draw_radial_outline(const uint16_t* profile, float cx, float cy, float ox, float oy, color_t color) {
   float px[16], py[16];
   radial_reconstruct(profile, cx, cy, ox, oy, px, py);
   for (int i = 0; i < 16; i++) {
@@ -400,7 +400,7 @@ void debug_draw_collision_hulls(void) {
   struct parts_data* pd = entity_manager_get_parts();
 
   for (uint32_t i = 0; i < od->active; i++) {
-    const uint8_t* prof = _generated_get_radial_profile(od->model_idx[i]);
+    const uint16_t* prof = _generated_get_radial_profile(od->model_idx[i]);
     if (!prof)
       continue;
 
@@ -417,7 +417,7 @@ void debug_draw_collision_hulls(void) {
       if (pd->model_idx[pi] == 0xFFFF)
         continue;
 
-      const uint8_t* part_prof = _generated_get_radial_profile(pd->model_idx[pi]);
+      const uint16_t* part_prof = _generated_get_radial_profile(pd->model_idx[pi]);
       if (!part_prof)
         continue;
 

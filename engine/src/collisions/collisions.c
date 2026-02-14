@@ -183,8 +183,8 @@ void collisions_engine_tick(void) {
       uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
       uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
 
-      const uint8_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
-      const uint8_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
+      const uint16_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
+      const uint16_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
 
       // If either object has no radial profile, fall back to broad-phase (keep the pair)
       if (!prof_a || !prof_b) {
@@ -235,8 +235,8 @@ void collisions_engine_tick(void) {
     // Part-level hit detection
     struct parts_data* ptd = entity_manager_get_parts();
 
-    const uint8_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
-    const uint8_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
+    const uint16_t* prof_a = _generated_get_radial_profile(od->model_idx[idx_a]);
+    const uint16_t* prof_b = _generated_get_radial_profile(od->model_idx[idx_b]);
 
     // Check parts of B hit by A's radial profile
     if (prof_a) {
@@ -247,7 +247,7 @@ void collisions_engine_tick(void) {
         if (ptd->model_idx[pi] == 0xFFFF)
           continue;
 
-        const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+        const uint16_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
         if (!part_prof)
           continue;
 
@@ -275,7 +275,7 @@ void collisions_engine_tick(void) {
         if (ptd->model_idx[pi] == 0xFFFF)
           continue;
 
-        const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+        const uint16_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
         if (!part_prof)
           continue;
 

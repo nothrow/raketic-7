@@ -78,7 +78,7 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         cWriter.WriteLine();
 
         // Radial collision profiles: flat 2D array + simple lookup
-        cWriter.WriteLine($"static const uint8_t _radial_profiles[][16] = {{");
+        cWriter.WriteLine($"static const uint16_t _radial_profiles[][16] = {{");
         for (int j = 0; j < models.Length; j++)
         {
             var profile = models[j].GetRadialProfile();
@@ -90,7 +90,7 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         cWriter.WriteLine($"}};");
         cWriter.WriteLine();
 
-        cWriter.WriteLine($"const uint8_t* _generated_get_radial_profile(uint16_t model_idx) {{");
+        cWriter.WriteLine($"const uint16_t* _generated_get_radial_profile(uint16_t model_idx) {{");
         cWriter.WriteLine($"  if (model_idx >= {models.Length}) return 0;");
         cWriter.WriteLine($"  return _radial_profiles[model_idx];");
         cWriter.WriteLine($"}}");

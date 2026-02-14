@@ -54,7 +54,7 @@ static void _beams_raycast(float* ex, float* ey, float sx, float sy,
     if (dist_sq > r * r) continue; // radius miss
 
     // Radius hit -- try precise radial profile test on object
-    const uint8_t* prof = _generated_get_radial_profile(od->model_idx[i]);
+    const uint16_t* prof = _generated_get_radial_profile(od->model_idx[i]);
     if (prof) {
       float t_hit;
       // Test ray [start, current_end] against this object's radial shape
@@ -85,7 +85,7 @@ static void _beams_raycast(float* ex, float* ey, float sx, float sy,
       uint32_t pi = parts_start + p;
       if (ptd->model_idx[pi] == 0xFFFF) continue;
 
-      const uint8_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
+      const uint16_t* part_prof = _generated_get_radial_profile(ptd->model_idx[pi]);
       if (!part_prof) continue;
 
       float t_hit;
