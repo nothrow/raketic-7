@@ -253,28 +253,29 @@ internal class SvgParser
         if (currentSegment.Count == 0)
             throw new InvalidOperationException("Quadratic curve segment requires a starting point.");
 
-        // P0 = start (last point in segment), P1 = control, P2 = end
+        // P0 = start (last point in segment) — already in transformed space
+        // P1, P2 = control/end — transform them to match P0's coordinate space
         var p0 = currentSegment[^1];
-        var p1x = quadratic.ControlPoint.X;
-        var p1y = quadratic.ControlPoint.Y;
-        var p2x = quadratic.End.X;
-        var p2y = quadratic.End.Y;
+        var p1 = GetPoint(quadratic.ControlPoint.X, quadratic.ControlPoint.Y);
+        var p2 = GetPoint(quadratic.End.X, quadratic.End.Y);
 
         // B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+        // All three points are in the same (transformed) coordinate space,
+        // so the result is already transformed — no need for GetPoint again.
         for (int i = 1; i <= CurveSegments; i++)
         {
             float t = (float)i / CurveSegments;
             float oneMinusT = 1 - t;
 
             float x = oneMinusT * oneMinusT * p0.X
-                    + 2 * oneMinusT * t * p1x
-                    + t * t * p2x;
+                    + 2 * oneMinusT * t * p1.X
+                    + t * t * p2.X;
 
             float y = oneMinusT * oneMinusT * p0.Y
-                    + 2 * oneMinusT * t * p1y
-                    + t * t * p2y;
+                    + 2 * oneMinusT * t * p1.Y
+                    + t * t * p2.Y;
 
-            currentSegment.Add(GetPoint(x, y));
+            currentSegment.Add(new Point(x, y));
         }
     }
 

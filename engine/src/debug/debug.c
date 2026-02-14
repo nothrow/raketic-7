@@ -325,9 +325,10 @@ void debug_draw_orbit_zones(void) {
       // Only show diagnostics within a reasonable range
       if (dist > planet_radius * ORBIT_MAX_DISTANCE_FACTOR * 2.0f) continue;
 
-      float svx = od->velocity_x[s];
-      float svy = od->velocity_y[s];
-      float speed = sqrtf(svx * svx + svy * svy);
+      // Velocity RELATIVE to the body (body itself is moving, e.g. planet orbiting sun)
+      float rel_vx = od->velocity_x[s] - od->velocity_x[i];
+      float rel_vy = od->velocity_y[s] - od->velocity_y[i];
+      float speed = sqrtf(rel_vx * rel_vx + rel_vy * rel_vy);
 
       float v_orbit = sqrtf(ORBIT_GRAVITATIONAL_CONSTANT * planet_mass / dist);
       float v_escape = sqrtf(2.0f * ORBIT_GRAVITATIONAL_CONSTANT * planet_mass / dist);
@@ -335,7 +336,7 @@ void debug_draw_orbit_zones(void) {
       // Radial/tangential decomposition
       float rnx = dx / (dist > 0.01f ? dist : 1.0f);
       float rny = dy / (dist > 0.01f ? dist : 1.0f);
-      float v_radial = svx * rnx + svy * rny;
+      float v_radial = rel_vx * rnx + rel_vy * rny;
       float tang_ratio = speed > 0.01f ? fabsf(v_radial) / speed : 0.0f;
 
       bool in_zone = dist >= planet_radius * ORBIT_MIN_DISTANCE_FACTOR &&

@@ -9,7 +9,9 @@
 #define MAX_VISIBLE_STARS 2048
 
 // Parallax speeds for each layer (0 = farthest, 2 = closest)
-static const float layer_speeds_[NUM_LAYERS] = { 0.1f, 0.3f, 0.5f };
+// Keep very low — stars are at near-infinite distance; at ship speeds ~130 u/s,
+// layer 2 moves ~6.5 px/s, just enough to convey motion.
+static const float layer_speeds_[NUM_LAYERS] = { 0.01f, 0.03f, 0.05f };
 
 // Base brightness for each layer
 static const uint8_t layer_min_alpha_[NUM_LAYERS] = { 60, 120, 200 };
