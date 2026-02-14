@@ -3,6 +3,8 @@
 #include "platform/math.h"
 #include "../generated/renderer.gen.h"
 
+#include <string.h>
+
 #include "ship.h"
 #include "ai.h"
 #include "hud/hud.h"
@@ -74,6 +76,11 @@ static void _objects_data_initialize(struct objects_data* data) {
   data->parts_start_idx = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
   data->parts_count = platform_retrieve_memory(sizeof(uint32_t) * MAXSIZE);
   data->health = platform_retrieve_memory(sizeof(int16_t) * MAXSIZE);
+
+  data->surface_idx = platform_retrieve_memory(sizeof(uint16_t) * MAXSIZE);
+  data->surface_rotation = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  data->rotation_speed = platform_retrieve_memory(sizeof(float) * MAXSIZE);
+  memset(data->surface_idx, 0xFF, sizeof(uint16_t) * MAXSIZE); // 0xFFFF = no surface
 
   data->active = 0;
   data->capacity = MAXSIZE;
@@ -190,6 +197,9 @@ static void _move_object(struct objects_data* od, uint32_t target, uint32_t sour
   od->parts_start_idx[target] = od->parts_start_idx[source];
   od->parts_count[target] = od->parts_count[source];
   od->health[target] = od->health[source];
+  od->surface_idx[target] = od->surface_idx[source];
+  od->surface_rotation[target] = od->surface_rotation[source];
+  od->rotation_speed[target] = od->rotation_speed[source];
 }
 
 void entity_manager_pack_objects(void) {

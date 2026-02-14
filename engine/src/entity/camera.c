@@ -18,6 +18,11 @@ static float _smooth_offset_x = 0.0f;
 static float _smooth_offset_y = 0.0f;
 static float _zoom = 1.0f;
 
+// After target is lost (ship destroyed), replay last offset with decay
+static float _last_offset_x = 0.0f;
+static float _last_offset_y = 0.0f;
+#define DRIFT_DECAY 0.90f
+
 #define ZOOM_MIN 0.25f
 #define ZOOM_MAX 8.0f
 
@@ -31,30 +36,44 @@ void camera_get_absolute_position(double* out_x, double* out_y) {
 }
 
 static void _camera_relocate_world(void) {
+  struct objects_data* od = entity_manager_get_objects();
+
+  float offset_x, offset_y;
+
   if (!is_valid_id(_target_entity)) {
-    return;
+    // Target lost (ship destroyed) — replay last offset, decaying to a stop
+    _last_offset_x *= DRIFT_DECAY;
+    _last_offset_y *= DRIFT_DECAY;
+
+    offset_x = _last_offset_x;
+    offset_y = _last_offset_y;
+
+    // Stop relocating once drift is negligible
+    if (offset_x * offset_x + offset_y * offset_y < 0.001f) return;
+  } else {
+    uint32_t target_idx = GET_ORDINAL(_target_entity);
+    _ASSERT(target_idx < od->active);
+
+    float target_x = od->position_orientation.position_x[target_idx];
+    float target_y = od->position_orientation.position_y[target_idx];
+    float vel_x = od->velocity_x[target_idx];
+    float vel_y = od->velocity_y[target_idx];
+
+    float desired_offset_x = vel_x * CAMERA_LOOKAHEAD_TIME;
+    float desired_offset_y = vel_y * CAMERA_LOOKAHEAD_TIME;
+
+    _smooth_offset_x += (desired_offset_x - _smooth_offset_x) * CAMERA_SMOOTHING;
+    _smooth_offset_y += (desired_offset_y - _smooth_offset_y) * CAMERA_SMOOTHING;
+
+    offset_x = target_x + _smooth_offset_x - SCREEN_CENTER_X;
+    offset_y = target_y + _smooth_offset_y - SCREEN_CENTER_Y;
+
+    // Save actual per-frame offset for drift after target loss
+    _last_offset_x = offset_x;
+    _last_offset_y = offset_y;
   }
 
   PROFILE_ZONE("camera_relocate_world");
-
-  struct objects_data* od = entity_manager_get_objects();
-  uint32_t target_idx = GET_ORDINAL(_target_entity);
-
-  _ASSERT(target_idx < od->active);
-
-  float target_x = od->position_orientation.position_x[target_idx];
-  float target_y = od->position_orientation.position_y[target_idx];
-  float vel_x = od->velocity_x[target_idx];
-  float vel_y = od->velocity_y[target_idx];
-
-  float desired_offset_x = vel_x * CAMERA_LOOKAHEAD_TIME;
-  float desired_offset_y = vel_y * CAMERA_LOOKAHEAD_TIME;
-
-  _smooth_offset_x += (desired_offset_x - _smooth_offset_x) * CAMERA_SMOOTHING;
-  _smooth_offset_y += (desired_offset_y - _smooth_offset_y) * CAMERA_SMOOTHING;
-
-  float offset_x = target_x + _smooth_offset_x - SCREEN_CENTER_X;
-  float offset_y = target_y + _smooth_offset_y - SCREEN_CENTER_Y;
 
   _absolute_x += (double)offset_x;
   _absolute_y += (double)offset_y;

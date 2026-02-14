@@ -1,5 +1,6 @@
 #include "ai.h"
 #include "entity.h"
+#include "radar.h"
 #include "messaging/messaging.h"
 #include "platform/platform.h"
 #include "core/core.h"
@@ -147,6 +148,21 @@ static float _compute_orbit_dv_sq(struct objects_data* od, uint32_t ei, uint32_t
   return dvx * dvx + dvy * dvy;
 }
 
+// Check if a body ordinal is visible on an entity's radar (nav or tactical contacts).
+// Returns true if the entity has no radar (fallback — no sensor means no restriction).
+static bool _body_on_radar(entity_id_t owner, uint32_t body_ordinal) {
+  const struct radar_data* rd = radar_get_data(owner);
+  if (!rd) return true;  // no radar = no sensor restriction
+
+  for (uint8_t i = 0; i < rd->nav_count; i++) {
+    if ((uint32_t)rd->nav[i].entity_ordinal == body_ordinal) return true;
+  }
+  for (uint8_t i = 0; i < rd->contact_count; i++) {
+    if ((uint32_t)rd->contacts[i].entity_ordinal == body_ordinal) return true;
+  }
+  return false;
+}
+
 static void _slot_tick(struct ai_slot* s) {
   struct objects_data* od = entity_manager_get_objects();
 
@@ -157,6 +173,13 @@ static void _slot_tick(struct ai_slot* s) {
   }
 
   entity_id_t eid = _slot_entity_id(s);
+
+  // Validate body is still visible on radar.
+  // If the entity has a radar and the body is not on it, disengage.
+  if (!_body_on_radar(eid, s->body_ordinal)) {
+    _slot_disengage((int)(s - _slots));
+    return;
+  }
 
   // --- Collision safety (every tick, regardless of phase) ---
   float sx = od->position_orientation.position_x[s->entity_ordinal];
@@ -223,7 +246,7 @@ static void _slot_tick(struct ai_slot* s) {
 
       messaging_send(PARTS_OF_TYPE(eid, PART_TYPEREF_ENGINE),
                      CREATE_MESSAGE(MESSAGE_ENGINES_THRUST, 0, 0));
-      messaging_send(eid, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, tx, ty));
+      // Don't override orientation during coast — let player rotate freely
       break;
     }
 
@@ -246,11 +269,7 @@ static void _slot_tick(struct ai_slot* s) {
   case AI_COAST: {
     s->timer--;
 
-    // Periodically orient along tangent
-    if (s->timer % COAST_ORIENT_INTERVAL == 0) {
-      _compute_orbit_dv_sq(od, s->entity_ordinal, s->body_ordinal, &dvx, &dvy, &tx, &ty);
-      messaging_send(eid, CREATE_MESSAGE_F(MESSAGE_ROTATE_TO, tx, ty));
-    }
+    // No orientation override during coast — player has full rotation control
 
     // Periodic evaluation
     if (s->timer <= 0) {

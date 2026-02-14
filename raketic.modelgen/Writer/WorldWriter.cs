@@ -1,4 +1,5 @@
 using raketic.modelgen.Entity;
+using raketic.modelgen.Surface;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
 using System.Numerics;
@@ -24,6 +25,10 @@ void _generated_draw_model(color_t color, uint16_t index);
 uint16_t _generated_get_model_radius(uint16_t index);
 const uint16_t* _generated_get_radial_profile(uint16_t model_idx);
 
+struct surface_polyline;
+struct surface_data;
+const struct surface_data* _generated_get_surface(uint16_t index);
+
 void _generated_load_map_data(uint16_t index);
 ");
 
@@ -38,6 +43,7 @@ void _generated_load_map_data(uint16_t index);
 #include ""entity/weapon.h""
 #include ""entity/ai.h""
 #include ""entity/radar.h""
+#include ""graphics/surface.h""
 #include ""debug/debug.h""
 #include ""hud/hud.h""
 #include ""debug/profiler.h""
@@ -63,6 +69,74 @@ void _generated_load_map_data(uint16_t index);
     {
         _hWriter?.Dispose();
         _cWriter?.Dispose();
+    }
+
+    internal void WriteSurfaces(IReadOnlyList<SurfaceDataRecord> surfaces)
+    {
+        if (_cWriter == null || _hWriter == null)
+            throw new InvalidOperationException("Writers not initialized. Call WriteHeaders() first.");
+
+        if (surfaces.Count == 0) return;
+
+        var w = _cWriter;
+
+        // Write surface constants to header
+        for (int i = 0; i < surfaces.Count; i++)
+        {
+            _hWriter.WriteLine($"#define SURFACE_{surfaces[i].Name.ToUpper()}_IDX ((uint16_t){i})");
+        }
+        _hWriter.WriteLine();
+
+        // Write polyline vertex data
+        for (int si = 0; si < surfaces.Count; si++)
+        {
+            var surf = surfaces[si];
+            for (int pi = 0; pi < surf.Polylines.Length; pi++)
+            {
+                var poly = surf.Polylines[pi];
+                w.Write($"static const int16_t _surf_{si}_poly_{pi}[] = {{ ");
+                for (int vi = 0; vi < poly.Points.Length; vi++)
+                {
+                    var pt = poly.Points[vi];
+                    if (vi > 0) w.Write(", ");
+                    w.Write($"{pt.Px}, {pt.Py}, {pt.Pz}");
+                }
+                w.WriteLine($" }};");
+            }
+            w.WriteLine();
+        }
+
+        // Write polyline descriptor arrays
+        for (int si = 0; si < surfaces.Count; si++)
+        {
+            var surf = surfaces[si];
+            w.WriteLine($"static const struct surface_polyline _surf_{si}_polys[] = {{");
+            for (int pi = 0; pi < surf.Polylines.Length; pi++)
+            {
+                w.WriteLine($"  {{ _surf_{si}_poly_{pi}, {surf.Polylines[pi].Points.Length} }},");
+            }
+            w.WriteLine($"}};");
+            w.WriteLine();
+        }
+
+        // Write surface data array
+        w.WriteLine($"static const struct surface_data _surfaces[] = {{");
+        for (int si = 0; si < surfaces.Count; si++)
+        {
+            var surf = surfaces[si];
+            w.WriteLine($"  {{ _surf_{si}_polys, {surf.Polylines.Length}, {{ {surf.ColorR}, {surf.ColorG}, {surf.ColorB}, {surf.ColorA} }} }},  // {si}: {surf.Name}");
+        }
+        w.WriteLine($"}};");
+        w.WriteLine();
+
+        // Write accessor function
+        w.WriteLine($"const struct surface_data* _generated_get_surface(uint16_t index) {{");
+        w.WriteLine($"  if (index >= {surfaces.Count}) return 0;");
+        w.WriteLine($"  return &_surfaces[index];");
+        w.WriteLine($"}}");
+        w.WriteLine();
+
+        Console.WriteLine($"Written {surfaces.Count} surface(s) with {surfaces.Sum(s => s.Polylines.Length)} polylines, {surfaces.Sum(s => s.Polylines.Sum(p => p.Points.Length))} total vertices.");
     }
 
     internal void WriteWorlds(IEnumerable<WorldsData> worlds)
@@ -174,6 +248,16 @@ void _generated_load_map_data(uint16_t index);
                 _cWriter!.WriteLine($"    od->velocity_x[new_idx] = -_rny * _v + od->velocity_x[{targetIdx}];");
                 _cWriter!.WriteLine($"    od->velocity_y[new_idx] = _rnx * _v + od->velocity_y[{targetIdx}];");
                 _cWriter!.WriteLine($"  }}");
+            }
+
+            // Surface initialization (animated planet/moon surfaces)
+            if (entity is EntityData edSurf && edSurf.SurfaceIdx.HasValue)
+            {
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"  // Surface: {edSurf.SurfaceName}");
+                _cWriter!.WriteLine($"  od->surface_idx[new_idx] = {edSurf.SurfaceIdx.Value};");
+                _cWriter!.WriteLine($"  od->rotation_speed[new_idx] = {(edSurf.RotationSpeed ?? 0.001f):0.0#######}f;");
+                _cWriter!.WriteLine($"  od->surface_rotation[new_idx] = 0.0f;");
             }
 
             // Engage AI orbit keeper for satellites with orbit targets

@@ -7,26 +7,13 @@
   <!-- Main solar disc (hull for collision) -->
   <circle class="hull" cx="0" cy="0" r="200" fill="none" stroke="#FFD700" stroke-width="4"/>
 
-  <!-- Solar prominences (simple lines, not curves) -->
+  <!-- Solar prominences (part of silhouette, stay static) -->
   <polyline points="-180,-90 -215,-105 -195,-55" fill="none" stroke="#FF6600" stroke-width="2"/>
   <polyline points="140,140 175,165 155,115" fill="none" stroke="#FF6600" stroke-width="2"/>
   <polyline points="50,-190 55,-230 85,-180" fill="none" stroke="#FF6600" stroke-width="2"/>
   <polyline points="-100,180 -120,220 -75,185" fill="none" stroke="#FF6600" stroke-width="2"/>
 
-  <!-- Surface texture arcs (simple lines) -->
-  <polyline points="-80,-40 -40,-70 20,-50" fill="none" stroke="#FFD700" stroke-width="1"/>
-  <polyline points="60,20 95,55 50,90" fill="none" stroke="#FFD700" stroke-width="1"/>
-  <polyline points="-30,70 -65,105 -110,70" fill="none" stroke="#FFD700" stroke-width="1"/>
-  <polyline points="20,-120 65,-135 100,-100" fill="none" stroke="#FFD700" stroke-width="1"/>
-
-  <!-- Sunspot 1 (hexagon approximation) -->
-  <polyline points="-42,30 -51,21 -60,25 -69,36 -60,39 -51,35 -42,30" fill="none" stroke="#CC8800" stroke-width="1.5"/>
-  <polyline points="-53,30 -57,27 -63,30 -63,34 -57,33 -53,30" fill="none" stroke="#996600" stroke-width="1"/>
-
-  <!-- Sunspot 2 (pentagon) -->
-  <polyline points="92,-60 85,-68 75,-65 73,-55 82,-52 92,-60" fill="none" stroke="#CC8800" stroke-width="1.2"/>
-
-  <!-- Corona rays -->
+  <!-- Corona rays (static outline) -->
   <line x1="0" y1="-200" x2="0" y2="-225" stroke="#FFA500" stroke-width="1"/>
   <line x1="200" y1="0" x2="225" y2="0" stroke="#FFA500" stroke-width="1"/>
   <line x1="0" y1="200" x2="0" y2="225" stroke="#FFA500" stroke-width="1"/>

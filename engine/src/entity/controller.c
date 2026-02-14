@@ -36,6 +36,24 @@ static void _process_mouse() {
   }
 }
 
+static void _process_rotation_and_weapons(void) {
+  const struct input_state* input = platform_get_input_state();
+
+  // Rotation via mouse
+  if (input->mdx != 0) {
+    messaging_send(_controlled_entity, CREATE_MESSAGE(MESSAGE_ROTATE_BY, -input->mdx, 0));
+  }
+
+  // Fire weapons with left mouse button
+  if (platform_input_is_button_down(BUTTON_LEFT)) {
+    messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_WEAPON),
+                   CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 1, 0));
+  } else {
+    messaging_send(PARTS_OF_TYPE(_controlled_entity, PART_TYPEREF_WEAPON),
+                   CREATE_MESSAGE(MESSAGE_WEAPON_FIRE, 0, 0));
+  }
+}
+
 static void _process_zoom(void) {
   const struct input_state* input = platform_get_input_state();
 
@@ -83,6 +101,8 @@ static void _controller_dispatch(entity_id_t id, message_t msg) {
     if (is_valid_id(_controlled_entity)) {
       if (_ai_active) {
         _process_ai_cancel();
+        // Allow rotation and weapons during orbit mode (AI only controls thrust)
+        _process_rotation_and_weapons();
       } else {
         _process_mouse();
         _process_keyboard();

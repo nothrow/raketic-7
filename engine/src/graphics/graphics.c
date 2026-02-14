@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "stars.h"
+#include "surface.h"
 #include "entity/entity.h"
 #include "entity/camera.h"
 #include "entity/beams.h"
@@ -137,6 +138,7 @@ void graphics_engine_draw(void) {
   _graphics_beams_draw();
   _graphics_parts_draw();
   _graphics_objects_draw();
+  surface_draw_all();
 
   platform_renderer_pop_zoom();
 

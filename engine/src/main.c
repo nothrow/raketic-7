@@ -5,6 +5,7 @@
 #include "physics/physics.h"
 #include "messaging/messaging.h"
 #include "graphics/graphics.h"
+#include "graphics/surface.h"
 #include "debug/debug.h"
 #include "hud/hud.h"
 #include "debug/profiler.h"
@@ -47,6 +48,7 @@ int run(void) {
     while (platform_tick_pending()) {
       physics_engine_tick();
       collisions_engine_tick();
+      surface_tick();
       messaging_pump();
     }
     PROFILE_FRAME_END("Physics");

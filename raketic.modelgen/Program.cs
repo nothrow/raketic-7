@@ -1,5 +1,6 @@
 using raketic.modelgen;
 using raketic.modelgen.Entity;
+using raketic.modelgen.Surface;
 using raketic.modelgen.Svg;
 using raketic.modelgen.World;
 using raketic.modelgen.Writer;
@@ -20,7 +21,8 @@ Console.WriteLine();
 
 var modelContext = new ModelContext(paths);
 var entityContext = new EntityContext(paths);
-var worldsParser = new WorldsParser(paths, modelContext, entityContext);
+var surfaceContext = new SurfaceContext(paths);
+var worldsParser = new WorldsParser(paths, modelContext, entityContext, surfaceContext);
 
 foreach(var world in Directory.GetFiles(Path.Combine(paths.DataDir, "worlds"), "*.lua"))
 {
@@ -35,6 +37,7 @@ using var writer = new WorldWriter(paths);
 
 writer.WriteHeaders();
 writer.WriteModels(worldsParser.Models);
+writer.WriteSurfaces(surfaceContext.Surfaces);
 writer.WriteWorlds(worldsParser.Worlds);
 
 return;

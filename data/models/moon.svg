@@ -6,14 +6,5 @@
 
   <!-- Main moon outline -->
   <circle class="hull" cx="0" cy="0" r="10" fill="none" stroke="white" stroke-width="1.5"/>
-
-  <!-- Crater 1 - large -->
-  <circle cx="-3" cy="-4" r="3" fill="none" stroke="white" stroke-width="0.8"/>
-
-  <!-- Crater 2 - medium -->
-  <circle cx="4" cy="2" r="2" fill="none" stroke="white" stroke-width="0.8"/>
-
-  <!-- Crater 3 - small -->
-  <circle cx="-1" cy="5" r="1.5" fill="none" stroke="white" stroke-width="0.8"/>
 </g>
 </svg>

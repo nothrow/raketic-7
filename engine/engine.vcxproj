@@ -61,6 +61,7 @@
     <ClCompile Include="src\hud\hud.c" />
     <ClCompile Include="src\hud\hud_text.c" />
     <ClCompile Include="src\graphics\graphics.c" />
+    <ClCompile Include="src\graphics\surface.c" />
     <ClCompile Include="src\graphics\stars.c">
       <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
@@ -130,6 +131,7 @@
     <ClInclude Include="src\hud\hud.h" />
     <ClInclude Include="src\hud\hud_text.h" />
     <ClInclude Include="src\graphics\graphics.h" />
+    <ClInclude Include="src\graphics\surface.h" />
     <ClInclude Include="src\graphics\stars.h" />
     <ClInclude Include="src\messaging\messaging.h" />
     <ClInclude Include="src\physics\physics.h" />

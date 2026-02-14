@@ -2,6 +2,7 @@
 #include "hud_text.h"
 #include "entity/entity.h"
 #include "entity/ai.h"
+#include "entity/radar.h"
 #include "platform/platform.h"
 #include "platform/math.h"
 
@@ -207,7 +208,8 @@ static void _draw_gauge(float px, float py, float pw,
 #define ORBIT_MIN_DIST_FACTOR  1.5f
 #define ORBIT_MAX_DIST_FACTOR  3.0f
 #define ORBIT_TANG_THRESHOLD   0.6f
-#define NAV_DISPLAY_FACTOR     2.0f   // show mini-map within outer_zone * this
+// Mini-map scale: map viewport covers outer_zone * this in world units
+#define NAV_DISPLAY_FACTOR     2.0f
 
 typedef struct {
   bool found;
@@ -226,6 +228,7 @@ typedef struct {
 } orbit_proximity_t;
 
 static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
+                                     entity_id_t ship_id,
                                      orbit_proximity_t* out) {
   out->found = false;
   out->in_nav_range = false;
@@ -236,31 +239,21 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
 
   if (ship_idx >= od->active) return;
 
-  float sx = od->position_orientation.position_x[ship_idx];
-  float sy = od->position_orientation.position_y[ship_idx];
+  // Read from ship's radar nav contacts instead of scanning all entities
+  const struct radar_data* rd = radar_get_data(ship_id);
+  if (!rd || rd->nav_count == 0) return;
 
-  // Find nearest planet or moon
-  float best_dist_sq = 1e30f;
-  uint32_t best = UINT32_MAX;
+  // Nearest celestial body is the first nav contact (sorted by distance)
+  const struct radar_contact* nav = &rd->nav[0];
+  uint32_t best = (uint32_t)nav->entity_ordinal;
 
-  for (uint32_t i = 0; i < od->active; i++) {
-    uint8_t t = od->type[i]._;
-    if (t != ENTITY_TYPE_PLANET && t != ENTITY_TYPE_MOON && t != ENTITY_TYPE_SUN) continue;
-
-    float dx = od->position_orientation.position_x[i] - sx;
-    float dy = od->position_orientation.position_y[i] - sy;
-    float d2 = dx * dx + dy * dy;
-    if (d2 < best_dist_sq) {
-      best_dist_sq = d2;
-      best = i;
-    }
-  }
-
-  if (best == UINT32_MAX) return;
+  if (best >= od->active) return;
 
   out->found = true;
-  out->body_type = od->type[best]._;
+  out->body_type = nav->entity_type;
 
+  float sx = od->position_orientation.position_x[ship_idx];
+  float sy = od->position_orientation.position_y[ship_idx];
   float bx = od->position_orientation.position_x[best];
   float by = od->position_orientation.position_y[best];
 
@@ -274,7 +267,8 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
   out->vel_x = rel_vx;
   out->vel_y = rel_vy;
 
-  float dist = sqrtf(best_dist_sq);
+  float dist_sq = out->rel_x * out->rel_x + out->rel_y * out->rel_y;
+  float dist = sqrtf(dist_sq);
   out->distance = dist;
 
   float body_radius = od->position_orientation.radius[best];
@@ -282,8 +276,8 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
   out->zone_inner = body_radius * ORBIT_MIN_DIST_FACTOR;
   out->zone_outer = body_radius * ORBIT_MAX_DIST_FACTOR;
 
-  // Nav range: show the mini-map when within 2x the outer orbit zone
-  out->in_nav_range = dist <= out->zone_outer * NAV_DISPLAY_FACTOR;
+  // Always show nav when radar sees the body (radar range is the limit now)
+  out->in_nav_range = true;
 
   out->in_zone = dist >= out->zone_inner && dist <= out->zone_outer;
 
@@ -361,7 +355,7 @@ static void _draw_nav_panel(float px, float py, float ph, float pw,
   uint32_t ship_idx = GET_ORDINAL(ship_id);
 
   orbit_proximity_t prox;
-  _compute_orbit_proximity(od, ship_idx, &prox);
+  _compute_orbit_proximity(od, ship_idx, ship_id, &prox);
 
   if (!prox.found || !prox.in_nav_range) {
     // Nothing nearby — blank panel

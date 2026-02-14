@@ -269,6 +269,8 @@ internal record RadarPartData : PartData
     public override void DumpPartData(StreamWriter w, string dataref)
     {
         w.WriteLine($"  ((struct radar_data*)({dataref}))->range = {Range ?? 300.0f:0.0#######}f;");
+        w.WriteLine($"  ((struct radar_data*)({dataref}))->contact_count = 0;");
+        w.WriteLine($"  ((struct radar_data*)({dataref}))->nav_count = 0;");
     }
 }
 
@@ -282,6 +284,9 @@ internal record EntityData : BaseEntityWithModelData
     public float? Rotation { get; init; }
     public int? OrbitTargetCacheIdx { get; init; }
     public int? OrbitTargetSpawnId { get; init; }
+    public string? SurfaceName { get; init; }
+    public int? SurfaceIdx { get; init; }
+    public float? RotationSpeed { get; init; }
 
     public static EntityData Empty { get; } = new EntityData();
 
@@ -333,6 +338,14 @@ internal record EntityData : BaseEntityWithModelData
                     throw new InvalidOperationException($"Invalid type for 'orbit' field in entity definition, expected Entity but got {type}");
                 var orbitIdx = System.Runtime.InteropServices.Marshal.ReadInt32(orbitPtr);
                 return this with { OrbitTargetCacheIdx = orbitIdx };
+            case "surface":
+                if (type != LuaType.String)
+                    throw new InvalidOperationException($"Invalid type for 'surface' field in entity definition, expected string but got {type}");
+                return this with { SurfaceName = lua.ToString(-1) };
+            case "rotation_speed":
+                if (type != LuaType.Number)
+                    throw new InvalidOperationException($"Invalid type for 'rotation_speed' field in entity definition, expected number but got {type}");
+                return this with { RotationSpeed = (float?)lua.ToNumberX(-1) };
             default:
                 return base.ReadFromTable(key, type, lua);
         }

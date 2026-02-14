@@ -1,12 +1,13 @@
 using KeraLua;
 using raketic.modelgen.Entity;
+using raketic.modelgen.Surface;
 using raketic.modelgen.Svg;
 
 namespace raketic.modelgen.World;
 
 internal record WorldsData(string WorldName, BaseEntityWithModelData[] Entities, int? ControlledEntitySpawnId);
 
-internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityContext _entityContext)
+internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityContext _entityContext, SurfaceContext _surfaceContext)
 {
     private List<WorldsData> _worlds = new();
     private List<BaseEntityWithModelData> _entities = new();
@@ -48,6 +49,13 @@ internal class WorldsParser(PathInfo _paths, ModelContext _modelContext, EntityC
                 if (target.SpawnId == null)
                     throw new InvalidOperationException("Orbit target must be spawned before the orbiting entity");
                 resolvedEntity = ((EntityData)resolvedEntity) with { OrbitTargetSpawnId = target.SpawnId };
+            }
+
+            // Resolve surface reference
+            if (resolvedEntity is EntityData edSurf && edSurf.SurfaceName != null)
+            {
+                var surfIdx = _surfaceContext.LoadSurface(edSurf.SurfaceName);
+                resolvedEntity = ((EntityData)resolvedEntity) with { SurfaceIdx = surfIdx };
             }
 
             _entities.Add(

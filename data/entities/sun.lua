@@ -2,4 +2,6 @@ return Sun {
   model  = models.sun,
   mass   = 10000000,
   radius = models.sun.radius,
+  surface = "sun_surface",
+  rotation_speed = 0.0005,
 }

@@ -29,6 +29,10 @@ struct objects_data {
   float* __restrict mass;
 
   int16_t* __restrict health; // <=0 means dead, will be swept by pack_objects
+
+  uint16_t* __restrict surface_idx;       // surface data index, 0xFFFF = none
+  float* __restrict surface_rotation;     // current rotation angle (radians)
+  float* __restrict rotation_speed;       // radians per tick
 };
 
 struct parts_data {

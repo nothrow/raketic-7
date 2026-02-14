@@ -6,6 +6,7 @@ return Ship {
     engine1 = parts.basicEngine,
     engine2 = parts.basicEngine,
     weapon1 = parts.laser,
-    weapon2 = parts.rocketLauncher
+    weapon2 = parts.rocketLauncher,
+    radar1  = parts.shipRadar
   }
 }

@@ -7,6 +7,7 @@
 #include "engine.h"
 #include "ship.h"
 #include "ai.h"
+#include "radar.h"
 #include "explosion.h"
 
 #include <math.h>
@@ -43,30 +44,25 @@ static void _detect_reset(void) {
 }
 
 static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_idx) {
+  entity_id_t ship_id = OBJECT_ID_WITH_TYPE(ship_idx, ENTITY_TYPE_SHIP);
+
+  // Use radar to find the nearest celestial body
+  const struct radar_data* rd = radar_get_data(ship_id);
+  if (!rd || rd->nav_count == 0) return;
+
+  uint32_t best_planet = (uint32_t)rd->nav[0].entity_ordinal;
+  if (best_planet >= od->active) return;
+
   float sx = od->position_orientation.position_x[ship_idx];
   float sy = od->position_orientation.position_y[ship_idx];
+  float bx = od->position_orientation.position_x[best_planet];
+  float by = od->position_orientation.position_y[best_planet];
 
-  // Find nearest planet
-  float best_dist_sq = 1e30f;
-  uint32_t best_planet = UINT32_MAX;
+  float dx = bx - sx;
+  float dy = by - sy;
+  float dist_sq = dx * dx + dy * dy;
+  float dist = sqrtf(dist_sq);
 
-  for (uint32_t i = 0; i < od->active; i++) {
-    uint8_t t = od->type[i]._;
-    if (t != ENTITY_TYPE_PLANET && t != ENTITY_TYPE_MOON && t != ENTITY_TYPE_SUN) continue;
-
-    float dx = od->position_orientation.position_x[i] - sx;
-    float dy = od->position_orientation.position_y[i] - sy;
-    float dist_sq = dx * dx + dy * dy;
-
-    if (dist_sq < best_dist_sq) {
-      best_dist_sq = dist_sq;
-      best_planet = i;
-    }
-  }
-
-  if (best_planet == UINT32_MAX) return;
-
-  float dist = sqrtf(best_dist_sq);
   float planet_radius = od->position_orientation.radius[best_planet];
 
   if (dist < planet_radius * ORBIT_MIN_DISTANCE_FACTOR) return;
@@ -83,8 +79,8 @@ static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_
   float v_escape_sq = 2.0f * GRAVITATIONAL_CONSTANT * planet_mass / dist;
   if (speed_sq > v_escape_sq) return;
 
-  float rnx = (sx - od->position_orientation.position_x[best_planet]) / dist;
-  float rny = (sy - od->position_orientation.position_y[best_planet]) / dist;
+  float rnx = (sx - bx) / dist;
+  float rny = (sy - by) / dist;
   float v_radial = rel_vx * rnx + rel_vy * rny;
 
   if (fabsf(v_radial) / speed > ORBIT_TANGENTIAL_THRESHOLD) return;
@@ -99,7 +95,6 @@ static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_
   }
 
   if (_detect.counter >= ORBIT_ENGAGE_DELAY_TICKS) {
-    entity_id_t ship_id = OBJECT_ID_WITH_TYPE(ship_idx, ENTITY_TYPE_SHIP);
     ai_orbit_engage(ship_id, best_planet);
     _detect_reset();
   }

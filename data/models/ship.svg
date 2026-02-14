@@ -21,6 +21,8 @@
       <circle cx="25" cy="45" slot="weapon1" />
       <circle cx="75" cy="45" slot="weapon2" />
 
+      <circle cx="50" cy="30" slot="radar1" />
+
       <!-- Wing weapons/details -->
       <!--<circle cx="15" cy="50" r="3" fill="none" stroke="white" stroke-width="1"/>
       <circle cx="85" cy="50" r="3" fill="none" stroke="white" stroke-width="1"/>-->

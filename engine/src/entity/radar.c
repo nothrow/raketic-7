@@ -5,13 +5,24 @@
 
 #include <immintrin.h>
 
-// Radar scans for all non-celestial objects within range.
-// Contacts are stored sorted by distance (closest first) in radar_data,
-// then MESSAGE_RADAR_SCAN_COMPLETE is sent to the parent entity.
-// Each contact carries entity_type for Friend-or-Foe identification.
+// Radar scans for all objects within range.
+// Celestial bodies (planet, moon, sun) go into the nav[] array.
+// Other entities (asteroid, ship, rocket, satellite) go into contacts[].
+// Both arrays are sorted by distance (closest first).
+// Each contact carries entity_type and entity_ordinal for identification.
 
-static bool _is_scannable_type(uint8_t type) {
-  // Detect anything that isn't a planet, moon, beam, particle, camera, or controller
+static bool _is_celestial(uint8_t type) {
+  switch (type) {
+  case ENTITY_TYPE_PLANET:
+  case ENTITY_TYPE_MOON:
+  case ENTITY_TYPE_SUN:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool _is_scannable(uint8_t type) {
   switch (type) {
   case ENTITY_TYPE_ASTEROID:
   case ENTITY_TYPE_SHIP:
@@ -24,6 +35,45 @@ static bool _is_scannable_type(uint8_t type) {
 }
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+// Insert a contact into a sorted array (ascending distance).
+// Returns updated count.
+static uint8_t _insert_contact(struct radar_contact* arr, float* dist_arr,
+                               uint8_t count, uint8_t max_count,
+                               float d_sq, float px, float py,
+                               uint16_t ordinal, uint8_t etype) {
+  // Find insertion point (sorted ascending by distance)
+  uint8_t insert_at = count;
+  for (uint8_t k = 0; k < count; k++) {
+    if (d_sq < dist_arr[k]) {
+      insert_at = k;
+      break;
+    }
+  }
+
+  // Shift entries down if array not full, or drop the farthest
+  if (count < max_count) {
+    for (uint8_t k = count; k > insert_at; k--) {
+      arr[k] = arr[k - 1];
+      dist_arr[k] = dist_arr[k - 1];
+    }
+    count++;
+  } else if (insert_at < max_count) {
+    for (uint8_t k = max_count - 1; k > insert_at; k--) {
+      arr[k] = arr[k - 1];
+      dist_arr[k] = dist_arr[k - 1];
+    }
+  } else {
+    return count; // farther than all stored, array full — skip
+  }
+
+  arr[insert_at].x = px;
+  arr[insert_at].y = py;
+  arr[insert_at].entity_ordinal = ordinal;
+  arr[insert_at].entity_type = etype;
+  dist_arr[insert_at] = d_sq;
+  return count;
+}
 
 static void _radar_tick(void) {
   struct parts_data* pd = entity_manager_get_parts();
@@ -42,11 +92,12 @@ static void _radar_tick(void) {
     float sy = od->position_orientation.position_y[parent_idx];
     float range_sq = rd->range * rd->range;
 
-    // Collect contacts: insertion-sort by distance into the contacts array.
-    // We maintain up to MAX_RADAR_CONTACTS, sorted closest-first.
-    // distances[] tracks the squared distance for each stored contact.
-    uint8_t count = 0;
-    float distances[MAX_RADAR_CONTACTS];
+    // Collect contacts: insertion-sort by distance.
+    // Tactical and nav contacts use separate arrays.
+    uint8_t tac_count = 0;
+    uint8_t nav_count = 0;
+    float tac_distances[MAX_RADAR_CONTACTS];
+    float nav_distances[MAX_NAV_CONTACTS];
 
     // AVX2 broadcast radar position and range
     __m256 radar_x = _mm256_set1_ps(sx);
@@ -84,48 +135,27 @@ static void _radar_tick(void) {
 
         uint32_t idx = j + bit;
         if (idx == parent_idx) continue;
-        if (!_is_scannable_type(od->type[idx]._)) continue;
         if (od->health[idx] <= 0) continue;
 
+        uint8_t etype = od->type[idx]._;
         float d_sq = dist_sq_arr[bit];
 
-        // Find insertion point (sorted ascending by distance)
-        uint8_t insert_at = count;
-        for (uint8_t k = 0; k < count; k++) {
-          if (d_sq < distances[k]) {
-            insert_at = k;
-            break;
-          }
+        if (_is_celestial(etype)) {
+          nav_count = _insert_contact(rd->nav, nav_distances, nav_count, MAX_NAV_CONTACTS,
+                                      d_sq, obj_px[idx], obj_py[idx], (uint16_t)idx, etype);
+        } else if (_is_scannable(etype)) {
+          tac_count = _insert_contact(rd->contacts, tac_distances, tac_count, MAX_RADAR_CONTACTS,
+                                      d_sq, obj_px[idx], obj_py[idx], (uint16_t)idx, etype);
         }
-
-        // Shift entries down if array not full, or drop the farthest
-        if (count < MAX_RADAR_CONTACTS) {
-          for (uint8_t k = count; k > insert_at; k--) {
-            rd->contacts[k] = rd->contacts[k - 1];
-            distances[k] = distances[k - 1];
-          }
-          count++;
-        } else if (insert_at < MAX_RADAR_CONTACTS) {
-          for (uint8_t k = MAX_RADAR_CONTACTS - 1; k > insert_at; k--) {
-            rd->contacts[k] = rd->contacts[k - 1];
-            distances[k] = distances[k - 1];
-          }
-        } else {
-          continue; // farther than all stored, array full — skip
-        }
-
-        rd->contacts[insert_at].x = obj_px[idx];
-        rd->contacts[insert_at].y = obj_py[idx];
-        rd->contacts[insert_at].entity_type = od->type[idx]._;
-        distances[insert_at] = d_sq;
       }
     }
 
-    rd->contact_count = count;
+    rd->contact_count = tac_count;
+    rd->nav_count = nav_count;
 
     // Notify parent
     messaging_send(parent_id,
-                   CREATE_MESSAGE(MESSAGE_RADAR_SCAN_COMPLETE, (int32_t)count, 0));
+                   CREATE_MESSAGE(MESSAGE_RADAR_SCAN_COMPLETE, (int32_t)tac_count, 0));
   }
 }
 
@@ -140,4 +170,22 @@ static void _radar_part_dispatch(entity_id_t id, message_t msg) {
 
 void radar_part_entity_initialize(void) {
   entity_manager_vtables[ENTITY_TYPE_PART_RADAR].dispatch_message = _radar_part_dispatch;
+}
+
+const struct radar_data* radar_get_data(entity_id_t owner) {
+  struct objects_data* od = entity_manager_get_objects();
+  struct parts_data* pd = entity_manager_get_parts();
+  uint32_t idx = GET_ORDINAL(owner);
+  if (idx >= od->active) return 0;
+
+  uint32_t start = od->parts_start_idx[idx];
+  uint32_t count = od->parts_count[idx];
+
+  for (uint32_t p = 0; p < count; p++) {
+    uint32_t pi = start + p;
+    if (pd->type[pi]._ == ENTITY_TYPE_PART_RADAR) {
+      return (const struct radar_data*)(pd->data[pi].data);
+    }
+  }
+  return 0;
 }
