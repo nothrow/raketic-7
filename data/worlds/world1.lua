@@ -25,30 +25,31 @@ local sat1 = spawn(entities.satellite {
 -- Player starts near the planet
 local player = spawn(entities.basicShip {
   position = vec(4850, -150),
+  orbit = planet
 })
 
 -- Asteroids drifting slowly toward the planet
-local asteroid1 = spawn(entities.asteroid {
+spawn(entities.asteroid {
   position = vec(4500, -400),
   velocity = vec(1.8, 1.2),
 })
 
-local asteroid2 = spawn(entities.asteroid {
+spawn(entities.asteroid {
   position = vec(5500, -300),
   velocity = vec(-2.5, 1.0),
 })
 
-local asteroid3 = spawn(entities.asteroid {
+spawn(entities.asteroid {
   position = vec(5200, 600),
   velocity = vec(-1.2, -2.0),
 })
 
-local asteroid4 = spawn(entities.asteroid {
+spawn(entities.asteroid {
   position = vec(4400, 300),
   velocity = vec(2.0, -0.8),
 })
 
-local asteroid5 = spawn(entities.asteroid {
+spawn(entities.asteroid {
   position = vec(5300, -500),
   velocity = vec(-1.5, 2.2),
 })

@@ -108,9 +108,15 @@ static float _compute_orbit_dv_sq(struct objects_data* od, uint32_t ei, uint32_t
   float svx = od->velocity_x[ei];
   float svy = od->velocity_y[ei];
 
-  // Pick tangent direction closest to current velocity
-  float dot_ccw = svx * (-rny) + svy * rnx;
-  float dot_cw = svx * rny + svy * (-rnx);
+  // Use velocity RELATIVE to the body for tangent direction selection.
+  // The body moves (e.g. planet orbiting sun) — inertial velocity is dominated
+  // by the body's motion, not the local orbital direction.
+  float rel_vx = svx - od->velocity_x[bi];
+  float rel_vy = svy - od->velocity_y[bi];
+
+  // Pick tangent direction closest to relative velocity (CW vs CCW orbit)
+  float dot_ccw = rel_vx * (-rny) + rel_vy * rnx;
+  float dot_cw = rel_vx * rny + rel_vy * (-rnx);
 
   float tx, ty;
   if (dot_ccw >= dot_cw) {
@@ -168,9 +174,12 @@ static void _slot_tick(struct ai_slot* s) {
   float dist = dist_sq * inv_dist;  // ≈ sqrt(dist_sq)
   float rnx = rx * inv_dist;
   float rny = ry * inv_dist;
-  float svx = od->velocity_x[s->entity_ordinal];
-  float svy = od->velocity_y[s->entity_ordinal];
-  float v_radial = svx * rnx + svy * rny; // positive = away, negative = approaching
+  // Velocity RELATIVE to the body for all radial safety checks.
+  // The body moves (e.g. planet orbiting sun at ~115 u/s);
+  // using inertial velocity would see phantom "approaching" at that speed.
+  float rel_vx = od->velocity_x[s->entity_ordinal] - od->velocity_x[s->body_ordinal];
+  float rel_vy = od->velocity_y[s->entity_ordinal] - od->velocity_y[s->body_ordinal];
+  float v_radial = rel_vx * rnx + rel_vy * rny; // positive = away, negative = approaching
 
   float emergency_dist = body_radius * EMERGENCY_DISTANCE_FACTOR;
   bool too_close = dist < emergency_dist;
