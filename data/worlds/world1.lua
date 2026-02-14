@@ -1,49 +1,56 @@
-local player = spawn(entities.basicShip {
+-- Sun at the center of the system
+local sun = spawn(entities.sun {
   position = vec(0, 0),
 })
 
+-- Planet orbiting the sun at distance 5000
+-- Hill sphere ≈ 747, so moons within ~250 are stable
 local planet = spawn(entities.planet {
-  position = vec(500, 300),
+  position = vec(5000, 0),
+  orbit = sun,
 })
 
+-- Moon orbiting the planet at distance 200 (27% of Hill sphere)
 local moon1 = spawn(entities.moon {
-  position = vec(500, 500),
+  position = vec(5000, 200),
   orbit = planet,
 })
 
+-- Satellite orbiting the planet at distance 180
 local sat1 = spawn(entities.satellite {
-  position = vec(500, 420),
+  position = vec(4820, 0),
   orbit = planet,
 })
 
-local asteroid1 = spawn(entities.asteroid {
-  position = vec(200, 0),
+-- Player starts near the planet
+local player = spawn(entities.basicShip {
+  position = vec(4850, -150),
 })
 
--- asteroids drifting slowly toward the planet
+-- Asteroids drifting slowly toward the planet
+local asteroid1 = spawn(entities.asteroid {
+  position = vec(4500, -400),
+  velocity = vec(1.8, 1.2),
+})
+
 local asteroid2 = spawn(entities.asteroid {
-  position = vec(-300, -200),
-  velocity = vec(2.5, 1.6),
+  position = vec(5500, -300),
+  velocity = vec(-2.5, 1.0),
 })
 
 local asteroid3 = spawn(entities.asteroid {
-  position = vec(1300, -100),
-  velocity = vec(-2.7, 1.3),
+  position = vec(5200, 600),
+  velocity = vec(-1.2, -2.0),
 })
 
 local asteroid4 = spawn(entities.asteroid {
-  position = vec(300, 900),
-  velocity = vec(0.8, -2.4),
+  position = vec(4400, 300),
+  velocity = vec(2.0, -0.8),
 })
 
 local asteroid5 = spawn(entities.asteroid {
-  position = vec(-200, 500),
-  velocity = vec(1.9, -0.5),
-})
-
-local asteroid6 = spawn(entities.asteroid {
-  position = vec(1200, 800),
-  velocity = vec(-2.0, -1.5),
+  position = vec(5300, -500),
+  velocity = vec(-1.5, 2.2),
 })
 
 -- force-include explosion particle models (spawned at runtime, not by entities)

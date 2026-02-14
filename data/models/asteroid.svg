@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="100" height="100" viewBox="-30 -30 60 60" xmlns="http://www.w3.org/2000/svg">
+  <g transform="scale(0.35)">
     <circle id="center" cx="0" cy="0" r="1" />
     <!-- Main asteroid body - irregular rock polygon -->
     <path class="hull" d="M 20,-8 L 12,-20 L -2,-24 L -18,-15 L -22,5 L -12,20 L 6,22 L 18,14 L 24,2 Z"
@@ -11,4 +12,5 @@
     <!-- Chunk slots - at the edge so chunks protrude outward -->
     <circle cx="-18" cy="-18" slot="chunk1" />
     <circle cx="18" cy="14" slot="chunk2" />
+  </g>
 </svg>

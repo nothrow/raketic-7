@@ -13,6 +13,8 @@ enum buttons {
 
 enum keys {
   KEY_SPACE = 0x20,
+  KEY_PLUS = 0x6B,  // VK_ADD (numpad +)
+  KEY_MINUS = 0x6D, // VK_SUBTRACT (numpad -)
   KEY_TILDE = 0xC0, // VK_OEM_3 (~/` key)
   KEY_COUNT = 0xC1,
 };
@@ -21,6 +23,7 @@ enum keys {
 struct input_state {
   int mx, my;
   int mdx, mdy;
+  int scroll_y;   // mouse wheel delta this frame (positive = up/zoom in)
   unsigned int buttons;
   uint8_t keyPressed[KEY_COUNT];
 };
@@ -55,6 +58,10 @@ void platform_renderer_draw_stars(size_t count, const float* vertices, const col
 void platform_renderer_draw_beams(size_t count, const float* start_x, const float* start_y,
                                   const float* end_x, const float* end_y,
                                   const uint16_t* lifetime_ticks, const uint16_t* lifetime_max);
+
+// Camera zoom (applies GL scale transform around screen center)
+void platform_renderer_push_zoom(float zoom);
+void platform_renderer_pop_zoom(void);
 
 // Call at end of frame to report draw call stats to profiler
 void platform_renderer_report_stats(void);

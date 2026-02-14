@@ -150,7 +150,13 @@ static void _recompute_acceleration(struct objects_data* od) {
       __m256 dist_sq = _mm256_add_ps(_mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy));
       dist_sq = _mm256_max_ps(dist_sq, epsilon); // avoid singularity
 
-      __m256 inv_r = _mm256_rsqrt_ps(dist_sq);
+      // rsqrt with Newton-Raphson refinement for full float precision
+      // (raw _mm256_rsqrt_ps is only ~12 bits — causes orbital energy drift)
+      __m256 inv_r_approx = _mm256_rsqrt_ps(dist_sq);
+      __m256 half_dist_sq = _mm256_mul_ps(dist_sq, _mm256_set1_ps(0.5f));
+      __m256 inv_r = _mm256_mul_ps(inv_r_approx,
+        _mm256_sub_ps(_mm256_set1_ps(1.5f),
+          _mm256_mul_ps(half_dist_sq, _mm256_mul_ps(inv_r_approx, inv_r_approx))));
       __m256 inv_r3 = _mm256_mul_ps(inv_r, _mm256_mul_ps(inv_r, inv_r));
 
       __m256 ax = _mm256_mul_ps(g, _mm256_mul_ps(jm, _mm256_mul_ps(dx, inv_r3)));

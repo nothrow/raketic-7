@@ -238,11 +238,6 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
 
   float sx = od->position_orientation.position_x[ship_idx];
   float sy = od->position_orientation.position_y[ship_idx];
-  float svx = od->velocity_x[ship_idx];
-  float svy = od->velocity_y[ship_idx];
-
-  out->vel_x = svx;
-  out->vel_y = svy;
 
   // Find nearest planet or moon
   float best_dist_sq = 1e30f;
@@ -250,7 +245,7 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
 
   for (uint32_t i = 0; i < od->active; i++) {
     uint8_t t = od->type[i]._;
-    if (t != ENTITY_TYPE_PLANET && t != ENTITY_TYPE_MOON) continue;
+    if (t != ENTITY_TYPE_PLANET && t != ENTITY_TYPE_MOON && t != ENTITY_TYPE_SUN) continue;
 
     float dx = od->position_orientation.position_x[i] - sx;
     float dy = od->position_orientation.position_y[i] - sy;
@@ -273,6 +268,12 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
   out->rel_x = sx - bx;
   out->rel_y = sy - by;
 
+  // Velocity RELATIVE to the body (the body itself is moving, e.g. planet orbiting sun)
+  float rel_vx = od->velocity_x[ship_idx] - od->velocity_x[best];
+  float rel_vy = od->velocity_y[ship_idx] - od->velocity_y[best];
+  out->vel_x = rel_vx;
+  out->vel_y = rel_vy;
+
   float dist = sqrtf(best_dist_sq);
   out->distance = dist;
 
@@ -286,7 +287,7 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
 
   out->in_zone = dist >= out->zone_inner && dist <= out->zone_outer;
 
-  float speed_sq = svx * svx + svy * svy;
+  float speed_sq = rel_vx * rel_vx + rel_vy * rel_vy;
   float speed = sqrtf(speed_sq);
 
   float body_mass = od->mass[best];
@@ -296,7 +297,7 @@ static void _compute_orbit_proximity(struct objects_data* od, uint32_t ship_idx,
   if (speed > 0.01f) {
     float rnx = out->rel_x / (dist > 0.01f ? dist : 1.0f);
     float rny = out->rel_y / (dist > 0.01f ? dist : 1.0f);
-    float v_radial = svx * rnx + svy * rny;
+    float v_radial = rel_vx * rnx + rel_vy * rny;
     float tang_ratio = fabsf(v_radial) / speed;
     out->tangent_ok = tang_ratio <= ORBIT_TANG_THRESHOLD;
   } else {
@@ -371,6 +372,7 @@ static void _draw_nav_panel(float px, float py, float ph, float pw,
   // --- Body name + distance (top line) ---
   const char* body_name = prox.body_type == ENTITY_TYPE_PLANET ? "PLANET"
                         : prox.body_type == ENTITY_TYPE_MOON   ? "MOON"
+                        : prox.body_type == ENTITY_TYPE_SUN    ? "SUN"
                                                                 : "BODY";
   hud_text_draw_string(lx, ty, body_name, SMALL_SCALE, COL_CYAN);
   hud_text_draw_string(lx + 42.0f, ty, "d:", SMALL_SCALE, COL_LABEL);

@@ -1,5 +1,9 @@
 #include "platform/platform.h"
 #include "controller.h"
+#include "camera.h"
+
+#define ZOOM_WHEEL_FACTOR 1.15f  // each scroll notch zooms 15%
+#define ZOOM_KEY_FACTOR   1.03f  // each tick holding +/- zooms 3%
 
 static entity_id_t _controlled_entity = INVALID_ENTITY;
 static int _last_rot = 0;
@@ -32,6 +36,25 @@ static void _process_mouse() {
   }
 }
 
+static void _process_zoom(void) {
+  const struct input_state* input = platform_get_input_state();
+
+  // Mouse wheel zoom
+  if (input->scroll_y > 0) {
+    for (int i = 0; i < input->scroll_y; i++)
+      camera_zoom_by(1.0f / ZOOM_WHEEL_FACTOR); // scroll up = zoom in
+  } else if (input->scroll_y < 0) {
+    for (int i = 0; i < -input->scroll_y; i++)
+      camera_zoom_by(ZOOM_WHEEL_FACTOR);         // scroll down = zoom out
+  }
+
+  // Keyboard zoom
+  if (platform_input_is_key_down(KEY_PLUS))
+    camera_zoom_by(1.0f / ZOOM_KEY_FACTOR);
+  if (platform_input_is_key_down(KEY_MINUS))
+    camera_zoom_by(ZOOM_KEY_FACTOR);
+}
+
 static void _process_keyboard() {
   if (platform_input_is_key_down(KEY_SPACE)) {
 
@@ -56,6 +79,7 @@ static void _controller_dispatch(entity_id_t id, message_t msg) {
 
   switch (msg.message) {
   case MESSAGE_BROADCAST_FRAME_TICK:
+    _process_zoom();  // zoom always works, even during AI
     if (is_valid_id(_controlled_entity)) {
       if (_ai_active) {
         _process_ai_cancel();

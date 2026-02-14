@@ -6,7 +6,7 @@ internal class ModelWriter
     public int DumpModelData(StreamWriter w, Model model)
     {
         int points = 0; ;
-        w.WriteLine($"static const int8_t _model_{model.FileName}_vertices[] = {{");
+        w.WriteLine($"static const int16_t _model_{model.FileName}_vertices[] = {{");
         foreach (var linestrip in model.LineStrips)
         {
             w.Write(" ");
@@ -14,7 +14,7 @@ internal class ModelWriter
             {
                 checked
                 {
-                    w.Write($" {(sbyte)point.X}, {(sbyte)point.Y},");
+                    w.Write($" {(short)point.X}, {(short)point.Y},");
                     ++points;
                 }
             }
@@ -39,24 +39,24 @@ internal class ModelWriter
         w.WriteLine();
     }
 
-    // Command encoding for compact draw command list:
-    // Each command is 5 bytes: { gl_mode, start, count, color_idx, width_x10 }
+    // Command encoding for draw command list:
+    // Each command is 5 uint16_t: { gl_mode, start, count, color_idx, width_x10 }
     // gl_mode: 2=GL_LINE_LOOP, 3=GL_LINE_STRIP, 6=GL_TRIANGLE_FAN, 0=END
-    // color_idx: 0-253 = palette index, 0xFE = black, 0xFD = param color, 0xFF = no change
+    // color_idx: 0-253 = palette index, 0xFFFE = black, 0xFFFD = param color, 0xFFFF = no change
     // width_x10: line width * 10, 0 = no change
 
-    private const byte COLOR_NO_CHANGE = 0xFF;
-    private const byte COLOR_PARAM = 0xFD;
-    private const byte COLOR_BLACK = 0xFE;
+    private const ushort COLOR_NO_CHANGE = 0xFFFF;
+    private const ushort COLOR_PARAM = 0xFFFD;
+    private const ushort COLOR_BLACK = 0xFFFE;
 
-    private static byte GlMode(LineStrip ls) => ls.IsClosed ? (byte)2 : (byte)3; // GL_LINE_LOOP : GL_LINE_STRIP
+    private static ushort GlMode(LineStrip ls) => ls.IsClosed ? (ushort)2 : (ushort)3; // GL_LINE_LOOP : GL_LINE_STRIP
 
     /// <summary>
     /// Emits compact draw command data array for a model.
     /// </summary>
     public void DumpModelCommands(StreamWriter w, Model model)
     {
-        var cmds = new List<byte>();
+        var cmds = new List<ushort>();
 
         // First pass: hull fill commands
         int hullStart = 0;
@@ -67,7 +67,7 @@ internal class ModelWriter
             {
                 if (linestrip.Class == "hull" && linestrip.IsClosed)
                 {
-                    cmds.AddRange(new byte[] { 6, (byte)hullStart, (byte)linestrip.Points.Length, COLOR_BLACK, 0 });
+                    cmds.AddRange(new ushort[] { 6, (ushort)hullStart, (ushort)linestrip.Points.Length, COLOR_BLACK, 0 });
                 }
                 hullStart += linestrip.Points.Length;
             }
@@ -81,34 +81,34 @@ internal class ModelWriter
         foreach (var linestrip in model.LineStrips)
         {
             var len = linestrip.Points.Length;
-            byte colorByte = COLOR_NO_CHANGE;
-            byte widthByte = 0;
+            ushort colorVal = COLOR_NO_CHANGE;
+            ushort widthVal = 0;
 
             if (linestrip.Class == "heat")
             {
-                if (previousColorIndex != -1) colorByte = COLOR_PARAM;
+                if (previousColorIndex != -1) colorVal = COLOR_PARAM;
                 previousColorIndex = -1;
             }
             else
             {
                 int cidx = _colorIndexes[linestrip.Color];
-                if (previousColorIndex != cidx) colorByte = (byte)cidx;
+                if (previousColorIndex != cidx) colorVal = (ushort)cidx;
                 previousColorIndex = cidx;
             }
 
             if (linestrip.StrokeWidth != previousWidth)
             {
-                widthByte = (byte)(linestrip.StrokeWidth * 10.0f + 0.5f);
+                widthVal = (ushort)(linestrip.StrokeWidth * 10.0f + 0.5f);
                 previousWidth = linestrip.StrokeWidth;
             }
 
-            cmds.AddRange(new byte[] { GlMode(linestrip), (byte)start, (byte)len, colorByte, widthByte });
+            cmds.AddRange(new ushort[] { GlMode(linestrip), (ushort)start, (ushort)len, colorVal, widthVal });
             start += len;
         }
 
         cmds.Add(0); // END terminator
 
-        w.Write($"static const uint8_t _model_{model.FileName}_cmds[] = {{");
+        w.Write($"static const uint16_t _model_{model.FileName}_cmds[] = {{");
         w.Write($" {string.Join(", ", cmds)}");
         w.WriteLine(" };");
     }

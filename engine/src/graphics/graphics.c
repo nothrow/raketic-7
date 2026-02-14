@@ -8,6 +8,9 @@
 
 #include <immintrin.h>
 
+// Expose zoom state for external use (debug overlays, etc.)
+static float _current_zoom = 1.0f;
+
 static void _particles_colors(const struct particles_data* pd, color_t* target) {
   PROFILE_ZONE("_particles_colors");
   uint16_t* __restrict lifetime_ticks = pd->lifetime_ticks;
@@ -122,14 +125,20 @@ void graphics_engine_draw(void) {
 
   double cam_x, cam_y;
   camera_get_absolute_position(&cam_x, &cam_y);
+  _current_zoom = camera_get_zoom();
 
-  // Draw star background first (behind everything)
+  // Draw star background first (screen-space, no zoom)
   stars_draw((float)cam_x, (float)cam_y);
+
+  // World rendering with zoom
+  platform_renderer_push_zoom(_current_zoom);
 
   _graphics_particles_draw();
   _graphics_beams_draw();
   _graphics_parts_draw();
   _graphics_objects_draw();
-  
+
+  platform_renderer_pop_zoom();
+
   PROFILE_ZONE_END();
 }

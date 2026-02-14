@@ -1,5 +1,5 @@
 return Planet {
   model  = models.planet,
-  mass   = 10000,
+  mass   = 100000,
   radius = models.planet.radius,
 }

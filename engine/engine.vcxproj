@@ -57,6 +57,7 @@
     <ClCompile Include="src\entity\radar.c" />
     <ClCompile Include="src\entity\planet.c" />
     <ClCompile Include="src\entity\moon.c" />
+    <ClCompile Include="src\entity\sun.c" />
     <ClCompile Include="src\hud\hud.c" />
     <ClCompile Include="src\hud\hud_text.c" />
     <ClCompile Include="src\graphics\graphics.c" />

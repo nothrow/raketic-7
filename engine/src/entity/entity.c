@@ -19,6 +19,7 @@
 #include "moon.h"
 #include "satellite.h"
 #include "radar.h"
+#include "sun.h"
 #include "debug/debug.h"
 #include "debug/profiler.h"
 
@@ -111,6 +112,7 @@ static void _entity_manager_types_initialize(void) {
   moon_entity_initialize();
   satellite_entity_initialize();
   radar_part_entity_initialize();
+  sun_entity_initialize();
 }
 
 void entity_manager_initialize(void) {

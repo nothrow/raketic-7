@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="30" height="30" viewBox="-15 -15 30 30" xmlns="http://www.w3.org/2000/svg">
+<g transform="scale(2.0)">
   <!-- Center marker -->
   <circle id="center" cx="0" cy="0" r="1" />
 
@@ -14,4 +15,5 @@
 
   <!-- Crater 3 - small -->
   <circle cx="-1" cy="5" r="1.5" fill="none" stroke="white" stroke-width="0.8"/>
+</g>
 </svg>

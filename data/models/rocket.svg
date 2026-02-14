@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="100" height="100" viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
+<g transform="scale(0.3)">
     <circle id="center" cx="0" cy="0" r="1" />
     <!-- Rocket body -->
     <g transform="rotate(0)">
@@ -13,4 +14,5 @@
         <!-- Exhaust glow -->
         <line x1="-5" y1="0" x2="-8" y2="0" stroke="yellow" stroke-width="2"/>
     </g>
+</g>
 </svg>

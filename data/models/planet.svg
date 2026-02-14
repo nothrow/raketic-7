@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="150" height="150" viewBox="-75 -75 150 150" xmlns="http://www.w3.org/2000/svg">
+<g transform="scale(2.0)">
   <!-- Center marker -->
   <circle id="center" cx="0" cy="0" r="1" />
 
@@ -38,4 +39,5 @@
 
   <!-- Equator line (subtle) -->
   <ellipse cx="0" cy="0" rx="60" ry="12" fill="none" stroke="white" stroke-width="0.75" stroke-dasharray="6,6"/>
+</g>
 </svg>

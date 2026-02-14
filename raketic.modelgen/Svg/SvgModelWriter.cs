@@ -36,13 +36,13 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
 
         // Draw model interpreter: reads command data and issues GL calls
         cWriter.WriteLine($"void _generated_draw_model(color_t color, uint16_t index) {{");
-        cWriter.WriteLine($"  static const int8_t* _vtx[] = {{");
+        cWriter.WriteLine($"  static const int16_t* _vtx[] = {{");
         foreach (var model in models)
         {
             cWriter.WriteLine($"    _model_{model.FileName}_vertices,");
         }
         cWriter.WriteLine($"  }};");
-        cWriter.WriteLine($"  static const uint8_t* _cmds[] = {{");
+        cWriter.WriteLine($"  static const uint16_t* _cmds[] = {{");
         foreach (var model in models)
         {
             cWriter.WriteLine($"    _model_{model.FileName}_cmds,");
@@ -50,12 +50,12 @@ internal class SvgModelWriter(StreamWriter cWriter, StreamWriter hWriter)
         cWriter.WriteLine($"  }};");
         cWriter.WriteLine($"  _ASSERT(index >= 0 && index < {models.Length});");
         cWriter.WriteLine($"  glEnableClientState(GL_VERTEX_ARRAY);");
-        cWriter.WriteLine($"  glVertexPointer(2, GL_BYTE, 0, _vtx[index]);");
-        cWriter.WriteLine($"  const uint8_t* c = _cmds[index];");
+        cWriter.WriteLine($"  glVertexPointer(2, GL_SHORT, 0, _vtx[index]);");
+        cWriter.WriteLine($"  const uint16_t* c = _cmds[index];");
         cWriter.WriteLine($"  while (*c) {{");
-        cWriter.WriteLine($"    if (c[3] == 0xFE) glColor4ub(0, 0, 0, 255);");
-        cWriter.WriteLine($"    else if (c[3] == 0xFD) glColor4ubv((GLubyte*)(&color));");
-        cWriter.WriteLine($"    else if (c[3] != 0xFF) glColor4ubv((GLubyte*)(_model_colors + c[3] * 4));");
+        cWriter.WriteLine($"    if (c[3] == 0xFFFE) glColor4ub(0, 0, 0, 255);");
+        cWriter.WriteLine($"    else if (c[3] == 0xFFFD) glColor4ubv((GLubyte*)(&color));");
+        cWriter.WriteLine($"    else if (c[3] != 0xFFFF) glColor4ubv((GLubyte*)(_model_colors + c[3] * 4));");
         cWriter.WriteLine($"    if (c[4]) glLineWidth(c[4] * 0.1f);");
         cWriter.WriteLine($"    glDrawArrays(c[0], c[1], c[2]);");
         cWriter.WriteLine($"    c += 5;");

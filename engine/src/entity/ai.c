@@ -127,8 +127,10 @@ static float _compute_orbit_dv_sq(struct objects_data* od, uint32_t ei, uint32_t
   // v_orbit = sqrt(v_orbit_sq) = v_orbit_sq * rsqrt(v_orbit_sq)
   float v_orbit = v_orbit_sq * Q_rsqrt(v_orbit_sq);
 
-  float target_vx = tx * v_orbit;
-  float target_vy = ty * v_orbit;
+  // Target velocity = tangential orbit velocity + body's inertial velocity
+  // (the body itself is moving, e.g. planet orbiting the sun)
+  float target_vx = tx * v_orbit + od->velocity_x[bi];
+  float target_vy = ty * v_orbit + od->velocity_y[bi];
 
   float dvx = target_vx - svx;
   float dvy = target_vy - svy;

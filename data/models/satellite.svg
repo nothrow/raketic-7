@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="80" height="80" viewBox="-40 -40 80 80" xmlns="http://www.w3.org/2000/svg">
+<g transform="scale(0.25)">
   <!-- Center marker -->
   <circle id="center" cx="0" cy="0" r="1" />
 
@@ -33,4 +34,5 @@
   <!-- Turret slots (sides of the body) -->
   <circle cx="-8" cy="-6" slot="turret1" />
   <circle cx="8" cy="-6" slot="turret2" />
+</g>
 </svg>

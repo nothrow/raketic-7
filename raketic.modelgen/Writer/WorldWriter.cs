@@ -124,20 +124,55 @@ void _generated_load_map_data(uint16_t index);
             }
 
             // Orbit initialization: set tangential velocity for circular orbit
+            // Uses the FULL gravitational field (all bodies) to compute the correct
+            // centripetal acceleration, not just the orbit target's mass.
+            // This accounts for tidal forces (e.g., sun pulling on a moon).
             if (entity is EntityData ed && ed.OrbitTargetSpawnId.HasValue)
             {
                 var targetIdx = ed.OrbitTargetSpawnId.Value;
                 _cWriter!.WriteLine();
-                _cWriter!.WriteLine($"  // Initial circular orbit velocity around entity {targetIdx}");
+                _cWriter!.WriteLine($"  // Circular orbit velocity around entity {targetIdx} (N-body corrected)");
                 _cWriter!.WriteLine($"  {{");
                 _cWriter!.WriteLine($"    float _dx = od->position_orientation.position_x[new_idx] - od->position_orientation.position_x[{targetIdx}];");
                 _cWriter!.WriteLine($"    float _dy = od->position_orientation.position_y[new_idx] - od->position_orientation.position_y[{targetIdx}];");
                 _cWriter!.WriteLine($"    float _dist = sqrtf(_dx * _dx + _dy * _dy);");
-                _cWriter!.WriteLine($"    float _v = sqrtf(6.67430f * (float)od->mass[{targetIdx}] / _dist);");
                 _cWriter!.WriteLine($"    float _rnx = _dx / _dist;");
                 _cWriter!.WriteLine($"    float _rny = _dy / _dist;");
-                _cWriter!.WriteLine($"    od->velocity_x[new_idx] = -_rny * _v;");
-                _cWriter!.WriteLine($"    od->velocity_y[new_idx] = _rnx * _v;");
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"    // Relative acceleration of orbiter w.r.t. orbit center (tidal frame)");
+                _cWriter!.WriteLine($"    float _arx = 0.0f, _ary = 0.0f;");
+                _cWriter!.WriteLine($"    for (uint32_t _k = 0; _k < od->active; _k++) {{");
+                _cWriter!.WriteLine($"      if (_k == (uint32_t)new_idx) continue;");
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"      // Gravity on orbiter from body _k");
+                _cWriter!.WriteLine($"      float _ox = od->position_orientation.position_x[_k] - od->position_orientation.position_x[new_idx];");
+                _cWriter!.WriteLine($"      float _oy = od->position_orientation.position_y[_k] - od->position_orientation.position_y[new_idx];");
+                _cWriter!.WriteLine($"      float _od2 = _ox * _ox + _oy * _oy;");
+                _cWriter!.WriteLine($"      if (_od2 < 1.0f) continue;");
+                _cWriter!.WriteLine($"      float _od1 = sqrtf(_od2);");
+                _cWriter!.WriteLine($"      float _gm = 6.67430f * od->mass[_k] / (_od2 * _od1);");
+                _cWriter!.WriteLine($"      _arx += _gm * _ox;");
+                _cWriter!.WriteLine($"      _ary += _gm * _oy;");
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"      // Subtract gravity on orbit center from same body (tidal correction)");
+                _cWriter!.WriteLine($"      if (_k != (uint32_t){targetIdx}) {{");
+                _cWriter!.WriteLine($"        float _cx = od->position_orientation.position_x[_k] - od->position_orientation.position_x[{targetIdx}];");
+                _cWriter!.WriteLine($"        float _cy = od->position_orientation.position_y[_k] - od->position_orientation.position_y[{targetIdx}];");
+                _cWriter!.WriteLine($"        float _cd2 = _cx * _cx + _cy * _cy;");
+                _cWriter!.WriteLine($"        if (_cd2 >= 1.0f) {{");
+                _cWriter!.WriteLine($"          float _cd1 = sqrtf(_cd2);");
+                _cWriter!.WriteLine($"          float _gmc = 6.67430f * od->mass[_k] / (_cd2 * _cd1);");
+                _cWriter!.WriteLine($"          _arx -= _gmc * _cx;");
+                _cWriter!.WriteLine($"          _ary -= _gmc * _cy;");
+                _cWriter!.WriteLine($"        }}");
+                _cWriter!.WriteLine($"      }}");
+                _cWriter!.WriteLine($"    }}");
+                _cWriter!.WriteLine();
+                _cWriter!.WriteLine($"    // Centripetal component (toward orbit center)");
+                _cWriter!.WriteLine($"    float _a_cent = -(_arx * _rnx + _ary * _rny);");
+                _cWriter!.WriteLine($"    float _v = _a_cent > 0.0f ? sqrtf(_a_cent * _dist) : 0.0f;");
+                _cWriter!.WriteLine($"    od->velocity_x[new_idx] = -_rny * _v + od->velocity_x[{targetIdx}];");
+                _cWriter!.WriteLine($"    od->velocity_y[new_idx] = _rnx * _v + od->velocity_y[{targetIdx}];");
                 _cWriter!.WriteLine($"  }}");
             }
 

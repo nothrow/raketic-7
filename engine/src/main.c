@@ -1,5 +1,6 @@
 #include "platform/platform.h"
 #include "entity/entity.h"
+#include "entity/camera.h"
 #include "collisions/collisions.h"
 #include "physics/physics.h"
 #include "messaging/messaging.h"
@@ -53,11 +54,15 @@ int run(void) {
     PROFILE_FRAME_START("Render");
     graphics_engine_draw();
     if (debug_is_overlay_enabled()) {
+      // Debug overlays are in world space — apply zoom
+      platform_renderer_push_zoom(camera_get_zoom());
       debug_draw_collision_hulls();
       debug_draw_orbit_zones();
       debug_trails_draw();
       debug_watch_draw();
+      platform_renderer_pop_zoom();
     }
+    // HUD is screen-space — no zoom
     hud_draw();
     PROFILE_FRAME_END("Render");
 

@@ -98,13 +98,16 @@ static void _map_keystates(const Uint8* k)
 {
   platform_clear_memory(input_state_.keyPressed, sizeof(input_state_.keyPressed));
   input_state_.keyPressed[KEY_SPACE] = k[SDL_SCANCODE_SPACE];
+  input_state_.keyPressed[KEY_PLUS] = k[SDL_SCANCODE_KP_PLUS] || k[SDL_SCANCODE_EQUALS];
+  input_state_.keyPressed[KEY_MINUS] = k[SDL_SCANCODE_KP_MINUS] || k[SDL_SCANCODE_MINUS];
   input_state_.keyPressed[KEY_TILDE] = k[SDL_SCANCODE_GRAVE];
 }
 
 bool platform_loop(void) {
-  // Reset delta každý frame
+  // Reset deltas every frame
   input_state_.mdx = 0;
   input_state_.mdy = 0;
+  input_state_.scroll_y = 0;
 
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -116,6 +119,9 @@ bool platform_loop(void) {
       input_state_.mdy += event.motion.yrel;
       input_state_.mx = event.motion.x;
       input_state_.my = event.motion.y;
+      break;
+    case SDL_MOUSEWHEEL:
+      input_state_.scroll_y += event.wheel.y;
       break;
     case SDL_KEYDOWN:
       if (event.key.keysym.sym == SDLK_ESCAPE) {

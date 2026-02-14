@@ -16,6 +16,10 @@ static double _absolute_x = 0.0;
 static double _absolute_y = 0.0;
 static float _smooth_offset_x = 0.0f;
 static float _smooth_offset_y = 0.0f;
+static float _zoom = 1.0f;
+
+#define ZOOM_MIN 0.25f
+#define ZOOM_MAX 8.0f
 
 void camera_set_entity(entity_id_t entity_id) {
   _target_entity = entity_id;
@@ -138,8 +142,16 @@ void camera_remap_entity(uint32_t* remap, uint32_t old_active) {
   }
 }
 
+float camera_get_zoom(void) {
+  return _zoom;
+}
+
+void camera_zoom_by(float factor) {
+  _zoom *= factor;
+  if (_zoom < ZOOM_MIN) _zoom = ZOOM_MIN;
+  if (_zoom > ZOOM_MAX) _zoom = ZOOM_MAX;
+}
+
 void camera_entity_initialize(void) {
   entity_manager_vtables[ENTITY_TYPE_CAMERA].dispatch_message = _camera_dispatch;
 }
-
-

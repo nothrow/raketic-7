@@ -114,6 +114,18 @@ void platform_renderer_draw_line(float x1, float y1, float x2, float y2, color_t
   glEnd();
 }
 
+void platform_renderer_push_zoom(float zoom) {
+  glPushMatrix();
+  float inv = 1.0f / zoom;
+  glTranslatef(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f, 0.0f);
+  glScalef(inv, inv, 1.0f);
+  glTranslatef(-WINDOW_WIDTH / 2.0f, -WINDOW_HEIGHT / 2.0f, 0.0f);
+}
+
+void platform_renderer_pop_zoom(void) {
+  glPopMatrix();
+}
+
 void platform_renderer_report_stats(void) {
   PROFILE_DRAW_CALLS_RESET();
 }

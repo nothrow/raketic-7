@@ -45,20 +45,14 @@ static void _detect_reset(void) {
 static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_idx) {
   float sx = od->position_orientation.position_x[ship_idx];
   float sy = od->position_orientation.position_y[ship_idx];
-  float svx = od->velocity_x[ship_idx];
-  float svy = od->velocity_y[ship_idx];
-
-  float speed_sq = svx * svx + svy * svy;
-  if (speed_sq < 0.001f) return;
-
-  float speed = sqrtf(speed_sq);
 
   // Find nearest planet
   float best_dist_sq = 1e30f;
   uint32_t best_planet = UINT32_MAX;
 
   for (uint32_t i = 0; i < od->active; i++) {
-    if (od->type[i]._ != ENTITY_TYPE_PLANET) continue;
+    uint8_t t = od->type[i]._;
+    if (t != ENTITY_TYPE_PLANET && t != ENTITY_TYPE_MOON && t != ENTITY_TYPE_SUN) continue;
 
     float dx = od->position_orientation.position_x[i] - sx;
     float dy = od->position_orientation.position_y[i] - sy;
@@ -78,13 +72,20 @@ static void _ship_check_orbit_conditions(struct objects_data* od, uint32_t ship_
   if (dist < planet_radius * ORBIT_MIN_DISTANCE_FACTOR) return;
   if (dist > planet_radius * ORBIT_MAX_DISTANCE_FACTOR) return;
 
+  // Use velocity RELATIVE to the body (the body itself moves, e.g. planet orbiting sun)
+  float rel_vx = od->velocity_x[ship_idx] - od->velocity_x[best_planet];
+  float rel_vy = od->velocity_y[ship_idx] - od->velocity_y[best_planet];
+  float speed_sq = rel_vx * rel_vx + rel_vy * rel_vy;
+  if (speed_sq < 0.001f) return;
+  float speed = sqrtf(speed_sq);
+
   float planet_mass = od->mass[best_planet];
   float v_escape_sq = 2.0f * GRAVITATIONAL_CONSTANT * planet_mass / dist;
   if (speed_sq > v_escape_sq) return;
 
   float rnx = (sx - od->position_orientation.position_x[best_planet]) / dist;
   float rny = (sy - od->position_orientation.position_y[best_planet]) / dist;
-  float v_radial = svx * rnx + svy * rny;
+  float v_radial = rel_vx * rnx + rel_vy * rny;
 
   if (fabsf(v_radial) / speed > ORBIT_TANGENTIAL_THRESHOLD) return;
 
@@ -177,6 +178,9 @@ static void _ship_handle_collision(entity_id_t id, const message_t* msg) {
 
   entity_id_t other = (GET_TYPE(id_a) == ENTITY_TYPEREF_SHIP._) ? id_b : id_a;
   uint8_t other_type = GET_TYPE(other);
+
+  // Sun collision is handled in collisions.c (instant burn, no explosion)
+  if (other_type == ENTITY_TYPE_SUN) return;
 
   if (other_type == ENTITY_TYPEREF_PLANET._ || other_type == ENTITY_TYPEREF_MOON._ || other_type == ENTITY_TYPEREF_ASTEROID._) {
     uint32_t ord = GET_ORDINAL(id);

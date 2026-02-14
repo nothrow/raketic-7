@@ -2,6 +2,7 @@
 #include "radial.h"
 #include "debug/profiler.h"
 #include "entity/entity.h"
+#include "entity/camera.h"
 #include "platform/platform.h"
 #include "messaging/messaging.h"
 #include "../generated/renderer.gen.h"
@@ -41,11 +42,15 @@ void _cull_visible_objects(position_orientation_t* po, size_t active, struct col
   target->active = 0;
   size_t remaining = active;
 
-  // cull objects that are within camera reach (-1000, -1000) to (1000, 1000)
-  __m256 minx = _mm256_set1_ps(-1000.0f);
-  __m256 maxx = _mm256_set1_ps(1000.0f);
-  __m256 miny = _mm256_set1_ps(-1000.0f);
-  __m256 maxy = _mm256_set1_ps(1000.0f);
+  // cull objects that are within camera reach, scaled by zoom
+  float zoom = camera_get_zoom();
+  float half_w = (WINDOW_WIDTH / 2.0f) * zoom + 200.0f;  // margin for objects partially on-screen
+  float half_h = (WINDOW_HEIGHT / 2.0f) * zoom + 200.0f;
+
+  __m256 minx = _mm256_set1_ps(-half_w);
+  __m256 maxx = _mm256_set1_ps(WINDOW_WIDTH + half_w);
+  __m256 miny = _mm256_set1_ps(-half_h);
+  __m256 maxy = _mm256_set1_ps(WINDOW_HEIGHT + half_h);
 
   for (; px < end_px; px += 8, py += 8, remaining -= 8) {
     __m256 pxv = _mm256_load_ps(px);
@@ -209,6 +214,16 @@ void collisions_engine_tick(void) {
   for (size_t i = 0; i < collision_buffer_objects_.active; i++) {
     uint32_t idx_a = collision_buffer_objects_.idx[i].idxa;
     uint32_t idx_b = collision_buffer_objects_.idx[i].idxb;
+
+    // Sun: anything touching it is instantly incinerated (no explosion, no messages)
+    if (od->type[idx_a]._ == ENTITY_TYPE_SUN) {
+      od->health[idx_b] = 0;
+      continue;
+    }
+    if (od->type[idx_b]._ == ENTITY_TYPE_SUN) {
+      od->health[idx_a] = 0;
+      continue;
+    }
 
     entity_id_t idxa = entity_manager_resolve_object(idx_a);
     entity_id_t idxb = entity_manager_resolve_object(idx_b);

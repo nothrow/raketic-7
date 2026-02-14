@@ -43,6 +43,11 @@ local radarDefaults = {
   __dataType = "RadarData"
 }
 
+local sunDefaults = {
+  type   = "ENTITY_TYPEREF_SUN",
+  __dataType = "EntityData"
+}
+
 local function merge(a, b)
   local result = {}
   for k, v in pairs(a) do
@@ -88,6 +93,10 @@ end
 
 function Radar(data)
   return Entity(merge(radarDefaults, data))
+end
+
+function Sun(data)
+  return Entity(merge(sunDefaults, data))
 end
 
 function deg(degrees)
